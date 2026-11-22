@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>F-P 光学腔 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">1</span>F-P 光学腔</div>
+    <p class="section-desc">法布里-珀罗腔基本原理、多光束干涉、Airy 函数、关键参数与交互式反射/透射/损耗谱仿真</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-title">法布里-珀罗腔结构与基本原理</div>
+        <span class="topic-badge badge-theory">原理</span>
+      </div>
+      <div class="topic-body">
+        <p>法布里-珀罗腔（Fabry-Pérot cavity）由两块平行的反射镜构成。光在两镜面之间多次往返反射，形成多光束干涉，从而产生尖锐的谐振峰。F-P 腔是激光器、滤波器、光谱分析等系统的核心组件。</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+            <defs>
+              <marker id="arrowIn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#378ADD"/></marker>
+              <marker id="arrowRefl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7F77DD"/></marker>
+              <marker id="arrowTrans" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+              <marker id="arrowBounce" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#AFA9EC"/></marker>
+            </defs>
+            <text x="410" y="22" text-anchor="middle" font-size="14" font-weight="600" fill="#3C3489">法布里-珀罗腔多光束干涉示意图</text>
+            <text x="120" y="44" text-anchor="middle" font-size="11" fill="#888780">入射区 (Incident)</text>
+            <text x="410" y="44" text-anchor="middle" font-size="11" fill="#888780">腔内介质 (折射率 n, 腔长 L)</text>
+            <text x="700" y="44" text-anchor="middle" font-size="11" fill="#888780">透射区 (Transmitted)</text>
+            <line x1="220" y1="55" x2="220" y2="295" stroke="#534AB7" stroke-width="3.5" stroke-linecap="round"/>
+            <text x="220" y="314" text-anchor="middle" font-size="13" font-weight="600" fill="#534AB7">M₁</text>
+            <line x1="600" y1="55" x2="600" y2="295" stroke="#534AB7" stroke-width="3.5" stroke-linecap="round"/>
+            <text x="600" y="314" text-anchor="middle" font-size="13" font-weight="600" fill="#534AB7">M₂</text>
+            <line x1="222" y1="300" x2="598" y2="300" stroke="#888780" stroke-width="0.6" stroke-dasharray="3,2"/>
+            <text x="410" y="328" text-anchor="middle" font-family="SF Mono,Consolas,monospace" font-size="13" fill="#3C3489" font-style="italic">L</text>
+            <line x1="50" y1="110" x2="216" y2="110" stroke="#378ADD" stroke-width="2" marker-end="url(#arrowIn)"/>
+            <text x="55" y="100" font-family="SF Mono,Consolas,monospace" font-size="12" fill="#378ADD" font-style="italic">E₀</text>
+            <line x1="220" y1="140" x2="54" y2="140" stroke="#7F77DD" stroke-width="2" marker-end="url(#arrowRefl)"/>
+            <text x="55" y="132" font-family="SF Mono,Consolas,monospace" font-size="12" fill="#7F77DD" font-style="italic">Eᵣ</text>
+            <line x1="222" y1="110" x2="598" y2="155" stroke="#AFA9EC" stroke-width="1.6" marker-end="url(#arrowBounce)"/>
+            <line x1="598" y1="155" x2="222" y2="195" stroke="#AFA9EC" stroke-width="1.4" marker-end="url(#arrowBounce)"/>
+            <line x1="222" y1="195" x2="598" y2="235" stroke="#AFA9EC" stroke-width="1.2" marker-end="url(#arrowBounce)" opacity="0.75"/>
+            <line x1="598" y1="235" x2="222" y2="275" stroke="#AFA9EC" stroke-width="1" marker-end="url(#arrowBounce)" opacity="0.5"/>
+            <line x1="600" y1="155" x2="750" y2="155" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowTrans)"/>
+            <text x="710" y="146" font-family="SF Mono,Consolas,monospace" font-size="12" fill="#1D9E75" font-style="italic">Eₜ,₁</text>
+            <line x1="600" y1="235" x2="750" y2="235" stroke="#1D9E75" stroke-width="1.5" marker-end="url(#arrowTrans)" opacity="0.7"/>
+            <text x="710" y="226" font-family="SF Mono,Consolas,monospace" font-size="11" fill="#1D9E75" font-style="italic" opacity="0.75">Eₜ,₂</text>
+            <text x="208" y="68" text-anchor="end" font-family="SF Mono,Consolas,monospace" font-size="11" fill="#534AB7" font-style="italic">r₁, t₁</text>
+            <text x="612" y="68" text-anchor="start" font-family="SF Mono,Consolas,monospace" font-size="11" fill="#534AB7" font-style="italic">r₂, t₂</text>
+            <circle cx="60" cy="176" r="4" fill="#378ADD"/><text x="70" y="180" font-size="10" fill="#888780">入射光</text>
+            <circle cx="60" cy="194" r="4" fill="#7F77DD"/><text x="70" y="198" font-size="10" fill="#888780">反射光</text>
+            <circle cx="60" cy="212" r="4" fill="#AFA9EC"/><text x="70" y="216" font-size="10" fill="#888780">腔内往返</text>
+            <circle cx="60" cy="230" r="4" fill="#1D9E75"/><text x="70" y="234" font-size="10" fill="#888780">透射光</text>
+          </svg>
+          <div class="diagram-caption">图 1. F-P 腔结构示意图：入射光 $E_0$ 经 $M_1$ 透射进入腔内，多次往返后经 $M_2$ 透射输出</div>
+        </div>
+
+        <p><strong>多光束干涉</strong>：入射光 $E_0$ 从左侧射入 $M_1$，每次往返在腔内积累相位 $\delta$。各次透射光场构成等比数列，求和后得到总透射场和反射场。</p>
+        <p><strong>谐振条件</strong>：当往返相位 $\delta = 2m\pi$（$m$ 为整数）时，透射率取极大值，腔发生谐振。相邻纵模频率间隔称为自由光谱范围（FSR）。</p>
+        <p><strong>精细度（Finesse）</strong>：反映谐振峰的尖锐程度，由镜面反射率决定，是 F-P 腔品质的核心指标。</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" style="max-width:700px;">
+            <line x1="50" y1="170" x2="680" y2="170" stroke="#c5c2b8" stroke-width="1"/>
+            <line x1="50" y1="20" x2="50" y2="170" stroke="#c5c2b8" stroke-width="1"/>
+            <text x="365" y="195" text-anchor="middle" font-size="11" fill="#888780">频率 ν</text>
+            <text x="18" y="95" text-anchor="middle" font-size="11" fill="#888780" transform="rotate(-90 18 95)">透射率 T</text>
+            <line x1="150" y1="170" x2="350" y2="170" stroke="#7F77DD" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <line x1="150" y1="166" x2="150" y2="174" stroke="#7F77DD" stroke-width="1"/>
+            <line x1="350" y1="166" x2="350" y2="174" stroke="#7F77DD" stroke-width="1"/>
+            <text x="250" y="185" text-anchor="middle" font-size="10" fill="#7F77DD">FSR</text>
+            <line x1="138" y1="105" x2="162" y2="105" stroke="#EF9F27" stroke-width="1.5"/>
+            <line x1="138" y1="101" x2="138" y2="109" stroke="#EF9F27" stroke-width="1"/>
+            <line x1="162" y1="101" x2="162" y2="109" stroke="#EF9F27" stroke-width="1"/>
+            <text x="150" y="98" text-anchor="middle" font-size="9" fill="#EF9F27">FWHM</text>
+            <path d="M 50,168 Q 90,168 120,90 Q 135,30 150,30 Q 165,30 180,90 Q 210,168 250,168 Q 290,168 320,90 Q 335,30 350,30 Q 365,30 380,90 Q 410,168 450,168 Q 490,168 520,90 Q 535,30 550,30 Q 565,30 580,90 Q 610,168 680,168" stroke="#1D9E75" stroke-width="2" fill="none"/>
+            <text x="150" y="22" text-anchor="middle" font-size="10" fill="#888780">m</text>
+            <text x="350" y="22" text-anchor="middle" font-size="10" fill="#888780">m+1</text>
+            <text x="550" y="22" text-anchor="middle" font-size="10" fill="#888780">m+2</text>
+          </svg>
+          <div class="diagram-caption">图 2. F-P 腔透射谱：等间隔谐振峰，FSR 为纵模间隔，FWHM 为单峰线宽</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-title">多光束干涉场推导</div>
+        <span class="topic-badge badge-formula">推导</span>
+      </div>
+      <div class="topic-body">
+        <p><strong>Step 1：单次往返的光场变化</strong> — 入射光 $E_0$ 经 $M_1$ 透射进入腔内，振幅为 $E_0 t_1$。在腔内传播半程获得相位 $\delta/2$，到达 $M_2$ 后部分透射出腔（$\times t_2$），部分反射回腔（$\times r_2$）。往返总相位为 $\delta = \frac{4\pi n L \nu}{c}$。</p>
+
+        <p><strong>Step 2：透射光场求和</strong> — 腔内光每次到达 $M_2$ 后透射出去的光场依次为：</p>
+        <div class="formula-box">
+          $$E_{t,1} = E_0\, t_1 t_2\, e^{i\delta/2}, \quad E_{t,2} = E_{t,1} \cdot r_1 r_2\, e^{i\delta}, \quad E_{t,3} = E_{t,1} \cdot (r_1 r_2\, e^{i\delta})^2$$
+        </div>
+        <p>总透射场为等比级数求和：</p>
+        <div class="formula-box">
+          $$E_t = E_0\, t_1 t_2\, e^{i\delta/2} \sum_{m=0}^{\infty} (r_1 r_2\, e^{i\delta})^m = \frac{E_0\, t_1 t_2\, e^{i\delta/2}}{1 - r_1 r_2\, e^{i\delta}}$$
+          <div class="formula-label">总透射光场（等比级数求和）</div>
+        </div>
+
+        <p><strong>Step 3：反射光场（含镜面损耗）</strong> — 反射光由 $M_1$ 直接反射（$r_1 E_0$）和腔内经 $M_1$ 漏出的多光束叠加而成，考虑反射相移关系 $t_1 t_1' = -T_1$（功率反射率 $R_i = |r_i|^2$、透射率 $T_i = |t_i|^2$、损耗 $L_i = 1 - R_i - T_i$）：</p>
+        <div class="formula-box">
+          $$E_r = E_0 \left[r_1 - \frac{T_1 r_2 e^{i\delta}}{1 - r_1 r_2 e^{i\delta}}\right], \qquad R_{\text{cav}}(\nu) = \left|\frac{E_r}{E_0}\right|^2 = \left|\frac{r_1(1 - r_1 r_2 e^{i\delta}) - T_1 r_2 e^{i\delta}}{1 - r_1 r_2 e^{i\delta}}\right|^2$$
+          <div class="formula-label">含镜面损耗的腔反射场与反射率</div>
+        </div>
+
+        <p><strong>Step 4：Airy 函数</strong> — 取透射率 $T = |E_t/E_0|^2$，令有效振幅反射率乘积 $R = |r_1 r_2| = \sqrt{R_1 R_2}$，Airy 精细度系数为 $F = \frac{4R}{(1-R)^2}$：</p>
+        <div class="formula-box">
+          $$T(\nu) = \frac{|t_1 t_2|^2}{|1 - r_1 r_2\, e^{i\delta}|^2} = \frac{T_{\max}}{1 + F\sin^2(\delta/2)}, \qquad T_{\max} = \frac{T_1 T_2}{(1 - \sqrt{R_1 R_2})^2}$$
+          <div class="formula-label">Airy 透射函数（对称无损耗镜面时 $T_{\max} = 1$）</div>
+        </div>
+        <div class="formula-box">
+          $$R(\nu) = 1 - T(\nu) = \frac{F\sin^2(\delta/2)}{1 + F\sin^2(\delta/2)}$$
+          <div class="formula-label">反射率（对称无损耗条件）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-title">关键参数公式</div>
+        <span class="topic-badge badge-formula">参数</span>
+      </div>
+      <div class="topic-body">
+        <div class="formula-box">
+          $$\Delta\nu_{\text{FSR}} = \frac{c}{2nL}$$
+          <div class="formula-label">自由光谱范围（FSR）</div>
+        </div>
+        <div class="formula-box">
+          $$\mathcal{F} = \frac{\pi\sqrt{R}}{1-R}$$
+          <div class="formula-label">精细度（Finesse），$R = |r_1 r_2| = \sqrt{R_1 R_2}$</div>
+        </div>
+        <div class="formula-box">
+          $$\Delta\nu_{\text{FWHM}} = \frac{\Delta\nu_{\text{FSR}}}{\mathcal{F}} = \frac{c}{2nL\mathcal{F}}$$
+          <div class="formula-label">谐振峰半高全宽（FWHM）</div>
+        </div>
+        <div class="formula-box">
+          $$Q = \frac{\nu_0}{\Delta\nu_{\text{FWHM}}} = \frac{2nL\mathcal{F}\nu_0}{c}$$
+          <div class="formula-label">品质因子（Q factor）</div>
+        </div>
+        <p>考虑镜面损耗时（$R_i + T_i + L_i = 1$），能量守恒关系为 $T(\nu) + R_{\text{cav}}(\nu) + \Lambda(\nu) = 1$。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-title">仿真算法：高精细度谐振峰自适应采样</div>
+        <span class="topic-badge badge-sim">数值算法</span>
+      </div>
+      <div class="topic-body">
+        <p>当 $R_1, R_2 \to 0.999$ 时，$\mathcal{F} > 3000$，谐振峰极窄。若在 $3\,\text{FSR}$ 范围内仅做等间距采样，离散网格极易跨过峰顶导致峰值失真。仿真器构建<strong>基础均匀网格 + 谐振峰二次加密网格</strong>：</p>
+        <div class="formula-box">
+          $$\nu_k \in \left\{\nu_{\text{uniform}}\right\} \cup \bigcup_{m=-1}^{1} \left\{m\,\Delta\nu_{\text{FSR}} + \operatorname{sgn}(u_j)\, u_j^2 \cdot \min(0.45\,\Delta\nu_{\text{FSR}},\, 4\,\Delta\nu_{\text{FWHM}})\right\}$$
+          <div class="formula-label">排序后在每个谐振峰附近自动加密，确保任意高 Q 峰值无截断渲染</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group"><div class="sim-label">M₁ 反射率 R₁ <span id="fpR1Val">0.950</span></div><input type="range" id="fpR1" min="0" max="0.999" step="0.001" value="0.95"></div>
+          <div class="sim-control-group"><div class="sim-label">M₁ 损耗 L₁ <span id="fpL1Val">0.020</span></div><input type="range" id="fpL1" min="0" max="0.5" step="0.001" value="0.02"></div>
+          <div class="sim-control-group"><div class="sim-label">M₂ 反射率 R₂ <span id="fpR2Val">0.950</span></div><input type="range" id="fpR2" min="0" max="0.999" step="0.001" value="0.95"></div>
+          <div class="sim-control-group"><div class="sim-label">M₂ 损耗 L₂ <span id="fpL2Val">0.020</span></div><input type="range" id="fpL2" min="0" max="0.5" step="0.001" value="0.02"></div>
+          <div class="sim-control-group"><div class="sim-label">腔长 L (μm) <span id="fpLVal">100</span></div><input type="range" id="fpL" min="10" max="500" step="1" value="100"></div>
+          <div class="sim-control-group"><div class="sim-label">介质折射率 n <span id="fpNVal">1.00</span></div><input type="range" id="fpN" min="1.0" max="3.5" step="0.05" value="1.0"></div>
+          <div class="sim-status">
+            <div class="status-line"><span>M₁ 透射 T₁</span><strong id="fpT1Val">0.030</strong></div>
+            <div class="status-line"><span>M₂ 透射 T₂</span><strong id="fpT2Val">0.030</strong></div>
+          </div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-stack">
+            <div class="sim-canvas-wrap-2">
+              <div class="sim-canvas-label">F-P 腔反射谱、透射谱与损耗谱（自适应峰值采样）</div>
+              <canvas id="fpCanvas" width="640" height="320"></canvas>
+            </div>
+          </div>
+          <div class="sim-metrics">
+            <div class="metric"><div class="val" id="fpFsr">—</div><div class="lbl">FSR (GHz)</div></div>
+            <div class="metric"><div class="val" id="fpFinesse">—</div><div class="lbl">Finesse</div></div>
+            <div class="metric"><div class="val" id="fpFwhm">—</div><div class="lbl">FWHM (GHz)</div></div>
+            <div class="metric"><div class="val" id="fpQ">—</div><div class="lbl">Q factor</div></div>
+            <div class="metric"><div class="val" id="fpTmax">—</div><div class="lbl">T_max</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Saleh, B. E. A. &amp; Teich, M. C. <em>Fundamentals of Photonics</em>, 3rd ed., Ch. 9: Resonator Optics (Wiley, 2019).</li>
+      <li><span class="ref-num">[2]</span>Yariv, A. &amp; Yeh, P. <em>Photonics: Optical Electronics in Modern Communications</em>, 6th ed. (Oxford University Press, 2007).</li>
+      <li><span class="ref-num">[3]</span>Born, M. &amp; Wolf, E. <em>Principles of Optics</em>, 7th ed., Sec. 7.6: Multiple-Beam Interference (Cambridge University Press, 1999).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  var c_light = 3e8;
+  var fpCanvas = document.getElementById('fpCanvas');
+  var fpCtx = fpCanvas ? fpCanvas.getContext('2d') : null;
+
+  function fpGetParams() {
+    var R1 = parseFloat(document.getElementById('fpR1').value);
+    var L1 = parseFloat(document.getElementById('fpL1').value);
+    var R2 = parseFloat(document.getElementById('fpR2').value);
+    var L2 = parseFloat(document.getElementById('fpL2').value);
+    var L_um = parseFloat(document.getElementById('fpL').value);
+    var n = parseFloat(document.getElementById('fpN').value);
+    if (R1 + L1 > 0.999) L1 = Math.max(0, 0.999 - R1);
+    if (R2 + L2 > 0.999) L2 = Math.max(0, 0.999 - R2);
+    return { R1: R1, R2: R2, T1: Math.max(0, 1 - R1 - L1), T2: Math.max(0, 1 - R2 - L2), L1: L1, L2: L2, L_um: L_um, n: n };
+  }
+
+  function fpComputeSpectrum(p) {
+    var r1 = Math.sqrt(p.R1), r2 = Math.sqrt(p.R2), abs_r1r2 = r1 * r2;
+    var L_m = p.L_um * 1e-6, fsr = c_light / (2 * p.n * L_m), fsrGHz = fsr / 1e9;
+    var finesse = Math.PI * Math.sqrt(abs_r1r2) / Math.max(1e-9, 1 - abs_r1r2);
+    var fwhm = fsr / finesse, Q = 200e12 / fwhm;
+    var Tmax = (p.T1 * p.T2) / Math.pow(Math.max(1e-9, 1 - abs_r1r2), 2);
+    var fStart = -1.5 * fsr, fEnd = 1.5 * fsr, freqs = [];
+    for (var i = 0; i < 800; i++) freqs.push(fStart + (i / 799) * (fEnd - fStart));
+    for (var m = -1; m <= 1; m++) {
+      var fc = m * fsr, span = Math.min(0.45 * fsr, 4 * fwhm);
+      for (var j = -80; j <= 80; j++) {
+        var u = j / 80, f = fc + u * Math.abs(u) * span;
+        if (f >= fStart && f <= fEnd) freqs.push(f);
+      }
+    }
+    freqs.sort(function(a, b) { return a - b; });
+    var t1_sq = -p.T1, data = [];
+    for (var k = 0; k < freqs.length; k++) {
+      var freq = freqs[k], delta = 2 * Math.PI * freq / fsr, cos_d = Math.cos(delta), sin_d = Math.sin(delta);
+      var dRe = 1 - abs_r1r2 * cos_d, dIm = -abs_r1r2 * sin_d, dAbsSq = dRe * dRe + dIm * dIm;
+      var T = (p.T1 * p.T2) / dAbsSq;
+      var nRe = r1 * dRe + t1_sq * r2 * cos_d, nIm = r1 * dIm + t1_sq * r2 * sin_d;
+      var R = (nRe * nRe + nIm * nIm) / dAbsSq;
+      data.push({ freq: freq / 1e9, T: T, R: R, Loss: Math.max(0, 1 - T - R) });
+    }
+    return { data: data, fsrGHz: fsrGHz, finesse: finesse, fwhm: fwhm, Q: Q, Tmax: Tmax };
+  }
+
+  function fpRedraw() {
+    if (!fpCanvas || !fpCtx) return;
+    var p = fpGetParams(), result = fpComputeSpectrum(p), data = result.data;
+    var dpr = window.devicePixelRatio || 1, cssW = fpCanvas.clientWidth || 640, cssH = cssW < 400 ? 240 : 320;
+    fpCanvas.width = Math.round(cssW * dpr); fpCanvas.height = Math.round(cssH * dpr);
+    fpCanvas.style.height = cssH + 'px'; fpCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = cssW, H = cssH, padL = 45, padR = 15, padT = 25, padB = 35, plotW = W - padL - padR, plotH = H - padT - padB;
+    fpCtx.fillStyle = '#faf9f7'; fpCtx.fillRect(0, 0, W, H);
+    var fMin = data[0].freq, fMax = data[data.length - 1].freq, fRange = fMax - fMin;
+    fpCtx.strokeStyle = '#e0ddd3'; fpCtx.lineWidth = 0.5; fpCtx.font = '10px -apple-system, sans-serif'; fpCtx.fillStyle = '#888780';
+    for (var g = 0; g <= 4; g++) {
+      var yVal = g * 0.25, y = padT + plotH * (1 - yVal);
+      fpCtx.beginPath(); fpCtx.moveTo(padL, y); fpCtx.lineTo(W - padR, y); fpCtx.stroke();
+      fpCtx.textAlign = 'right'; fpCtx.fillText(yVal.toFixed(2), padL - 5, y + 3);
+    }
+    for (var m = -1; m <= 1; m++) {
+      var x = padL + (m * result.fsrGHz - fMin) / fRange * plotW;
+      fpCtx.strokeStyle = '#e8e5dd'; fpCtx.beginPath(); fpCtx.moveTo(x, padT); fpCtx.lineTo(x, padT + plotH); fpCtx.stroke();
+      fpCtx.textAlign = 'center'; fpCtx.fillText(m + ' FSR', x, H - padB + 14);
+    }
+    fpCtx.fillStyle = '#5f5e5a'; fpCtx.font = '11px -apple-system, sans-serif';
+    fpCtx.textAlign = 'center'; fpCtx.fillText('相对频率 (GHz)', W / 2, H - 4);
+    fpCtx.save(); fpCtx.translate(12, padT + plotH / 2); fpCtx.rotate(-Math.PI / 2); fpCtx.fillText('归一化光强', 0, 0); fpCtx.restore();
+    function drawCurve(key, color, lw, dash) {
+      fpCtx.strokeStyle = color; fpCtx.lineWidth = lw; fpCtx.setLineDash(dash || []); fpCtx.beginPath();
+      for (var i = 0; i < data.length; i++) {
+        var x = padL + (data[i].freq - fMin) / fRange * plotW, y = padT + plotH * (1 - data[i][key]);
+        if (i === 0) fpCtx.moveTo(x, y); else fpCtx.lineTo(x, y);
+      }
+      fpCtx.stroke(); fpCtx.setLineDash([]);
+    }
+    drawCurve('Loss', '#EF9F27', 1.5, [4, 3]); drawCurve('R', '#7F77DD', 2, null); drawCurve('T', '#1D9E75', 2, null);
+    fpCtx.font = '11px -apple-system, sans-serif'; var legX = W - padR - 75, legY = padT + 8;
+    fpCtx.fillStyle = '#1D9E75'; fpCtx.fillRect(legX, legY, 10, 3); fpCtx.fillStyle = '#2c2c2a'; fpCtx.textAlign = 'left'; fpCtx.fillText('透射 T', legX + 14, legY + 3);
+    fpCtx.fillStyle = '#7F77DD'; fpCtx.fillRect(legX, legY + 14, 10, 3); fpCtx.fillStyle = '#2c2c2a'; fpCtx.fillText('反射 R', legX + 14, legY + 17);
+    fpCtx.fillStyle = '#EF9F27'; fpCtx.fillRect(legX, legY + 28, 10, 3); fpCtx.fillStyle = '#2c2c2a'; fpCtx.fillText('损耗 Λ', legX + 14, legY + 31);
+    document.getElementById('fpFsr').textContent = result.fsrGHz.toFixed(2);
+    document.getElementById('fpFinesse').textContent = isFinite(result.finesse) ? Math.round(result.finesse) : '—';
+    var fwhmGHz = result.fwhm / 1e9;
+    document.getElementById('fpFwhm').textContent = fwhmGHz < 0.01 ? fwhmGHz.toFixed(4) : fwhmGHz.toFixed(2);
+    document.getElementById('fpQ').textContent = isFinite(result.Q) ? result.Q.toExponential(2) : '—';
+    document.getElementById('fpTmax').textContent = result.Tmax.toFixed(3);
+    document.getElementById('fpR1Val').textContent = p.R1.toFixed(3); document.getElementById('fpL1Val').textContent = p.L1.toFixed(3);
+    document.getElementById('fpR2Val').textContent = p.R2.toFixed(3); document.getElementById('fpL2Val').textContent = p.L2.toFixed(3);
+    document.getElementById('fpLVal').textContent = p.L_um.toFixed(0); document.getElementById('fpNVal').textContent = p.n.toFixed(2);
+    document.getElementById('fpT1Val').textContent = p.T1.toFixed(3); document.getElementById('fpT2Val').textContent = p.T2.toFixed(3);
+  }
+
+  ['fpR1', 'fpL1', 'fpR2', 'fpL2', 'fpL', 'fpN'].forEach(function(id) {
+    var el = document.getElementById(id); if (!el) return;
+    el.addEventListener('input', function() {
+      if (id === 'fpR1' || id === 'fpL1') {
+        var R1 = parseFloat(document.getElementById('fpR1').value), L1 = parseFloat(document.getElementById('fpL1').value);
+        if (R1 + L1 > 0.999) { if (id === 'fpR1') document.getElementById('fpL1').value = (0.999 - R1).toFixed(3); else document.getElementById('fpR1').value = (0.999 - L1).toFixed(3); }
+      }
+      if (id === 'fpR2' || id === 'fpL2') {
+        var R2 = parseFloat(document.getElementById('fpR2').value), L2 = parseFloat(document.getElementById('fpL2').value);
+        if (R2 + L2 > 0.999) { if (id === 'fpR2') document.getElementById('fpL2').value = (0.999 - R2).toFixed(3); else document.getElementById('fpR2').value = (0.999 - L2).toFixed(3); }
+      }
+      fpRedraw();
+    });
+  });
+
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      if (btn.dataset.panel === 'simulation') setTimeout(fpRedraw, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  window.addEventListener('resize', fpRedraw);
+  window.addEventListener('load', fpRedraw);
+})();
+</script>
+</body>
+</html>

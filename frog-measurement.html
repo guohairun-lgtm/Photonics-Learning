@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>脉冲自相关与 FROG 测量 - 光子学学习</title>
+<style>
+.frog-sim { display: flex; flex-direction: column; gap: 0.75rem; }
+.frog-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 0.5rem; }
+.frog-metric { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.5rem 0.65rem; }
+.frog-metric-lbl { font-size: 11px; color: var(--c-text-hint); }
+.frog-metric-val { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 14px; font-weight: 600; color: var(--c-purple-600); margin-top: 2px; }
+.frog-layout { display: grid; grid-template-columns: 285px 1fr; gap: 0.85rem; align-items: start; }
+@media (max-width: 860px) { .frog-layout { grid-template-columns: 1fr; } }
+.frog-sidebar { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.8rem; display: flex; flex-direction: column; gap: 0.65rem; }
+.frog-ctrl-sec { border-top: 0.5px solid var(--c-border); padding-top: 0.55rem; }
+.frog-ctrl-sec:first-child { border-top: none; padding-top: 0; }
+.frog-ctrl-head { font-size: 11.5px; font-weight: 600; color: var(--c-text-sec); margin-bottom: 0.4rem; }
+.frog-mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.frog-mode-btn { padding: 5px 6px; font-size: 11px; font-weight: 500; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: center; }
+.frog-mode-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); font-weight: 600; }
+.frog-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.frog-preset-btn { padding: 5px 6px; font-size: 11px; border: 0.5px solid var(--c-border); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: left; }
+.frog-preset-btn:hover { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.frog-preset-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-600); color: var(--c-purple-800); font-weight: 600; }
+.frog-preset-full { grid-column: 1 / -1; }
+.frog-slider-grp { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+.frog-slider-grp.disabled { opacity: 0.45; pointer-events: none; }
+.frog-slider-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--c-text-sec); }
+.frog-slider-row .val { font-family: "SF Mono", monospace; font-weight: 600; color: var(--c-purple-600); }
+.frog-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+@media (max-width: 720px) { .frog-charts-grid { grid-template-columns: 1fr; } }
+.frog-chart-card { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.6rem; display: flex; flex-direction: column; }
+.frog-chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 4px; }
+.frog-chart-title { font-size: 12px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 5px; }
+.frog-badge { font-size: 10px; font-family: "SF Mono", monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--c-purple-50); color: var(--c-purple-600); }
+.frog-mini-btn { font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 0.5px solid var(--c-border-2); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; }
+.frog-mini-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.frog-cv-wrap { width: 100%; height: 225px; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.frog-cv-wrap canvas { display: block; width: 100%; height: 100%; }
+.frog-tip { margin-top: 0.65rem; padding: 0.6rem 0.85rem; border-radius: var(--radius); background: var(--c-blue-50); border: 0.5px solid var(--c-blue-100); color: var(--c-blue-600); font-size: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">9</span>脉冲自相关与频率分辨时域门测量（FROG）</div>
+    <p class="section-desc">超越线性自干涉（FTIR）→ 和频非线性自相关/互相关 → FROG 二维时频谱图 → 广义投影与 PCGPA 相位反演算法 → 多形态超快脉冲交互仿真</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>从线性自干涉到非线性时域门</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">为什么线性自干涉（FTIR）无法完整表征超快脉冲？</div><span class="topic-badge badge-theory">动机</span></div>
+        <div class="topic-body">
+          <p>第 8 章讨论的迈克尔逊线性自干涉（FTIR）测量的是光场的一阶自相关函数 $R_{EE}(\tau)$，根据维纳-辛钦定理，其傅里叶变换仅给出<strong>功率谱密度</strong> $S(\omega) = |\tilde{E}(\omega)|^2$，<strong>完全丢失了光谱相位 $\phi(\omega)$</strong>。一个 30 fs 的傅里叶变换极限脉冲，与一个被色散展宽至 300 fs 的强啁啾脉冲，只要功率谱相同，其线性干涉图就完全一致。</p>
+          <p>要测量飞秒至皮秒级超快脉冲的真实时域波形，经典测量原则要求“<strong>用更短的事件去测量短事件</strong>”。由于任何光电探测器的响应速度都远慢于飞秒脉冲，必须引入<strong>非线性光学过程</strong>（如二阶非线性晶体中的和频 SFG / 倍频 SHG），利用脉冲自身（自门控）或已知参考脉冲（互门控）作为超快“光门（Optical Gate）”，对被测脉冲进行延时切片采样。</p>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">基于和频过程的脉冲自相关与互相关</div><span class="topic-badge badge-theory">非线性相关</span></div>
+        <div class="topic-body">
+          <p>将待测脉冲 $E(t)$ 与经过可调延时 $\tau$ 的门脉冲 $G(t-\tau)$ 非共线聚焦于薄非线性晶体（如 BBO）中发生<strong>和频过程（SFG）</strong>（当 $G(t)=E(t)$ 时退化为<strong>倍频 SHG</strong>），在相位匹配方向产生非线性信号场 $E_{\text{sig}}(t,\tau) \propto E(t)\,G(t-\tau)$。</p>
+          <ul>
+            <li><strong>强度自相关 / 互相关</strong>：若仅用慢速光电探测器记录不同延时 $\tau$ 下的和频总光强 $A_2(\tau) = \int |E(t)\,G(t-\tau)|^2\,\mathrm{d}t$，即可获得脉冲宽度量级的时域信息。</li>
+            <li><strong>强度自相关的局限</strong>：首先，自相关 $A_2(\tau)$ 恒为偶对称函数，无法区分脉冲的前沿与后沿；其次，由自相关半高宽 $\tau_{\text{AC}}$ 反推脉宽 $\tau_p$ 必须预先假设脉冲形状（如高斯脉冲 $\tau_{\text{AC}}/\tau_p = \sqrt{2}$，$\operatorname{sech}^2$ 脉冲为 $1.543$）；最后，它仍无法唯一确定脉冲的相位与啁啾分布。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>FROG：频率分辨光学开关与时谱图的物理意义</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">用光谱仪替代单点探测器：从 1D 相关到 2D 时谱图</div><span class="topic-badge badge-theory">核心原理</span></div>
+        <div class="topic-body">
+          <p><strong>频率分辨光学开关（Frequency-Resolved Optical Gating, FROG）</strong>的思想极其简洁而深刻：将自相关仪末端的单点光电探测器替换为<strong>光谱仪 + 面阵 CCD</strong>，在每一个相对延时 $\tau$ 下记录和频信号 $E_{\text{sig}}(t,\tau)$ 的光谱，从而构成一幅二维的<strong>时频谱图（Spectrogram / FROG Trace）</strong> $I_{\text{FROG}}(\omega, \tau)$。</p>
+          <div class="diagram-box">
+            <svg viewBox="0 0 820 275" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+              <defs>
+                <marker id="arrF-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7F77DD"/></marker>
+                <marker id="arrF-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#378ADD"/></marker>
+                <marker id="arrF-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#EF9F27"/></marker>
+                <marker id="arrF-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+              </defs>
+              <text x="410" y="20" text-anchor="middle" font-size="13.5" font-weight="600" fill="#3C3489">基于和频（SFG / SHG）的非共线 FROG 测量光路原理示意图</text>
+              <!-- Input pulse -->
+              <rect x="18" y="102" width="76" height="44" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+              <text x="56" y="121" text-anchor="middle" font-size="11" font-weight="600" fill="#534AB7">待测脉冲</text>
+              <text x="56" y="137" text-anchor="middle" font-size="10" fill="#534AB7">E(t)</text>
+              <line x1="94" y1="124" x2="152" y2="124" stroke="#7F77DD" stroke-width="2.2" marker-end="url(#arrF-p)"/>
+              <!-- BS -->
+              <line x1="152" y1="142" x2="184" y2="106" stroke="#5f5e5a" stroke-width="3"/>
+              <text x="168" y="158" text-anchor="middle" font-size="9.5" fill="#888780">分束镜 BS</text>
+              <!-- Upper arm (fixed) -->
+              <line x1="168" y1="124" x2="168" y2="62" stroke="#378ADD" stroke-width="2"/>
+              <line x1="155" y1="52" x2="181" y2="72" stroke="#378ADD" stroke-width="2.5"/>
+              <line x1="168" y1="62" x2="368" y2="62" stroke="#378ADD" stroke-width="2" marker-end="url(#arrF-b)"/>
+              <text x="270" y="54" text-anchor="middle" font-size="10" fill="#185FA5">测试光路 E(t)</text>
+              <!-- Lower arm (delay) -->
+              <line x1="168" y1="124" x2="245" y2="124" stroke="#EF9F27" stroke-width="2"/>
+              <rect x="245" y="105" width="78" height="38" rx="5" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1.3"/>
+              <text x="284" y="121" text-anchor="middle" font-size="10" font-weight="600" fill="#854F0B">光学延迟线</text>
+              <text x="284" y="135" text-anchor="middle" font-size="9.5" fill="#854F0B">延时 τ</text>
+              <line x1="323" y1="124" x2="368" y2="124" stroke="#EF9F27" stroke-width="2" marker-end="url(#arrF-a)"/>
+              <text x="284" y="156" text-anchor="middle" font-size="9.5" fill="#854F0B">门信号 G(t − τ)</text>
+              <!-- Focusing Lens -->
+              <ellipse cx="380" cy="93" rx="7" ry="44" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+              <text x="380" y="152" text-anchor="middle" font-size="9.5" fill="#5f5e5a">聚焦透镜</text>
+              <!-- Beams converging into BBO -->
+              <line x1="387" y1="66" x2="452" y2="91" stroke="#378ADD" stroke-width="1.8"/>
+              <line x1="387" y1="120" x2="452" y2="95" stroke="#EF9F27" stroke-width="1.8"/>
+              <!-- BBO Crystal -->
+              <rect x="452" y="64" width="28" height="58" rx="4" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.8"/>
+              <text x="466" y="97" text-anchor="middle" font-size="10" font-weight="600" fill="#0F6E56">BBO</text>
+              <text x="466" y="138" text-anchor="middle" font-size="9.5" fill="#0F6E56">χ⁽²⁾ 和频晶体</text>
+              <!-- SFG beam -->
+              <line x1="480" y1="93" x2="555" y2="93" stroke="#1D9E75" stroke-width="2.4" marker-end="url(#arrF-t)"/>
+              <text x="518" y="83" text-anchor="middle" font-size="9.5" fill="#0F6E56" font-weight="600">E_sig(t,τ)</text>
+              <text x="518" y="109" text-anchor="middle" font-size="9" fill="#0F6E56">ω₁ + ω₂</text>
+              <!-- Spectrometer + CCD -->
+              <rect x="558" y="62" width="106" height="62" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+              <text x="611" y="88" text-anchor="middle" font-size="11" font-weight="600" fill="#3C3489">光谱仪 + CCD</text>
+              <text x="611" y="105" text-anchor="middle" font-size="9.5" fill="#534AB7">按延时 τ 记录频谱</text>
+              <line x1="664" y1="93" x2="696" y2="93" stroke="#534AB7" stroke-width="1.8" marker-end="url(#arrF-p)"/>
+              <!-- 2D FROG Trace Icon -->
+              <rect x="700" y="54" width="102" height="78" rx="6" fill="#1e1b4b" stroke="#534AB7" stroke-width="1.5"/>
+              <ellipse cx="751" cy="93" rx="28" ry="11" transform="rotate(-24 751 93)" fill="#EF9F27" opacity="0.88"/>
+              <ellipse cx="751" cy="93" rx="16" ry="6" transform="rotate(-24 751 93)" fill="#fef08a"/>
+              <text x="751" y="148" text-anchor="middle" font-size="10" font-weight="600" fill="#3C3489">2D FROG 时谱图</text>
+              <text x="751" y="162" text-anchor="middle" font-size="9" fill="#888780">I_FROG(ω, τ)</text>
+              <!-- Bottom summary strip -->
+              <rect x="28" y="188" width="764" height="66" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <text x="410" y="209" text-anchor="middle" font-size="11" font-weight="600" fill="#3C3489">FROG 时谱图对超快脉冲表征的核心意义</text>
+              <text x="155" y="232" text-anchor="middle" font-size="10" fill="#0F6E56">① 直观读取时频演化与啁啾斜率</text>
+              <text x="410" y="232" text-anchor="middle" font-size="10" fill="#185FA5">② 二维相位反演唯一重构 E(t) 与 φ(t)</text>
+              <text x="665" y="232" text-anchor="middle" font-size="10" fill="#854F0B">③ 边缘分布提供内置实验自洽检验</text>
+            </svg>
+            <div class="diagram-caption">图 1. 非共线和频 FROG 测量装置示意图：待测脉冲与延时门脉冲在 BBO 晶体中混频，经光谱仪获得 2D 时谱图 $I_{\text{FROG}}(\omega, \tau)$</div>
+          </div>
+          <p><strong>FROG 时谱图对于表征超快脉冲的核心意义</strong>：</p>
+          <ul>
+            <li><strong>直观的“光学乐谱”</strong>：横轴为延时 $\tau$（时间），纵轴为频率 $\omega$。无啁啾孤子呈正立椭圆；线性啁啾（GDD）使图样倾斜；三阶色散（TOD）呈现抛物线“C 形”拖尾；孤子与切伦科夫色散波在时频平面上自然分离为两个独立岛屿。</li>
+            <li><strong>二维相位反演的数学唯一性</strong>：一维频谱相位恢复存在无数多解，而二维 FROG 图样包含 $N^2$ 个数据点却只需反演 $2N$ 个自由度（复电场实部与虚部），高度过约束使得反演解在物理上基本唯一。</li>
+            <li><strong>内置自洽检验（Marginals）</strong>：FROG 图沿频率轴积分严格等于强度自相关 $A_2(\tau)$，沿延时轴积分严格等于光谱自卷积，可直接诊断实验中的晶体带宽限制或光路失准。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>SHG-FROG 与可调门控 SFG-XFROG 的对比</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">自门控 vs 外门控（门脉冲宽度的测不准权衡）</div><span class="topic-badge badge-theory">对比</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>自门控 SHG-FROG</strong>（$G(t)=E(t)$）：无需额外参考源，灵敏度极高，广泛用于飞秒锁模激光器。其固有缺陷是存在<strong>时间反演模糊性</strong>（$E(t)$ 与 $E^*(-t)$ 产生完全相同的对称 FROG 图，无法直接区分正负啁啾或前沿/后沿色散波）。</li>
+            <li><strong>外门控 SFG-XFROG</strong>（$G(t)=E_{\text{ref}}(t)$）：使用已知的短参考脉冲作为门信号，彻底消除时间反演模糊性，能够清晰分辨复杂结构（如孤子与色散波的先后到达顺序、正负啁啾方向），且特别适合测量极弱光脉冲。</li>
+            <li><strong>门脉冲宽度 $\tau_g$ 的影响</strong>：根据傅里叶测不准原理，门宽 $\tau_g$ 越窄，时间切片越精细但频谱展宽越严重（时谱图沿频率轴拉长）；$\tau_g$ 越宽，频率分辨率越高但时间结构被平滑模糊（沿延时轴拉长）。最佳门宽通常取 $\tau_g \approx (0.5\text{--}1.0)\,\tau_p$。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>和频非线性信号与强度自相关/互相关</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">从慢变包络到二阶非线性混频场</div><span class="topic-badge badge-formula">SFG / SHG</span></div>
+        <div class="topic-body">
+          <p>设待测超快脉冲与门脉冲的复慢变包络分别为 $E(t) = \sqrt{I(t)}\,e^{i\phi(t)}$ 与 $G(t) = \sqrt{I_G(t)}\,e^{i\phi_G(t)}$。在薄 $\chi^{(2)}$ 非线性晶体（忽略群速度失配与泵浦消耗）中，和频极化产生的非线性信号场为：</p>
+          <div class="formula-box">
+            $$E_{\text{sig}}(t, \tau) \propto \chi^{(2)}\, E(t)\, G(t - \tau)$$
+            <div class="formula-label">SFG-XFROG 信号场；当 $G(t) = E(t)$ 时为 SHG-FROG，即 $E_{\text{sig}}(t, \tau) = E(t)\,E(t - \tau)$</div>
+          </div>
+          <p>慢速光电探测器对信号光强进行时间积分，得到<strong>无背景二阶强度互相关 / 自相关函数</strong>：</p>
+          <div class="formula-box">
+            $$A_2(\tau) = \int_{-\infty}^{+\infty} \left|E_{\text{sig}}(t, \tau)\right|^2\,\mathrm{d}t = \int_{-\infty}^{+\infty} I(t)\,I_G(t - \tau)\,\mathrm{d}t$$
+            <div class="formula-label">当 $I_G = I$ 时为标准二阶强度自相关 $A_2(\tau) = \int I(t)I(t-\tau)\,\mathrm{d}t$，恒满足 $A_2(-\tau) = A_2(\tau)$</div>
+          </div>
+          <p>对于典型无啁啾脉冲，强度自相关半高宽 $\tau_{\text{AC}}$ 与脉冲半高宽 $\tau_p$ 满足固定去卷积比值：高斯脉冲 $\tau_{\text{AC}}/\tau_p = \sqrt{2} \approx 1.414$；双曲正割（孤子）脉冲 $\tau_{\text{AC}}/\tau_p \approx 1.543$；理想矩形平顶脉冲 $\tau_{\text{AC}}/\tau_p = 1.000$。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>FROG 时谱图的数学定义与边缘分布定理</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">FROG 轨迹与一维/二维傅里叶联系</div><span class="topic-badge badge-formula">FROG Trace</span></div>
+        <div class="topic-body">
+          <p>将非线性信号场 $E_{\text{sig}}(t,\tau)$ 送入光谱仪进行频率分辨测量（$\omega$ 为相对于和频中心频率 $\omega_0 + \omega_g$ 的角频率偏移），测得的二维 FROG 时谱图为：</p>
+          <div class="formula-box">
+            $$I_{\text{FROG}}(\omega, \tau) = \left|\tilde{E}_{\text{sig}}(\omega, \tau)\right|^2 = \left| \int_{-\infty}^{+\infty} E(t)\, G(t - \tau)\, e^{-i\omega t}\,\mathrm{d}t \right|^2$$
+            <div class="formula-label">FROG 时谱图核心公式（短时傅里叶变换 / Spectrogram 模平方）</div>
+          </div>
+          <p>利用 Parseval 定理与卷积定理，可严格导出 FROG 时谱图的两条<strong>边缘分布（Marginals）</strong>校验关系：</p>
+          <div class="formula-box">
+            $$M_\tau(\tau) = \int_{-\infty}^{+\infty} I_{\text{FROG}}(\omega, \tau)\,\mathrm{d}\omega = 2\pi \int_{-\infty}^{+\infty} I(t)\,I_G(t-\tau)\,\mathrm{d}t \propto A_2(\tau)$$
+            <div class="formula-label">时间边缘分布 = 强度自相关 / 互相关函数</div>
+          </div>
+          <div class="formula-box">
+            $$M_\omega(\omega) = \int_{-\infty}^{+\infty} I_{\text{FROG}}(\omega, \tau)\,\mathrm{d}\tau = \int_{-\infty}^{+\infty} \left|\tilde{E}(\omega')\right|^2 \left|\tilde{G}(\omega - \omega')\right|^2\,\mathrm{d}\omega' = \left(S_E * S_G\right)(\omega)$$
+            <div class="formula-label">频率边缘分布 = 待测脉冲功率谱与门脉冲功率谱的卷积</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">瞬时频率、群延迟与色散相位展开</div><span class="topic-badge badge-formula">色散与啁啾</span></div>
+        <div class="topic-body">
+          <p>在频域对光谱相位做泰勒展开（以中心角频率 $\omega_0$ 为原点）：</p>
+          <div class="formula-box">
+            $$\tilde{E}(\omega) = |\tilde{E}(\omega)|\,\exp\!\left[i\left(\frac{1}{2}\phi_2\omega^2 + \frac{1}{6}\phi_3\omega^3 + \cdots\right)\right], \qquad \tau_g(\omega) = \frac{\mathrm{d}\phi(\omega)}{\mathrm{d}\omega} = \phi_2\omega + \frac{1}{2}\phi_3\omega^2$$
+            <div class="formula-label">$\phi_2$（GDD，单位 $\text{fs}^2$）产生线性倾斜的群延迟，$\phi_3$（TOD，单位 $\text{fs}^3$）产生抛物线型“C 形”群延迟</div>
+          </div>
+          <p>时域瞬时频率偏移为 $\Delta\omega_{\text{inst}}(t) = -\frac{\mathrm{d}\phi(t)}{\mathrm{d}t}$（采用 $e^{-i\omega t}$ 约定），在 FROG 图上表现为各延时处频谱重心的轨迹。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>FROG 相位反演算法（广义投影与 PCGPA）</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">双约束交替投影：Generalized Projections &amp; PCGPA</div><span class="topic-badge badge-sim">反演算法</span></div>
+        <div class="topic-body">
+          <p>从实验测得的无相位二维强度矩阵 $I_{\text{FROG}}^{\text{meas}}(\omega, \tau)$ 重构复光场 $E(t)$，本质上是求解满足两个集合交集的二维相位恢复问题。最经典且高效的方法是<strong>主成分广义投影算法（Principal Component Generalized Projections Algorithm, PCGPA）</strong>：</p>
+          <ol style="padding-left:1.5rem; font-size:13.5px; line-height:1.85; margin-bottom:0.6rem;">
+            <li><strong>初始化</strong>：生成随机噪声或高斯初始猜测场 $E^{(0)}(t)$（XFROG 中门脉冲 $G(t)$ 已知固定，SHG-FROG 中令 $G^{(0)}=E^{(0)}$）。</li>
+            <li><strong>构造外积与信号场</strong>：计算 $E_{\text{sig}}^{(k)}(t, \tau) = E^{(k)}(t)\,G^{(k)}(t-\tau)$，沿时间轴 $t$ 做 1D FFT 得 $\tilde{E}_{\text{sig}}^{(k)}(\omega, \tau)$。</li>
+            <li><strong>投影 1 — 实验数据幅值约束</strong>：保留当前迭代相位，将振幅替换为测量值平方根：
+              <div class="formula-box">$$\tilde{E}'_{\text{sig}}(\omega, \tau) = \sqrt{I_{\text{FROG}}^{\text{meas}}(\omega, \tau)} \cdot \frac{\tilde{E}_{\text{sig}}^{(k)}(\omega, \tau)}{\left|\tilde{E}_{\text{sig}}^{(k)}(\omega, \tau)\right|}$$</div>
+            </li>
+            <li><strong>投影 2 — 数学形式约束（SVD 秩-1 外积投影）</strong>：沿 $\omega$ 做逆 FFT 回到时域 $E'_{\text{sig}}(t, \tau)$，通过行循环移位映射为外积矩阵 $O_{mn} = E'_{\text{sig}}(t_m, t_m - t_n)$。对 $O$ 做奇异值分解（SVD）并仅保留最大奇异值对应的<strong>主成分（Rank-1 近似）</strong>：
+              <div class="formula-box">$$O = \sum_{r=1}^{N} \sigma_r \mathbf{u}_r \mathbf{v}_r^\dagger \;\xrightarrow{\text{Rank-1 投影}}\; E^{(k+1)}(t) \propto \mathbf{u}_1, \quad G^{(k+1)}(t) \propto \mathbf{v}_1^*$$</div>
+              <p>对于 SHG-FROG，额外施加对称化更新；对于 XFROG，直接将投影矩阵乘以已知门脉冲向量 $G$ 即可一步得到最优 $E^{(k+1)}$。</p>
+            </li>
+            <li><strong>误差评估与收敛判据</strong>：计算归一化 FROG 均方根误差 $G$：
+              <div class="formula-box">$$G^{(k)} = \sqrt{\frac{1}{N^2}\sum_{i=1}^{N}\sum_{j=1}^{N} \left[ I_{\text{FROG}}^{\text{meas}}(\omega_i, \tau_j) - \mu\, I_{\text{FROG}}^{(k)}(\omega_i, \tau_j) \right]^2}$$<div class="formula-label">$\mu$ 为最佳强度缩放因子；通常当 $G < 0.005$（$N=128$）时即认为完整重构出脉冲振幅与相位</div></div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="frog-sim">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-bottom:0.5px solid var(--c-border); padding-bottom:0.5rem;">
+          <div style="font-size:13.5px; font-weight:600; color:var(--c-purple-800);">脉冲自相关 / 互相关与 2D FROG 时谱图交互仿真器</div>
+          <div style="font-size:11px; font-family:'SF Mono',monospace; color:var(--c-text-hint);" id="frog-status">网格 128×128 · 实时计算</div>
+        </div>
+
+        <div class="frog-metrics">
+          <div class="frog-metric"><div class="frog-metric-lbl">脉冲半高宽 τ_p</div><div class="frog-metric-val" id="fm-tp">—</div></div>
+          <div class="frog-metric"><div class="frog-metric-lbl">门脉冲宽度 τ_g</div><div class="frog-metric-val" id="fm-tg" style="color:var(--c-amber-600);">—</div></div>
+          <div class="frog-metric"><div class="frog-metric-lbl">相关峰宽 τ_AC</div><div class="frog-metric-val" id="fm-tac" style="color:var(--c-teal-600);">—</div></div>
+          <div class="frog-metric"><div class="frog-metric-lbl">比值 τ_AC / τ_p</div><div class="frog-metric-val" id="fm-ratio">—</div></div>
+          <div class="frog-metric"><div class="frog-metric-lbl">光谱带宽 Δν</div><div class="frog-metric-val" id="fm-bw">—</div></div>
+          <div class="frog-metric"><div class="frog-metric-lbl">时间带宽积 TBP</div><div class="frog-metric-val" id="fm-tbp">—</div></div>
+        </div>
+
+        <div class="frog-layout">
+          <aside class="frog-sidebar">
+            <div class="frog-ctrl-sec">
+              <div class="frog-ctrl-head">门控机制（SHG vs 可调门宽 XFROG）</div>
+              <div class="frog-mode-toggle">
+                <button class="frog-mode-btn active" id="fmode-xfrog" onclick="frogSetGateMode('xfrog')">外门控 SFG-XFROG<br><span style="font-size:9.5px;opacity:0.75;">门宽 τ_g 独立可调</span></button>
+                <button class="frog-mode-btn" id="fmode-shg" onclick="frogSetGateMode('shg')">自门控 SHG-FROG<br><span style="font-size:9.5px;opacity:0.75;">G(t) = E(t) 对称图</span></button>
+              </div>
+            </div>
+
+            <div class="frog-ctrl-sec">
+              <div class="frog-ctrl-head">典型超快脉冲预设</div>
+              <div class="frog-preset-grid">
+                <button class="frog-preset-btn active" id="fpre-soliton" onclick="frogApplyPreset('soliton')">耗散孤子 (Sech)</button>
+                <button class="frog-preset-btn" id="fpre-flattop" onclick="frogApplyPreset('flattop')">平顶啁啾脉冲 (DSR)</button>
+                <button class="frog-preset-btn" id="fpre-dw" onclick="frogApplyPreset('dw')">孤子 + 色散波 (DW)</button>
+                <button class="frog-preset-btn" id="fpre-tod" onclick="frogApplyPreset('tod')">三阶色散 (TOD 拖尾)</button>
+                <button class="frog-preset-btn frog-preset-full" id="fpre-double" onclick="frogApplyPreset('double')">双脉冲干涉态 (Double Pulse · 光谱条纹)</button>
+              </div>
+            </div>
+
+            <div class="frog-ctrl-sec">
+              <div class="frog-ctrl-head">脉冲与门控参数</div>
+              <div class="frog-slider-grp">
+                <div class="frog-slider-row"><span>基础脉冲宽度 τ₀ (fs)</span><span class="val" id="fv-tp">36 fs</span></div>
+                <input type="range" id="fs-tp" min="18" max="80" step="2" value="36">
+              </div>
+              <div class="frog-slider-grp" id="grp-tg">
+                <div class="frog-slider-row"><span>门信号脉宽 τ_g (fs)</span><span class="val" id="fv-tg" style="color:var(--c-amber-600);">28 fs</span></div>
+                <input type="range" id="fs-tg" min="10" max="120" step="2" value="28">
+              </div>
+              <div class="frog-slider-grp">
+                <div class="frog-slider-row"><span>二阶色散 GDD φ₂ (fs²)</span><span class="val" id="fv-gdd">0</span></div>
+                <input type="range" id="fs-gdd" min="-1200" max="1200" step="20" value="0">
+              </div>
+              <div class="frog-slider-grp">
+                <div class="frog-slider-row"><span>三阶色散 TOD φ₃ (×10³ fs³)</span><span class="val" id="fv-tod">0.0</span></div>
+                <input type="range" id="fs-tod" min="-35" max="35" step="1" value="0">
+              </div>
+              <div class="frog-slider-grp" id="grp-aux" style="display:none;">
+                <div class="frog-slider-row"><span id="fl-aux">色散波延时 Δt_DW (fs)</span><span class="val" id="fv-aux">+55 fs</span></div>
+                <input type="range" id="fs-aux" min="-90" max="90" step="5" value="55">
+              </div>
+            </div>
+          </aside>
+
+          <div>
+            <div class="frog-charts-grid">
+              <div class="frog-chart-card">
+                <div class="frog-chart-head">
+                  <div class="frog-chart-title"><span class="frog-badge">A</span>时域包络 |E(t)|² 与瞬时频率</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">蓝：脉冲 · 橙虚：门 · 绿：Δν(t)</span>
+                </div>
+                <div class="frog-cv-wrap"><canvas id="fcv-time"></canvas></div>
+              </div>
+
+              <div class="frog-chart-card">
+                <div class="frog-chart-head">
+                  <div class="frog-chart-title"><span class="frog-badge" style="background:var(--c-blue-50);color:var(--c-blue-600);">B</span>频域功率谱 |Ẽ(Δν)|² 与光谱相位</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">紫：功率谱 · 橙虚：φ(Δν)</span>
+                </div>
+                <div class="frog-cv-wrap"><canvas id="fcv-spec"></canvas></div>
+              </div>
+
+              <div class="frog-chart-card">
+                <div class="frog-chart-head">
+                  <div class="frog-chart-title"><span class="frog-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">C</span>和频强度自相关 / 互相关 A₂(τ)</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">等于 FROG 频率边缘积分</span>
+                </div>
+                <div class="frog-cv-wrap"><canvas id="fcv-ac"></canvas></div>
+              </div>
+
+              <div class="frog-chart-card">
+                <div class="frog-chart-head">
+                  <div class="frog-chart-title"><span class="frog-badge" style="background:#fef2f2;color:#e11d48;">D</span>2D FROG 时谱图 I_FROG(Δν, τ)</div>
+                  <div>
+                    <button class="frog-mini-btn active" id="fbtn-lin" onclick="frogSetLog(false)">线性</button>
+                    <button class="frog-mini-btn" id="fbtn-log" onclick="frogSetLog(true)">对数 dB</button>
+                  </div>
+                </div>
+                <div class="frog-cv-wrap"><canvas id="fcv-frog"></canvas></div>
+              </div>
+            </div>
+
+            <div class="frog-tip" id="frog-tip">
+              <strong>FROG 诊断提示：</strong>正在初始化时频引擎...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Trebino, R. <em>Frequency-Resolved Optical Gating: The Measurement of Ultrashort Laser Pulses</em> (Springer, 2000).</li>
+      <li><span class="ref-num">[2]</span>Kane, D. J. &amp; Trebino, R. Characterization of arbitrary femtosecond pulses using frequency-resolved optical gating. <em>IEEE J. Quantum Electron.</em> <strong>29</strong>, 571–579 (1993).</li>
+      <li><span class="ref-num">[3]</span>Kane, D. J. Recent progress toward real-time measurement of ultrashort laser pulses. <em>IEEE J. Quantum Electron.</em> <strong>35</strong>, 421–431 (1999).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+
+  var N = 128, Tmax = 260.0, dt = (2 * Tmax) / N; // dt = 4.0625 fs, df = 1000 / 520 = 1.923 THz
+  var dfTHz = 1000.0 / (2 * Tmax);
+  var tAxis = new Float64Array(N), fAxis = new Float64Array(N), fShift = new Float64Array(N);
+  for (var i = 0; i < N; i++) {
+    tAxis[i] = -Tmax + i * dt;
+    var k = i < N / 2 ? i : i - N;
+    fAxis[i] = k * dfTHz;
+    fShift[i] = (i - N / 2) * dfTHz;
+  }
+
+  var eRe = new Float64Array(N), eIm = new Float64Array(N);
+  var gRe = new Float64Array(N), gIm = new Float64Array(N);
+  var sRe = new Float64Array(N), sIm = new Float64Array(N);
+  var specP = new Float64Array(N), specPhi = new Float64Array(N);
+  var acArr = new Float64Array(N);
+  var frogGrid = new Float64Array(N * N);
+
+  var S = {
+    preset: 'soliton',
+    gateMode: 'xfrog', // 'xfrog' or 'shg'
+    logScale: false,
+    tp: 36,
+    tg: 28,
+    gdd: 0,
+    tod: 0,
+    aux: 55
+  };
+
+  function fft(re, im, inv) {
+    var n = re.length;
+    for (var i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { var tr = re[i]; re[i] = re[j]; re[j] = tr; var ti = im[i]; im[i] = im[j]; im[j] = ti; }
+    }
+    var sign = inv ? 1 : -1;
+    for (var len = 2; len <= n; len <<= 1) {
+      var half = len >> 1, ang = sign * 2 * Math.PI / len, wR = Math.cos(ang), wI = Math.sin(ang);
+      for (var i0 = 0; i0 < n; i0 += len) {
+        var cR = 1, cI = 0;
+        for (var k = 0; k < half; k++) {
+          var u = i0 + k, v = u + half;
+          var tR = cR * re[v] - cI * im[v], tI = cR * im[v] + cI * re[v];
+          re[v] = re[u] - tR; im[v] = im[u] - tI; re[u] += tR; im[u] += tI;
+          var nR = cR * wR - cI * wI; cI = cR * wI + cI * wR; cR = nR;
+        }
+      }
+    }
+    if (inv) { for (var m = 0; m < n; m++) { re[m] /= n; im[m] /= n; } }
+  }
+
+  function buildPulseAndFROG() {
+    var tp = S.tp, gdd = S.gdd, tod = S.tod * 1000.0;
+    // 1. Construct base time-domain envelope
+    for (var i = 0; i < N; i++) {
+      var t = tAxis[i], r = 0, m = 0;
+      if (S.preset === 'soliton') {
+        var arg = 1.762747 * t / tp;
+        r = Math.abs(arg) > 30 ? 0 : 1 / Math.cosh(arg);
+      } else if (S.preset === 'flattop') {
+        var w = tp / 1.85;
+        r = Math.exp(-0.5 * Math.pow(Math.abs(t / w), 6));
+      } else if (S.preset === 'dw') {
+        var arg2 = 1.762747 * t / tp;
+        var sol = Math.abs(arg2) > 30 ? 0 : 1 / Math.cosh(arg2);
+        // Dispersive wave: delayed by S.aux fs, frequency shifted by +20 THz
+        var dwEnv = 0.55 * Math.exp(-2 * Math.LN2 * Math.pow((t - S.aux) / (tp * 1.45), 2));
+        var phDW = -2 * Math.PI * 0.020 * (t - S.aux); // +20 THz in e^{-i w t}
+        r = sol + dwEnv * Math.cos(phDW);
+        m = dwEnv * Math.sin(phDW);
+      } else if (S.preset === 'tod') {
+        r = Math.exp(-2 * Math.LN2 * Math.pow(t / tp, 2));
+      } else if (S.preset === 'double') {
+        var sep = Math.max(30, Math.abs(S.aux));
+        var p1 = Math.exp(-2 * Math.LN2 * Math.pow((t + sep / 2) / tp, 2));
+        var p2 = 0.85 * Math.exp(-2 * Math.LN2 * Math.pow((t - sep / 2) / tp, 2));
+        r = p1 + p2;
+      }
+      eRe[i] = r; eIm[i] = m;
+    }
+
+    // 2. Apply spectral phase (GDD + TOD) in frequency domain
+    var half = N >> 1;
+    // Shift t=0 to index 0 before FFT so spectral phase has no linear ramp
+    for (var i2 = 0; i2 < N; i2++) { sRe[i2] = eRe[(i2 + half) & (N - 1)]; sIm[i2] = eIm[(i2 + half) & (N - 1)]; }
+    fft(sRe, sIm, false);
+    for (var k = 0; k < N; k++) {
+      var w = 2 * Math.PI * fAxis[k] * 1e-3; // rad/fs
+      var phi = 0.5 * gdd * w * w + (1 / 6) * tod * w * w * w;
+      var cp = Math.cos(phi), sp = Math.sin(phi);
+      var nr = sRe[k] * cp - sIm[k] * sp, ni = sRe[k] * sp + sIm[k] * cp;
+      sRe[k] = nr; sIm[k] = ni;
+    }
+
+    // Extract centered spectrum & phase
+    var maxSp = 1e-12;
+    for (var k2 = 0; k2 < N; k2++) {
+      var si = (k2 + half) & (N - 1);
+      var p = sRe[si] * sRe[si] + sIm[si] * sIm[si];
+      specP[k2] = p;
+      if (p > maxSp) maxSp = p;
+      var w2 = 2 * Math.PI * fShift[k2] * 1e-3;
+      specPhi[k2] = 0.5 * gdd * w2 * w2 + (1 / 6) * tod * w2 * w2 * w2;
+    }
+    for (var k3 = 0; k3 < N; k3++) specP[k3] /= maxSp;
+
+    // Back to time domain
+    fft(sRe, sIm, true);
+    var maxE = 1e-12;
+    for (var i3 = 0; i3 < N; i3++) {
+      var idx = (i3 + half) & (N - 1);
+      eRe[i3] = sRe[idx]; eIm[i3] = sIm[idx];
+      var p2 = eRe[i3] * eRe[i3] + eIm[i3] * eIm[i3];
+      if (p2 > maxE) maxE = p2;
+    }
+    var invMax = 1.0 / Math.sqrt(maxE);
+    for (var i4 = 0; i4 < N; i4++) { eRe[i4] *= invMax; eIm[i4] *= invMax; }
+
+    // 3. Build Gate Pulse G(t)
+    if (S.gateMode === 'shg') {
+      for (var j = 0; j < N; j++) { gRe[j] = eRe[j]; gIm[j] = eIm[j]; }
+    } else {
+      for (var j2 = 0; j2 < N; j2++) {
+        gRe[j2] = Math.exp(-2 * Math.LN2 * Math.pow(tAxis[j2] / S.tg, 2));
+        gIm[j2] = 0;
+      }
+    }
+
+    // 4. Compute 2D FROG Trace I_FROG(w, tau) and Autocorrelation A2(tau)
+    var maxFrog = 1e-12, maxAC = 1e-12;
+    for (var jTau = 0; jTau < N; jTau++) {
+      var shift = jTau - half;
+      var sumAC = 0;
+      for (var it = 0; it < N; it++) {
+        var ig = it - shift;
+        var gr = (ig >= 0 && ig < N) ? gRe[ig] : 0;
+        var gi = (ig >= 0 && ig < N) ? gIm[ig] : 0;
+        var sigR = eRe[it] * gr - eIm[it] * gi;
+        var sigI = eRe[it] * gi + eIm[it] * gr;
+        sRe[it] = sigR; sIm[it] = sigI;
+        sumAC += sigR * sigR + sigI * sigI;
+      }
+      acArr[jTau] = sumAC;
+      if (sumAC > maxAC) maxAC = sumAC;
+      fft(sRe, sIm, false);
+      for (var kf = 0; kf < N; kf++) {
+        var si2 = (kf + half) & (N - 1);
+        var fp = sRe[si2] * sRe[si2] + sIm[si2] * sIm[si2];
+        frogGrid[kf * N + jTau] = fp;
+        if (fp > maxFrog) maxFrog = fp;
+      }
+    }
+    for (var q = 0; q < N; q++) acArr[q] /= maxAC;
+    for (var q2 = 0; q2 < N * N; q2++) frogGrid[q2] /= maxFrog;
+  }
+
+  function calcFWHM(arr, step) {
+    var pk = 0, pkI = 0;
+    for (var i = 0; i < arr.length; i++) { if (arr[i] > pk) { pk = arr[i]; pkI = i; } }
+    var half = 0.5 * pk, l = pkI, r = pkI;
+    while (l > 0 && arr[l] >= half) l--;
+    while (r < arr.length - 1 && arr[r] >= half) r++;
+    return Math.max(step, (r - l) * step);
+  }
+
+  function setupCV(id) {
+    var c = document.getElementById(id), rect = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(10, Math.round(rect.width)), h = Math.max(10, Math.round(rect.height));
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function drawGrid(ctx, w, h, pad, xMin, xMax, yMin, yMax, xLbl, yLbl) {
+    var pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+    var toX = function(x) { return pad.l + ((x - xMin) / (xMax - xMin)) * pw; };
+    var toY = function(y) { return pad.t + ph - ((y - yMin) / (yMax - yMin)) * ph; };
+    ctx.strokeStyle = '#e4e1d8'; ctx.lineWidth = 0.5; ctx.font = '9.5px monospace'; ctx.fillStyle = '#888780';
+    for (var i = 0; i <= 4; i++) {
+      var yv = yMin + (i / 4) * (yMax - yMin), py = toY(yv);
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(Math.abs(yv) >= 10 ? yv.toFixed(0) : yv.toFixed(1), pad.l - 5, py + 3);
+      var xv = xMin + (i / 4) * (xMax - xMin), px = toX(xv);
+      ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, h - pad.b); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.fillText(Math.round(xv), px, h - pad.b + 12);
+    }
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(xLbl, pad.l + pw / 2, h - 3);
+    ctx.save(); ctx.translate(11, pad.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yLbl, 0, 0); ctx.restore();
+    return { toX: toX, toY: toY, pw: pw, ph: ph };
+  }
+
+  // Perceptually uniform Plasma-like colormap for 2D FROG trace
+  function colormap(v) {
+    v = Math.max(0, Math.min(1, v));
+    var stops = [
+      [0.00, 15,  12,  41],
+      [0.22, 65,  25, 128],
+      [0.48, 168, 44, 132],
+      [0.72, 237, 121, 56],
+      [0.90, 251, 206, 54],
+      [1.00, 254, 250, 210]
+    ];
+    for (var i = 0; i < stops.length - 1; i++) {
+      if (v <= stops[i + 1][0]) {
+        var f = (v - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+        return [
+          Math.round(stops[i][1] + f * (stops[i + 1][1] - stops[i][1])),
+          Math.round(stops[i][2] + f * (stops[i + 1][2] - stops[i][2])),
+          Math.round(stops[i][3] + f * (stops[i + 1][3] - stops[i][3]))
+        ];
+      }
+    }
+    return [254, 250, 210];
+  }
+
+  function renderAll() {
+    var pad = { l: 40, r: 14, t: 10, b: 28 };
+    var tView = 160, fView = 45;
+
+    // A. Time Domain |E(t)|^2 + Gate |G(t)|^2 + Instantaneous Frequency
+    var rA = setupCV('fcv-time'), cA = rA.ctx;
+    var axA = drawGrid(cA, rA.w, rA.h, pad, -tView, tView, 0, 1.15, '时间 t (fs)', '归一化强度');
+    var ePow = new Float64Array(N);
+    for (var i = 0; i < N; i++) ePow[i] = eRe[i] * eRe[i] + eIm[i] * eIm[i];
+    cA.save(); cA.beginPath(); cA.rect(pad.l, pad.t, axA.pw, axA.ph); cA.clip();
+    // Gate envelope (amber dashed)
+    cA.strokeStyle = '#EF9F27'; cA.lineWidth = 1.4; cA.setLineDash([4, 3]); cA.beginPath();
+    var stG = false;
+    for (var i2 = 0; i2 < N; i2++) {
+      if (tAxis[i2] < -tView || tAxis[i2] > tView) continue;
+      var gp = gRe[i2] * gRe[i2] + gIm[i2] * gIm[i2], px = axA.toX(tAxis[i2]), py = axA.toY(gp);
+      if (!stG) { cA.moveTo(px, py); stG = true; } else cA.lineTo(px, py);
+    }
+    cA.stroke(); cA.setLineDash([]);
+    // Pulse envelope (blue)
+    cA.strokeStyle = '#378ADD'; cA.lineWidth = 2; cA.beginPath();
+    var stE = false;
+    for (var i3 = 0; i3 < N; i3++) {
+      if (tAxis[i3] < -tView || tAxis[i3] > tView) continue;
+      var px2 = axA.toX(tAxis[i3]), py2 = axA.toY(ePow[i3]);
+      if (!stE) { cA.moveTo(px2, py2); stE = true; } else cA.lineTo(px2, py2);
+    }
+    cA.stroke();
+    // Instantaneous frequency where |E|^2 > 0.04 (mapped [-30, +30] THz -> [0.1, 1.05])
+    cA.strokeStyle = '#1D9E75'; cA.lineWidth = 1.6; cA.beginPath();
+    var stF = false;
+    for (var i4 = 1; i4 < N - 1; i4++) {
+      if (tAxis[i4] < -tView || tAxis[i4] > tView || ePow[i4] < 0.04) { stF = false; continue; }
+      var cRe = eRe[i4 + 1] * eRe[i4 - 1] + eIm[i4 + 1] * eIm[i4 - 1];
+      var cIm = eIm[i4 + 1] * eRe[i4 - 1] - eRe[i4 + 1] * eIm[i4 - 1];
+      var instTHz = -(Math.atan2(cIm, cRe) / (2 * dt)) * (1000 / (2 * Math.PI));
+      var yNorm = 0.55 + Math.max(-0.45, Math.min(0.45, instTHz / 60.0));
+      var px3 = axA.toX(tAxis[i4]), py3 = axA.toY(yNorm);
+      if (!stF) { cA.moveTo(px3, py3); stF = true; } else cA.lineTo(px3, py3);
+    }
+    cA.stroke(); cA.restore();
+
+    // B. Spectrum + Spectral Phase
+    var rB = setupCV('fcv-spec'), cB = rB.ctx;
+    var axB = drawGrid(cB, rB.w, rB.h, pad, -fView, fView, 0, 1.15, '频率偏移 Δν (THz)', '归一化光谱');
+    cB.save(); cB.beginPath(); cB.rect(pad.l, pad.t, axB.pw, axB.ph); cB.clip();
+    // Spectral phase where specP > 0.01
+    cB.strokeStyle = '#EF9F27'; cB.lineWidth = 1.5; cB.setLineDash([4, 3]); cB.beginPath();
+    var stP = false;
+    for (var k = 0; k < N; k++) {
+      if (fShift[k] < -fView || fShift[k] > fView || specP[k] < 0.01) { stP = false; continue; }
+      var phNorm = 0.5 + Math.max(-0.48, Math.min(0.48, specPhi[k] / 20.0));
+      var pxP = axB.toX(fShift[k]), pyP = axB.toY(phNorm);
+      if (!stP) { cB.moveTo(pxP, pyP); stP = true; } else cB.lineTo(pxP, pyP);
+    }
+    cB.stroke(); cB.setLineDash([]);
+    // Power spectrum
+    cB.strokeStyle = '#534AB7'; cB.lineWidth = 2; cB.beginPath();
+    var stS = false;
+    for (var k2 = 0; k2 < N; k2++) {
+      if (fShift[k2] < -fView || fShift[k2] > fView) continue;
+      var pxS = axB.toX(fShift[k2]), pyS = axB.toY(specP[k2]);
+      if (!stS) { cB.moveTo(pxS, pyS); stS = true; } else cB.lineTo(pxS, pyS);
+    }
+    cB.stroke(); cB.restore();
+
+    // C. Intensity Autocorrelation / Cross-correlation A2(tau)
+    var rC = setupCV('fcv-ac'), cC = rC.ctx;
+    var axC = drawGrid(cC, rC.w, rC.h, pad, -tView, tView, 0, 1.15, '相对延时 τ (fs)', '归一化 A₂(τ)');
+    cC.save(); cC.beginPath(); cC.rect(pad.l, pad.t, axC.pw, axC.ph); cC.clip();
+    cC.fillStyle = 'rgba(29,158,117,0.14)'; cC.beginPath(); cC.moveTo(axC.toX(-tView), axC.toY(0));
+    for (var m = 0; m < N; m++) {
+      if (tAxis[m] < -tView || tAxis[m] > tView) continue;
+      cC.lineTo(axC.toX(tAxis[m]), axC.toY(acArr[m]));
+    }
+    cC.lineTo(axC.toX(tView), axC.toY(0)); cC.closePath(); cC.fill();
+    cC.strokeStyle = '#1D9E75'; cC.lineWidth = 2; cC.beginPath();
+    var stA = false;
+    for (var m2 = 0; m2 < N; m2++) {
+      if (tAxis[m2] < -tView || tAxis[m2] > tView) continue;
+      var pxA = axC.toX(tAxis[m2]), pyA = axC.toY(acArr[m2]);
+      if (!stA) { cC.moveTo(pxA, pyA); stA = true; } else cC.lineTo(pxA, pyA);
+    }
+    cC.stroke(); cC.restore();
+
+    // D. 2D FROG Spectrogram Heatmap
+    var rD = setupCV('fcv-frog'), cD = rD.ctx, padD = { l: 40, r: 22, t: 10, b: 28 };
+    var pw = rD.w - padD.l - padD.r, ph = rD.h - padD.t - padD.b;
+    // Render heatmap onto offscreen N x N ImageData then drawImage smoothly
+    var off = document.createElement('canvas'); off.width = N; off.height = N;
+    var octx = off.getContext('2d'), img = octx.createImageData(N, N), data = img.data;
+    // Map visible window [-tView, tView] x [-fView, fView]
+    for (var py = 0; py < N; py++) {
+      var fVal = fView - (py / (N - 1)) * (2 * fView); // top = +fView, bottom = -fView
+      var kf = Math.round(fVal / dfTHz + N / 2);
+      for (var px = 0; px < N; px++) {
+        var tauVal = -tView + (px / (N - 1)) * (2 * tView);
+        var kt = Math.round((tauVal + Tmax) / dt);
+        var val = (kf >= 0 && kf < N && kt >= 0 && kt < N) ? frogGrid[kf * N + kt] : 0;
+        var norm = S.logScale ? Math.max(0, (10 * Math.log10(val + 1e-6) + 45) / 45) : Math.pow(val, 0.65);
+        var rgb = colormap(norm), idx = (py * N + px) * 4;
+        data[idx] = rgb[0]; data[idx + 1] = rgb[1]; data[idx + 2] = rgb[2]; data[idx + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    cD.drawImage(off, padD.l, padD.t, pw, ph);
+    // Colorbar on right
+    for (var cb = 0; cb < ph; cb++) {
+      var rgb2 = colormap(1 - cb / ph);
+      cD.fillStyle = 'rgb(' + rgb2[0] + ',' + rgb2[1] + ',' + rgb2[2] + ')';
+      cD.fillRect(padD.l + pw + 5, padD.t + cb, 8, 1.5);
+    }
+    // Axes ticks for FROG
+    cD.strokeStyle = 'rgba(255,255,255,0.22)'; cD.lineWidth = 0.6; cD.font = '9.5px monospace'; cD.fillStyle = '#888780';
+    for (var g = 0; g <= 4; g++) {
+      var yv = -fView + (g / 4) * (2 * fView), pyT = padD.t + ph * (1 - g / 4);
+      cD.beginPath(); cD.moveTo(padD.l, pyT); cD.lineTo(padD.l + pw, pyT); cD.stroke();
+      cD.textAlign = 'right'; cD.fillText(Math.round(yv), padD.l - 5, pyT + 3);
+      var xv = -tView + (g / 4) * (2 * tView), pxT = padD.l + pw * (g / 4);
+      cD.beginPath(); cD.moveTo(pxT, padD.t); cD.lineTo(pxT, padD.t + ph); cD.stroke();
+      cD.textAlign = 'center'; cD.fillText(Math.round(xv), pxT, rD.h - padD.b + 12);
+    }
+    cD.fillStyle = '#5f5e5a'; cD.font = '10px -apple-system,sans-serif'; cD.textAlign = 'center';
+    cD.fillText('延时 τ (fs)', padD.l + pw / 2, rD.h - 3);
+    cD.save(); cD.translate(11, padD.t + ph / 2); cD.rotate(-Math.PI / 2); cD.fillText('Δν (THz)', 0, 0); cD.restore();
+
+    // Update metrics
+    var tpMeas = calcFWHM(ePow, dt), tacMeas = calcFWHM(acArr, dt), bwMeas = calcFWHM(specP, dfTHz);
+    var tbp = (tpMeas * 1e-15) * (bwMeas * 1e12);
+    document.getElementById('fm-tp').textContent = tpMeas.toFixed(1) + ' fs';
+    document.getElementById('fm-tg').textContent = S.gateMode === 'shg' ? ('自门控 (' + tpMeas.toFixed(0) + ' fs)') : (S.tg + ' fs');
+    document.getElementById('fm-tac').textContent = tacMeas.toFixed(1) + ' fs';
+    document.getElementById('fm-ratio').textContent = (tacMeas / Math.max(1, tpMeas)).toFixed(2);
+    document.getElementById('fm-bw').textContent = bwMeas.toFixed(1) + ' THz';
+    document.getElementById('fm-tbp').textContent = tbp.toFixed(3);
+
+    var tip = '';
+    if (S.gateMode === 'shg') {
+      tip = '<strong>SHG-FROG 自门控模式：</strong>时谱图关于 τ=0 严格对称（存在时间反演模糊性），无法单独分辨正负啁啾或孤子/色散波的先后顺序；切换至「外门控 SFG-XFROG」即可打破对称性并自由调节门脉宽 τ_g。';
+    } else if (S.preset === 'dw') {
+      tip = '<strong>孤子 + 色散波（XFROG）：</strong>主孤子位于 (τ=0, Δν=0)，切伦科夫色散波在时频平面上清晰分离于 (τ=' + (S.aux >= 0 ? '+' : '') + S.aux + ' fs, Δν=+20 THz)；调节门宽 τ_g 可直观观察时域与频域分辨率的测不准权衡。';
+    } else if (S.preset === 'flattop') {
+      tip = '<strong>平顶啁啾脉冲（DSR）：</strong>强二阶色散使 FROG 时谱图呈现明显的倾斜条带，斜率直接对应线性啁啾率；平顶包络使强度相关曲线呈三角形，τ_AC/τ_p 趋近于 1。';
+    } else if (S.preset === 'tod') {
+      tip = '<strong>三阶色散（TOD）：</strong>立方光谱相位导致时域产生振荡拖尾，FROG 图呈现典型的抛物线“C 形”结构，开启「对数 dB」模式可更清晰地观察次级振荡瓣。';
+    } else if (S.preset === 'double') {
+      tip = '<strong>双脉冲干涉态：</strong>自相关呈三峰结构，FROG 时谱图在中心出现密集的频域干涉条纹（条纹间隔 Δν = 1/ΔT）。';
+    } else {
+      tip = '<strong>耗散孤子（Sech）：</strong>无啁啾时 FROG 时谱图呈正立对称椭圆（TBP ≈ 0.315）；调节门宽 τ_g 越小则时间分辨率越高、频域越展宽，反之亦然。';
+    }
+    document.getElementById('frog-tip').innerHTML = tip;
+  }
+
+  function recomputeAndDraw() { buildPulseAndFROG(); renderAll(); }
+
+  window.frogSetGateMode = function(mode) {
+    S.gateMode = mode;
+    document.getElementById('fmode-xfrog').classList.toggle('active', mode === 'xfrog');
+    document.getElementById('fmode-shg').classList.toggle('active', mode === 'shg');
+    document.getElementById('grp-tg').classList.toggle('disabled', mode === 'shg');
+    recomputeAndDraw();
+  };
+
+  window.frogSetLog = function(lg) {
+    S.logScale = lg;
+    document.getElementById('fbtn-lin').classList.toggle('active', !lg);
+    document.getElementById('fbtn-log').classList.toggle('active', lg);
+    renderAll();
+  };
+
+  window.frogApplyPreset = function(name) {
+    S.preset = name;
+    var cfgs = {
+      soliton: { tp: 36, gdd: 0,    tod: 0,  aux: 55, showAux: false },
+      flattop: { tp: 56, gdd: 760,  tod: 0,  aux: 55, showAux: false },
+      dw:      { tp: 32, gdd: 0,    tod: 0,  aux: 55, showAux: true, auxLbl: '色散波延时 Δt_DW (fs)' },
+      tod:     { tp: 32, gdd: 0,    tod: 22, aux: 55, showAux: false },
+      double:  { tp: 28, gdd: 0,    tod: 0,  aux: 70, showAux: true, auxLbl: '双脉冲间隔 ΔT (fs)' }
+    };
+    var c = cfgs[name];
+    S.tp = c.tp; S.gdd = c.gdd; S.tod = c.tod; S.aux = c.aux;
+    document.getElementById('fs-tp').value = S.tp; document.getElementById('fv-tp').textContent = S.tp + ' fs';
+    document.getElementById('fs-gdd').value = S.gdd; document.getElementById('fv-gdd').textContent = String(S.gdd);
+    document.getElementById('fs-tod').value = S.tod; document.getElementById('fv-tod').textContent = S.tod.toFixed(1);
+    document.getElementById('fs-aux').value = S.aux; document.getElementById('fv-aux').textContent = (S.aux >= 0 ? '+' : '') + S.aux + ' fs';
+    document.getElementById('grp-aux').style.display = c.showAux ? 'flex' : 'none';
+    if (c.auxLbl) document.getElementById('fl-aux').textContent = c.auxLbl;
+    ['soliton', 'flattop', 'dw', 'tod', 'double'].forEach(function(id) {
+      document.getElementById('fpre-' + id).classList.toggle('active', id === name);
+    });
+    recomputeAndDraw();
+  };
+
+  function bindSlider(id, key, fmt) {
+    document.getElementById('fs-' + id).addEventListener('input', function(e) {
+      S[key] = parseFloat(e.target.value);
+      document.getElementById('fv-' + id).textContent = fmt(S[key]);
+      recomputeAndDraw();
+    });
+  }
+  bindSlider('tp', 'tp', function(v) { return v + ' fs'; });
+  bindSlider('tg', 'tg', function(v) { return v + ' fs'; });
+  bindSlider('gdd', 'gdd', function(v) { return String(v); });
+  bindSlider('tod', 'tod', function(v) { return v.toFixed(1); });
+  bindSlider('aux', 'aux', function(v) { return (v >= 0 ? '+' : '') + v + ' fs'; });
+
+  var isTabActive = false;
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isTabActive = (btn.dataset.panel === 'simulation');
+      if (isTabActive) setTimeout(recomputeAndDraw, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  window.addEventListener('resize', function() { if (isTabActive) renderAll(); });
+})();
+</script>
+</body>
+</html>

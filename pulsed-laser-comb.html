@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>脉冲式激光的时频域关系 - 光子学学习</title>
+<style>
+.comb-sim { display: flex; flex-direction: column; gap: 0.75rem; }
+.comb-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 0.5rem; }
+.comb-metric { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.5rem 0.65rem; }
+.comb-metric-lbl { font-size: 11px; color: var(--c-text-hint); }
+.comb-metric-val { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 14px; font-weight: 600; color: var(--c-purple-600); margin-top: 2px; }
+.comb-layout { display: grid; grid-template-columns: 285px 1fr; gap: 0.85rem; align-items: start; }
+@media (max-width: 860px) { .comb-layout { grid-template-columns: 1fr; } }
+.comb-sidebar { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.8rem; display: flex; flex-direction: column; gap: 0.65rem; }
+.comb-ctrl-sec { border-top: 0.5px solid var(--c-border); padding-top: 0.55rem; }
+.comb-ctrl-sec:first-child { border-top: none; padding-top: 0; }
+.comb-ctrl-head { font-size: 11.5px; font-weight: 600; color: var(--c-text-sec); margin-bottom: 0.4rem; }
+.comb-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.comb-preset-btn { padding: 5px 6px; font-size: 11px; border: 0.5px solid var(--c-border); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: left; }
+.comb-preset-btn:hover { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.comb-preset-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-600); color: var(--c-purple-800); font-weight: 600; }
+.comb-slider-grp { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+.comb-slider-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--c-text-sec); }
+.comb-slider-row .val { font-family: "SF Mono", monospace; font-weight: 600; color: var(--c-purple-600); }
+.comb-btn-row { display: flex; gap: 5px; }
+.comb-action-btn { flex: 1; padding: 6px 8px; font-size: 11.5px; font-weight: 500; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.comb-action-btn.primary { background: var(--c-purple-600); color: #fff; border-color: var(--c-purple-600); }
+.comb-action-btn.running { background: #e11d48; border-color: #e11d48; color: #fff; }
+.comb-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+@media (max-width: 720px) { .comb-charts-grid { grid-template-columns: 1fr; } }
+.comb-chart-card { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.6rem; display: flex; flex-direction: column; }
+.comb-chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 4px; }
+.comb-chart-title { font-size: 12px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 5px; }
+.comb-badge { font-size: 10px; font-family: "SF Mono", monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--c-purple-50); color: var(--c-purple-600); }
+.comb-cv-wrap { width: 100%; height: 225px; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.comb-cv-wrap canvas { display: block; width: 100%; height: 100%; }
+.comb-tip { margin-top: 0.65rem; padding: 0.6rem 0.85rem; border-radius: var(--radius); background: var(--c-blue-50); border: 0.5px solid var(--c-blue-100); color: var(--c-blue-600); font-size: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">10</span>脉冲式激光的时频域关系</div>
+    <p class="section-desc">周期脉冲序列与光学频率梳 → $\beta$-$\omega$ 空间中的群速度、相速度与 $f_{\text{ceo}}$ 几何起源 → 啁啾脉冲序列的频率梳不变性 → 谐振腔纵模色散的统一图像</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>周期脉冲激光与光学频率梳的本质等价</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">时域周期脉冲序列 ↔ 频域等间距频率梳</div><span class="topic-badge badge-theory">核心概念</span></div>
+        <div class="topic-body">
+          <p>在锁模激光器（第 7 章）或微腔耗散孤子（第 6 章）中，激光脉冲在谐振腔内周期性往返，每经过一个往返周期 $T_R = 1/f_{\text{rep}}$ 便向腔外输出一个超短脉冲。从傅里叶分析的视角看，<strong>时域的严格周期性必然对应频域的离散梳状结构</strong>——任何稳定的周期脉冲激光，其频谱本质上就是一把<strong>光学频率梳（Optical Frequency Comb）</strong>。</p>
+          <ul>
+            <li><strong>梳齿间距 $f_{\text{rep}}$</strong>：由脉冲序列的重复频率 $f_{\text{rep}} = 1/T_R$ 决定，相邻梳齿频率严格等间隔。</li>
+            <li><strong>频谱包络</strong>：由单个脉冲的时域波形（脉宽 $\tau_p$ 与形态）通过傅里叶变换决定；脉冲越短，频率梳覆盖的光谱带宽越宽。</li>
+            <li><strong>载波包络偏移频率 $f_{\text{ceo}}$</strong>：脉冲包络以群速度 $v_g$ 传播，而内部光载波以相速度 $v_p$ 传播；两者之差导致相邻脉冲间的载波相位相对包络中心发生固定滑移 $\Delta\phi_{\text{ce}}$，在频域表现为整把频率梳相对于频率零点（$f=0$）的整体平移 $f_{\text{ceo}} = \frac{\Delta\phi_{\text{ce}}}{2\pi} f_{\text{rep}}$。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>$\beta$-$\omega$ 空间中的几何统一图像</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">锁模直线、群速度、相速度与 $f_{\text{ceo}}$ 的几何起源</div><span class="topic-badge badge-theory">几何直觉</span></div>
+        <div class="topic-body">
+          <p>将光场的传播常数 $\beta$（空间角频率）与角频率 $\omega$ 绘制在二维 <strong>$\beta$-$\omega$ 空间</strong>中，可以把脉冲锁模、色散效应、载波包络偏移以及冷腔谐振模式统一在同一幅几何图像下：</p>
+          <div class="diagram-box">
+            <svg viewBox="0 0 820 305" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+              <defs>
+                <marker id="arrC-ax" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5f5e5a"/></marker>
+                <marker id="arrC-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e11d48"/></marker>
+              </defs>
+              <text x="410" y="20" text-anchor="middle" font-size="13.5" font-weight="600" fill="#3C3489">$\beta$-$\omega$ 空间中的统一物理图像：锁模直线、冷腔色散曲线与 $f_{\text{ceo}}$ 截距</text>
+              <!-- Left panel: beta-omega plane -->
+              <rect x="28" y="34" width="445" height="252" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <!-- Axes -->
+              <line x1="78" y1="252" x2="452" y2="252" stroke="#5f5e5a" stroke-width="1.4" marker-end="url(#arrC-ax)"/>
+              <line x1="78" y1="252" x2="78" y2="48" stroke="#5f5e5a" stroke-width="1.4" marker-end="url(#arrC-ax)"/>
+              <text x="445" y="268" text-anchor="end" font-size="11" fill="#5f5e5a" font-weight="600">传播常数 β (βₘ = 2πm/L)</text>
+              <text x="86" y="56" font-size="11" fill="#5f5e5a" font-weight="600">角频率 ω</text>
+              <text x="68" y="264" font-size="10" fill="#888780">O</text>
+              <!-- Cold cavity dispersion curve omega(beta) (curved) -->
+              <path d="M 110 218 Q 260 156 420 58" fill="none" stroke="#378ADD" stroke-width="2" stroke-dasharray="6,4"/>
+              <text x="382" y="64" font-size="10" fill="#185FA5" font-weight="600">冷腔色散 ω(β)</text>
+              <!-- Mode-locked comb straight tangent line at (beta0, omega0) = (265, 140) -->
+              <!-- Tangent slope: dy/dx = -0.58 => at x=78, y = 140 + 0.58*(265-78) = 248? Let's place intercept clearly at y=214 (above origin y=252) -->
+              <!-- Let (beta0, omega0) = (280, 128), intercept at (78, 212) => slope dy/dx = (128-212)/(280-78) = -84/202 = -0.416 -->
+              <!-- At x=430, y = 128 - 0.416*150 = 65.6 -->
+              <line x1="78" y1="212" x2="430" y2="66" stroke="#1D9E75" stroke-width="2.4"/>
+              <text x="398" y="96" font-size="10.5" fill="#0F6E56" font-weight="600">锁模频率梳直线</text>
+              <text x="398" y="110" font-size="9.5" fill="#0F6E56">斜率 = dω/dβ = v_g</text>
+              <!-- Secant from Origin (78, 252) to (280, 128) -->
+              <line x1="78" y1="252" x2="280" y2="128" stroke="#EF9F27" stroke-width="1.8" stroke-dasharray="5,3"/>
+              <text x="200" y="210" font-size="10" fill="#854F0B" font-weight="600">原点连线斜率</text>
+              <text x="200" y="223" font-size="9.5" fill="#854F0B">ω₀ / β₀ = v_p</text>
+              <!-- Center point (beta0, omega0) -->
+              <circle cx="280" cy="128" r="5" fill="#534AB7" stroke="#ffffff" stroke-width="1.5"/>
+              <text x="268" y="116" text-anchor="end" font-size="10.5" fill="#3C3489" font-weight="600">(β₀, ω₀)</text>
+              <!-- Comb teeth dots along straight line -->
+              <circle cx="205" cy="159" r="3.2" fill="#1D9E75"/>
+              <circle cx="242" cy="144" r="3.2" fill="#1D9E75"/>
+              <circle cx="318" cy="112" r="3.2" fill="#1D9E75"/>
+              <circle cx="355" cy="97" r="3.2" fill="#1D9E75"/>
+              <!-- Intercept marker omega_offset / omega_ceo -->
+              <circle cx="78" cy="212" r="4" fill="#e11d48"/>
+              <line x1="65" y1="252" x2="65" y2="215" stroke="#e11d48" stroke-width="1.6" marker-end="url(#arrC-r)"/>
+              <text x="58" y="236" text-anchor="end" font-size="10" fill="#e11d48" font-weight="600">ω_ceo</text>
+              <!-- Right panel: Conceptual mapping summary -->
+              <rect x="488" y="34" width="308" height="252" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <text x="642" y="56" text-anchor="middle" font-size="12" font-weight="600" fill="#3C3489">四重物理量的统一对应</text>
+              <rect x="504" y="68" width="276" height="44" rx="6" fill="#E1F5EE" stroke="#9FE1CB"/>
+              <text x="514" y="86" font-size="10.5" font-weight="600" fill="#0F6E56">① 锁模直线斜率 → 群速度 v_g</text>
+              <text x="514" y="102" font-size="9.5" fill="#0F6E56">所有梳齿共线，等间距 Δω = v_g·(2π/L) = ω_rep</text>
+              <rect x="504" y="120" width="276" height="44" rx="6" fill="#FAEEDA" stroke="#FAC775"/>
+              <text x="514" y="138" font-size="10.5" font-weight="600" fill="#854F0B">② 原点连线斜率 → 相速度 v_p</text>
+              <text x="514" y="154" font-size="9.5" fill="#854F0B">v_p = ω₀/β₀；色散介质中 v_g ≠ v_p</text>
+              <rect x="504" y="172" width="276" height="44" rx="6" fill="#fef2f2" stroke="#fecaca"/>
+              <text x="514" y="190" font-size="10.5" font-weight="600" fill="#dc2626">③ 纵轴截距 → 载波包络偏移 ω_ceo</text>
+              <text x="514" y="206" font-size="9.5" fill="#dc2626">ω_offset = ω₀(1 − v_g/v_p) ≡ ω_ceo (mod ω_rep)</text>
+              <rect x="504" y="224" width="276" height="48" rx="6" fill="#E6F1FB" stroke="#B5D4F4"/>
+              <text x="514" y="242" font-size="10.5" font-weight="600" fill="#185FA5">④ 反函数 ω(β_m) → 冷腔谐振纵模</text>
+              <text x="514" y="258" font-size="9.5" fill="#185FA5">冷腔色散导致 FSR 随频率弯曲；非线性将其锁直</text>
+            </svg>
+            <div class="diagram-caption">图 1. $\beta$-$\omega$ 空间中的频率梳几何图像：切线斜率 $v_g$、原点割线斜率 $v_p$、纵轴截距 $\omega_{\text{ceo}}$ 与冷腔反函数色散曲线 $\omega(\beta)$</div>
+          </div>
+          <ul>
+            <li><strong>锁模状态 = $\beta$-$\omega$ 空间中的一条斜直线</strong>：锁模要求所有频率分量以完全相同的群速度 $v_g$ 共同前进（无脉冲走离），因此频率梳各模式点 $(\beta_m, \omega_m)$ 严格落在过中心点 $(\beta_0, \omega_0)$、斜率为 $v_g = \left.\frac{\mathrm{d}\omega}{\mathrm{d}\beta}\right|_{\omega_0} = \left(\left.\frac{\mathrm{d}\beta}{\mathrm{d}\omega}\right|_{\omega_0}\right)^{-1}$ 的直线上。</li>
+            <li><strong>相速度与 $f_{\text{ceo}}$ 的必然性</strong>：原点 $(0,0)$ 到中心点 $(\beta_0, \omega_0)$ 连线的斜率定义了相速度 $v_p = \omega_0/\beta_0$。在真空中 $v_g = v_p = c$，锁模直线严格过原点（$f_{\text{ceo}} = 0$）；而在光纤、晶体或氮化硅微腔等色散介质中 $v_g \neq v_p$，锁模直线反向延长至 $\beta = 0$ 处必然产生非零纵轴截距，这正是不同脉冲激光系统中普遍存在<strong>载波包络偏移频率 $f_{\text{ceo}}$</strong> 的根本物理原因。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>啁啾脉冲序列与谐振腔模式的统一理解</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">啁啾脉冲序列的频率梳不变性</div><span class="topic-badge badge-theory">推广</span></div>
+        <div class="topic-body">
+          <p>若周期脉冲序列经过一段色散介质或本身处于强啁啾锁模态（如第 7 章正常色散平顶脉冲 DSR），各频率分量之间不再满足“零相位差”，而是带有随频率变化的静态光谱相位 $\phi(\omega) = \frac{1}{2}\phi_2(\omega-\omega_0)^2 + \cdots$。此时：</p>
+          <ul>
+            <li><strong>频率梳结构依然严格存在</strong>：只要每个脉冲携带相同的光谱相位且重复周期恒为 $T_R$，频域上依然是等间距的离散频率梳，<strong>梳齿频率位置 $f_m = f_{\text{ceo}} + m f_{\text{rep}}$ 完全不变</strong>，改变的仅是各根梳齿的相对初相位。</li>
+            <li><strong>中心频率处的 $v_g$ 与 $v_p$ 依然明确定义</strong>：仍可由色散曲线在中心频率 $\omega_0$ 处的一阶导数 $\beta_1 = \left.\frac{\mathrm{d}\beta}{\mathrm{d}\omega}\right|_{\omega_0} = 1/v_g$ 定义脉冲包络的群速度，由 $\beta(\omega_0)/\omega_0 = 1/v_p$ 定义载波相速度，而二阶导数 $\beta_2 = \left.\frac{\mathrm{d}^2\beta}{\mathrm{d}\omega^2}\right|_{\omega_0}$ 则描述脉冲在传播中的啁啾展宽。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">$\beta$-$\omega$ 反函数与谐振腔纵模体系的统一</div><span class="topic-badge badge-theory">全书贯通</span></div>
+        <div class="topic-body">
+          <p>在光学谐振腔（第 1 章 F-P 腔、第 6 章高 $Q$ 微环腔）中，驻波或周期性边界条件将传播常数离散化为等间距网格 $\beta_m = \frac{2\pi}{L} m$。此时，$\beta(\omega)$ 的<strong>反函数 $\omega(\beta)$</strong> 直接给出了冷腔第 $m$ 阶纵模的谐振频率 $\omega_m = \omega(\beta_m)$：</p>
+          <ul>
+            <li><strong>冷腔（线性）纵模</strong>：受材料与波导色散影响，$\omega(\beta)$ 是一条弯曲曲线，相邻纵模间距（局域 FSR）随频率变化，偏离等间距直线的量即为<strong>积分色散 $D_{\text{int}}(\mu)$</strong>。</li>
+            <li><strong>锁模 / 孤子（非线性）频率梳</strong>：在 Kerr 非线性、四波混频或可饱和吸收的锁模作用下，原本弯曲的冷腔纵模被非线性相移“拉直”到斜率为 $v_g$ 的严格直线上，从而在时域凝聚为不失真传播的周期超短脉冲。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>周期脉冲序列的傅里叶变换与频率梳方程</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">含载波包络相位滑移 $\Delta\phi_{\text{ce}}$ 的周期脉冲序列</div><span class="topic-badge badge-formula">推导</span></div>
+        <div class="topic-body">
+          <p>设单个超快脉冲的复慢变包络为 $A(t)$（可含任意啁啾相位），中心角频率为 $\omega_0 = 2\pi f_0$。重复周期为 $T_R = 1/f_{\text{rep}}$、相邻脉冲间载波包络相位滑移为 $\Delta\phi_{\text{ce}}$ 的无限脉冲序列可写为：</p>
+          <div class="formula-box">
+            $$E_{\text{train}}(t) = \sum_{n=-\infty}^{+\infty} A(t - n T_R)\,\exp\!\left[i\omega_0(t - n T_R) + i\left(\phi_0 + n\,\Delta\phi_{\text{ce}}\right)\right]$$
+            <div class="formula-label">第 $n$ 个脉冲包络位于 $n T_R$，其载波相对包络的初相位递增 $n\,\Delta\phi_{\text{ce}}$</div>
+          </div>
+          <p>对其执行傅里叶变换 $\tilde{E}_{\text{train}}(\omega) = \int_{-\infty}^{+\infty} E_{\text{train}}(t)e^{-i\omega t}\,\mathrm{d}t$，作变量替换 $t' = t - n T_R$ 并利用泊松求和公式 $\sum_{n} e^{in(\Delta\phi_{\text{ce}} - \omega T_R)} = \frac{2\pi}{T_R}\sum_{m}\delta\!\left(\omega - \frac{\Delta\phi_{\text{ce}}}{T_R} - m\frac{2\pi}{T_R}\right)$：</p>
+          <div class="formula-box">
+            $$\tilde{E}_{\text{train}}(\omega) = e^{i\phi_0}\,\tilde{A}(\omega - \omega_0) \cdot \frac{2\pi}{T_R}\sum_{m=-\infty}^{+\infty} \delta\!\left(\omega - \omega_{\text{ceo}} - m\,\omega_{\text{rep}}\right)$$
+            <div class="formula-label">频率梳核心公式：$f_m = f_{\text{ceo}} + m\,f_{\text{rep}}$，其中 $f_{\text{rep}} = \frac{1}{T_R}$，$f_{\text{ceo}} = \frac{\Delta\phi_{\text{ce}}}{2\pi} f_{\text{rep}}$</div>
+          </div>
+          <p><strong>啁啾脉冲序列推广</strong>：若单脉冲包络在频域带有色散相位 $\tilde{A}(\omega - \omega_0) = |\tilde{A}(\omega - \omega_0)|\,e^{i\phi_{\text{disp}}(\omega)}$，代入上式仅在每根梳齿上乘以复因子 $e^{i\phi_{\text{disp}}(\omega_m)}$，<strong>狄拉克梳 $\delta(\omega - \omega_{\text{ceo}} - m\omega_{\text{rep}})$ 的位置完全不变</strong>。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>$\beta$-$\omega$ 空间的群速度、相速度与 $f_{\text{ceo}}$ 关系</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">色散展开与纵轴截距公式</div><span class="topic-badge badge-formula">色散关系</span></div>
+        <div class="topic-body">
+          <p>将介质或波导的传播常数 $\beta(\omega)$ 在中心频率 $\omega_0$ 处做泰勒展开：</p>
+          <div class="formula-box">
+            $$\beta(\omega) = \beta_0 + \beta_1(\omega - \omega_0) + \frac{1}{2}\beta_2(\omega - \omega_0)^2 + \frac{1}{6}\beta_3(\omega - \omega_0)^3 + \cdots$$
+            <div class="formula-label">相速度 $v_p = \dfrac{\omega_0}{\beta_0} = \dfrac{c}{n(\omega_0)}$，群速度 $v_g = \left(\left.\dfrac{\mathrm{d}\beta}{\mathrm{d}\omega}\right|_{\omega_0}\right)^{-1} = \dfrac{1}{\beta_1} = \dfrac{c}{n_g(\omega_0)}$</div>
+          </div>
+          <p>在锁模状态下，脉冲沿长度 $L$ 的腔体往返一周所需时间为 $T_R = L/v_g = \beta_1 L$，而中心载波在一周内积累的相位差（载波相位减去包络位置对应的传播相位）为：</p>
+          <div class="formula-box">
+            $$\Delta\phi_{\text{ce}} = \omega_0 T_R - \beta_0 L = \omega_0 L \left(\frac{1}{v_g} - \frac{1}{v_p}\right) \pmod{2\pi}$$
+            <div class="formula-label">群速度与相速度之差直接决定了脉冲间的载波包络相位滑移</div>
+          </div>
+          <p>在 $(\beta, \omega)$ 平面中，过 $(\beta_0, \omega_0)$、斜率为 $v_g$ 的锁模直线方程为 $\omega(\beta) = \omega_0 + v_g(\beta - \beta_0)$。令 $\beta = 0$ 得纵轴截距：</p>
+          <div class="formula-box">
+            $$\omega_{\text{offset}} = \omega_0 - v_g \beta_0 = \omega_0 \left(1 - \frac{v_g}{v_p}\right), \qquad \omega_{\text{ceo}} = \omega_{\text{offset}} \pmod{\omega_{\text{rep}}}$$
+            <div class="formula-label">当且仅当 $v_g = v_p$（无色散）时直线过原点，$\omega_{\text{ceo}} = 0$</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>$\beta$-$\omega$ 反函数与谐振腔模式色散</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">冷腔谐振频率 $\omega_\mu$ 与积分色散 $D_{\text{int}}(\mu)$</div><span class="topic-badge badge-formula">谐振腔统一</span></div>
+        <div class="topic-body">
+          <p>对光学长度（几何周长）为 $L$ 的环形微腔或 F-P 腔（单程 $L/2$），纵模驻波条件为 $\beta(\omega_m) L = 2\pi m$，即 $\beta_m = \frac{2\pi}{L} m$。将 $\beta(\omega)$ 反解为 $\omega(\beta)$ 并在参考模 $m_0$（相对模序 $\mu = m - m_0$）附近展开：</p>
+          <div class="formula-box">
+            $$\omega_\mu = \omega(\beta_{m_0 + \mu}) = \omega_0 + D_1 \mu + \frac{1}{2} D_2 \mu^2 + \frac{1}{6} D_3 \mu^3 + \cdots$$
+            <div class="formula-label">反函数一阶导数给出自由光谱范围 $D_1 = \frac{2\pi v_g}{L} = 2\pi\,\text{FSR}$，二阶导数给出色散项 $D_2 = -\frac{c}{n_g} D_1^2 \beta_2$</div>
+          </div>
+          <p>定义冷腔模式相对于等间距锁模直线的偏离为<strong>积分色散</strong>：</p>
+          <div class="formula-box">
+            $$D_{\text{int}}(\mu) \equiv \omega_\mu - (\omega_0 + D_1 \mu) = \frac{1}{2} D_2 \mu^2 + \frac{1}{6} D_3 \mu^3 + \cdots$$
+            <div class="formula-label">当微腔中形成 Kerr 耗散孤子（第 6 章）或锁模孤子（第 7 章）时，非线性相移与失谐抵消 $D_{\text{int}}(\mu)$，使全部梳齿锁在 $D_{\text{int}}=0$ 的直线上</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="comb-sim">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-bottom:0.5px solid var(--c-border); padding-bottom:0.5rem;">
+          <div style="font-size:13.5px; font-weight:600; color:var(--c-purple-800);">脉冲激光时频关系与载波包络偏移频率 ($f_{\text{ceo}}$) 交互仿真器</div>
+          <div style="font-size:11px; font-family:'SF Mono',monospace; color:var(--c-text-hint);" id="comb-status">实时解析联动</div>
+        </div>
+
+        <div class="comb-metrics">
+          <div class="comb-metric"><div class="comb-metric-lbl">重复频率 f_rep</div><div class="comb-metric-val" id="cm-frep">1.00 GHz</div></div>
+          <div class="comb-metric"><div class="comb-metric-lbl">偏移频率 f_ceo</div><div class="comb-metric-val" id="cm-fceo" style="color:#e11d48;">0.25 GHz</div></div>
+          <div class="comb-metric"><div class="comb-metric-lbl">脉冲间相位滑移 Δφ_ce</div><div class="comb-metric-val" id="cm-dphi" style="color:var(--c-amber-600);">0.50π</div></div>
+          <div class="comb-metric"><div class="comb-metric-lbl">速度比 v_g / v_p</div><div class="comb-metric-val" id="cm-vgvp" style="color:var(--c-teal-600);">0.94</div></div>
+          <div class="comb-metric"><div class="comb-metric-lbl">啁啾 GDD (norm.)</div><div class="comb-metric-val" id="cm-gdd">0.00</div></div>
+          <div class="comb-metric"><div class="comb-metric-lbl">脉冲形态</div><div class="comb-metric-val" id="cm-state" style="font-size:12.5px;">变换极限</div></div>
+        </div>
+
+        <div class="comb-layout">
+          <aside class="comb-sidebar">
+            <div class="comb-ctrl-sec">
+              <div class="comb-ctrl-head">典型物理场景预设</div>
+              <div class="comb-preset-grid">
+                <button class="comb-preset-btn" id="cpre-zero" onclick="combApplyPreset('zero')">无偏移 (v_g = v_p)</button>
+                <button class="comb-preset-btn active" id="cpre-quarter" onclick="combApplyPreset('quarter')">常规色散 (Δφ = π/2)</button>
+                <button class="comb-preset-btn" id="cpre-half" onclick="combApplyPreset('half')">载波反转 (Δφ = π)</button>
+                <button class="comb-preset-btn" id="cpre-chirp" onclick="combApplyPreset('chirp')">啁啾脉冲频率梳</button>
+              </div>
+            </div>
+
+            <div class="comb-ctrl-sec">
+              <div class="comb-ctrl-head">载波包络与脉冲参数</div>
+              <div class="comb-slider-grp">
+                <div class="comb-slider-row"><span>f_ceo / f_rep (= Δφ_ce / 2π)</span><span class="val" id="cv-fceo" style="color:#e11d48;">0.25</span></div>
+                <input type="range" id="cs-fceo" min="0" max="1" step="0.01" value="0.25">
+              </div>
+              <div class="comb-slider-grp">
+                <div class="comb-slider-row"><span>脉冲啁啾 GDD (色散展宽)</span><span class="val" id="cv-gdd">0.00</span></div>
+                <input type="range" id="cs-gdd" min="-1.5" max="1.5" step="0.05" value="0">
+              </div>
+              <div class="comb-slider-grp">
+                <div class="comb-slider-row"><span>脉冲宽度 τ_p / T_R</span><span class="val" id="cv-tp">0.14</span></div>
+                <input type="range" id="cs-tp" min="0.08" max="0.24" step="0.01" value="0.14">
+              </div>
+              <div class="comb-slider-grp">
+                <div class="comb-slider-row"><span>冷腔色散曲率 D₂</span><span class="val" id="cv-d2">0.35</span></div>
+                <input type="range" id="cs-d2" min="-0.8" max="0.8" step="0.05" value="0.35">
+              </div>
+            </div>
+
+            <div class="comb-ctrl-sec">
+              <div class="comb-ctrl-head">动态扫频演示</div>
+              <div class="comb-btn-row">
+                <button class="comb-action-btn primary" id="cbtn-anim" onclick="combToggleAnim()">▶ 动态扫描 f_ceo</button>
+                <button class="comb-action-btn" onclick="combApplyPreset('quarter')">重置</button>
+              </div>
+            </div>
+          </aside>
+
+          <div>
+            <div class="comb-charts-grid">
+              <div class="comb-chart-card">
+                <div class="comb-chart-head">
+                  <div class="comb-chart-title"><span class="comb-badge">A</span>时域周期脉冲序列 E(t) 与包络</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">紫：载波 · 蓝虚：包络 · 红点：峰顶相位</span>
+                </div>
+                <div class="comb-cv-wrap"><canvas id="ccv-time"></canvas></div>
+              </div>
+
+              <div class="comb-chart-card">
+                <div class="comb-chart-head">
+                  <div class="comb-chart-title"><span class="comb-badge" style="background:#fef2f2;color:#e11d48;">B</span>频域光学频率梳 f_m = f_ceo + m·f_rep</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">红箭头：f_ceo · 橙虚：光谱相位</span>
+                </div>
+                <div class="comb-cv-wrap"><canvas id="ccv-comb"></canvas></div>
+              </div>
+
+              <div class="comb-chart-card">
+                <div class="comb-chart-head">
+                  <div class="comb-chart-title"><span class="comb-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">C</span>β-ω 空间：v_g、v_p、冷腔曲线与 ω_ceo</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">绿：v_g · 橙虚：v_p · 蓝虚：冷腔</span>
+                </div>
+                <div class="comb-cv-wrap"><canvas id="ccv-disp"></canvas></div>
+              </div>
+
+              <div class="comb-chart-card">
+                <div class="comb-chart-head">
+                  <div class="comb-chart-title"><span class="comb-badge" style="background:var(--c-amber-50);color:var(--c-amber-600);">D</span>相邻脉冲载波滑移对比 &amp; 积分色散</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">上：n=0 vs n=1 · 下：D_int(μ)</span>
+                </div>
+                <div class="comb-cv-wrap"><canvas id="ccv-cmp"></canvas></div>
+              </div>
+            </div>
+
+            <div class="comb-tip" id="comb-tip">
+              <strong>物理提示：</strong>调节 <code>f_ceo / f_rep</code> 观察四图联动：时域中载波在固定包络下逐脉冲滑移 Δφ_ce，频域中整把频率梳刚性平移 f_ceo，β-ω 空间中锁模直线纵轴截距随之改变；调节「脉冲啁啾 GDD」可验证时域脉冲展宽并出现频率扫频，但频域梳齿位置 f_m 严格不变。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Cundiff, S. T. &amp; Ye, J. Colloquium: Femtosecond optical frequency combs. <em>Rev. Mod. Phys.</em> <strong>75</strong>, 325–342 (2003).</li>
+      <li><span class="ref-num">[2]</span>Jones, D. J. et al. Carrier-envelope phase control of femtosecond mode-locked lasers and direct optical frequency synthesis. <em>Science</em> <strong>288</strong>, 635–639 (2000).</li>
+      <li><span class="ref-num">[3]</span>Fortier, T. &amp; Baumann, E. 20 years of developments in optical frequency comb technology and applications. <em>Commun. Phys.</em> <strong>2</strong>, 153 (2019).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+
+  var S = { fceoRatio: 0.25, gdd: 0.0, tp: 0.14, d2: 0.35 };
+  var isTabActive = false, isAnim = false, animId = null;
+  var N_CARRIER = 4; // Visual carrier cycles per TR (for clear teaching visualization)
+
+  function setupCV(id) {
+    var c = document.getElementById(id), rect = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(10, Math.round(rect.width)), h = Math.max(10, Math.round(rect.height));
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function evalSinglePulse(dtRel, phiCE) {
+    // Chirped Gaussian pulse: width stretches by sqrt(1 + gdd^2), chirp C = gdd / (1 + gdd^2)
+    var g = S.gdd, stretch = Math.sqrt(1 + g * g);
+    var wEff = S.tp * stretch;
+    var env = Math.exp(-0.5 * Math.pow(dtRel / wEff, 2)) / Math.sqrt(stretch);
+    var chirpPhase = (g / (1 + g * g)) * 0.5 * Math.pow(dtRel / S.tp, 2);
+    var carrierPhase = 2 * Math.PI * (N_CARRIER + S.fceoRatio) * dtRel + phiCE + chirpPhase;
+    return { env: env, field: env * Math.cos(carrierPhase) };
+  }
+
+  function renderAll() {
+    var dPhi = 2 * Math.PI * S.fceoRatio;
+    var m0 = 4; // center comb tooth index for beta-omega visual
+    var vgOverVp = m0 / (m0 + S.fceoRatio); // since w_ceo/w_0 = 1 - vg/vp => vg/vp = 1 - fceoRatio/(m0+fceoRatio)
+
+    // ===== Panel A: Time-domain pulse train (4 pulses: n = 0, 1, 2, 3) =====
+    var rA = setupCV('ccv-time'), cA = rA.ctx, padA = { l: 36, r: 12, t: 14, b: 26 };
+    var pwA = rA.w - padA.l - padA.r, phA = rA.h - padA.t - padA.b;
+    var tMin = -0.5, tMax = 3.5;
+    var toXA = function(t) { return padA.l + ((t - tMin) / (tMax - tMin)) * pwA; };
+    var toYA = function(y) { return padA.t + phA * (1 - (y + 1.15) / 2.3); };
+    cA.strokeStyle = '#e4e1d8'; cA.lineWidth = 0.6;
+    cA.beginPath(); cA.moveTo(padA.l, toYA(0)); cA.lineTo(rA.w - padA.r, toYA(0)); cA.stroke();
+    cA.font = '9.5px monospace'; cA.fillStyle = '#888780'; cA.textAlign = 'center';
+    for (var n = 0; n <= 3; n++) {
+      var xn = toXA(n);
+      cA.strokeStyle = '#e4e1d8'; cA.beginPath(); cA.moveTo(xn, padA.t); cA.lineTo(xn, rA.h - padA.b); cA.stroke();
+      cA.fillText('n=' + n + ' (' + n + 'T_R)', xn, rA.h - padA.b + 12);
+    }
+    cA.fillStyle = '#5f5e5a'; cA.font = '10px -apple-system,sans-serif';
+    cA.fillText('时间 t / T_R', padA.l + pwA / 2, rA.h - 3);
+
+    // Draw envelope (blue dashed) & carrier (purple solid)
+    var samples = 600;
+    cA.strokeStyle = 'rgba(55,138,221,0.65)'; cA.lineWidth = 1.4; cA.setLineDash([4, 3]); cA.beginPath();
+    for (var i = 0; i <= samples; i++) {
+      var tv = tMin + (i / samples) * (tMax - tMin), envSum = 0;
+      for (var n2 = -1; n2 <= 4; n2++) envSum += evalSinglePulse(tv - n2, n2 * dPhi).env;
+      var px = toXA(tv), py = toYA(envSum);
+      if (i === 0) cA.moveTo(px, py); else cA.lineTo(px, py);
+    }
+    cA.stroke(); cA.setLineDash([]);
+
+    cA.strokeStyle = '#534AB7'; cA.lineWidth = 1.6; cA.beginPath();
+    for (var i2 = 0; i2 <= samples; i2++) {
+      var tv2 = tMin + (i2 / samples) * (tMax - tMin), fSum = 0;
+      for (var n3 = -1; n3 <= 4; n3++) fSum += evalSinglePulse(tv2 - n3, n3 * dPhi).field;
+      var px2 = toXA(tv2), py2 = toYA(fSum);
+      if (i2 === 0) cA.moveTo(px2, py2); else cA.lineTo(px2, py2);
+    }
+    cA.stroke();
+
+    // Mark carrier amplitude at each envelope peak t = n
+    for (var n4 = 0; n4 <= 3; n4++) {
+      var pkVal = evalSinglePulse(0, n4 * dPhi).field;
+      cA.fillStyle = '#e11d48'; cA.beginPath(); cA.arc(toXA(n4), toYA(pkVal), 3.6, 0, Math.PI * 2); cA.fill();
+    }
+
+    // ===== Panel B: Frequency Comb Spectrum f_m = f_ceo + m*f_rep =====
+    var rB = setupCV('ccv-comb'), cB = rB.ctx, padB = { l: 36, r: 12, t: 14, b: 26 };
+    var pwB = rB.w - padB.l - padB.r, phB = rB.h - padB.t - padB.b;
+    var fMin = 0, fMax = 9.0; // in units of f_rep
+    var toXB = function(f) { return padB.l + ((f - fMin) / (fMax - fMin)) * pwB; };
+    var toYB = function(y) { return padB.t + phB * (1 - y / 1.15); };
+    cB.strokeStyle = '#e4e1d8'; cB.lineWidth = 0.6;
+    cB.beginPath(); cB.moveTo(padB.l, toYB(0)); cB.lineTo(rB.w - padB.r, toYB(0)); cB.stroke();
+    cB.font = '9.5px monospace'; cB.fillStyle = '#888780'; cB.textAlign = 'center';
+    for (var fm = 0; fm <= 8; fm += 2) {
+      cB.fillText(fm === 0 ? '0' : fm + 'f_r', toXB(fm), rB.h - padB.b + 12);
+    }
+    cB.fillStyle = '#5f5e5a'; cB.font = '10px -apple-system,sans-serif';
+    cB.fillText('频率 f (单位: f_rep)', padB.l + pwB / 2, rB.h - 3);
+
+    // Spectral envelope centered at f_center = 4.5 f_rep, bandwidth ~ 1 / (2*pi*tp)
+    var fCenter = 4.5, bwF = 0.24 / S.tp;
+    cB.strokeStyle = 'rgba(55,138,221,0.5)'; cB.lineWidth = 1.4; cB.setLineDash([4, 3]); cB.beginPath();
+    for (var j = 0; j <= 200; j++) {
+      var fv = fMin + (j / 200) * (fMax - fMin);
+      var sEnv = Math.exp(-Math.pow((fv - fCenter) / bwF, 2));
+      var pxB = toXB(fv), pyB = toYB(sEnv);
+      if (j === 0) cB.moveTo(pxB, pyB); else cB.lineTo(pxB, pyB);
+    }
+    cB.stroke(); cB.setLineDash([]);
+
+    // Spectral phase overlay (parabola proportional to GDD)
+    if (Math.abs(S.gdd) > 0.02) {
+      cB.strokeStyle = '#EF9F27'; cB.lineWidth = 1.5; cB.setLineDash([3, 2]); cB.beginPath();
+      for (var j2 = 0; j2 <= 200; j2++) {
+        var fv2 = fMin + (j2 / 200) * (fMax - fMin);
+        var phNorm = 0.45 + 0.14 * S.gdd * Math.pow((fv2 - fCenter) / bwF, 2);
+        var pxP = toXB(fv2), pyP = toYB(Math.max(0.02, Math.min(1.12, phNorm)));
+        if (j2 === 0) cB.moveTo(pxP, pyP); else cB.lineTo(pxP, pyP);
+      }
+      cB.stroke(); cB.setLineDash([]);
+    }
+
+    // Discrete comb teeth at f_m = fceoRatio + m
+    for (var m = 0; m <= 8; m++) {
+      var fTooth = S.fceoRatio + m;
+      if (fTooth > fMax) continue;
+      var amp = Math.exp(-Math.pow((fTooth - fCenter) / bwF, 2));
+      var isOffsetTooth = (m === 0);
+      cB.strokeStyle = isOffsetTooth ? '#e11d48' : '#534AB7';
+      cB.lineWidth = isOffsetTooth ? 2.2 : 2.0;
+      cB.beginPath(); cB.moveTo(toXB(fTooth), toYB(0)); cB.lineTo(toXB(fTooth), toYB(Math.max(0.08, amp))); cB.stroke();
+      cB.fillStyle = isOffsetTooth ? '#e11d48' : '#534AB7';
+      cB.beginPath(); cB.arc(toXB(fTooth), toYB(Math.max(0.08, amp)), 2.5, 0, Math.PI * 2); cB.fill();
+    }
+    // Highlight f_ceo interval from 0 to fceoRatio
+    if (S.fceoRatio > 0.02) {
+      var x0 = toXB(0), xC = toXB(S.fceoRatio), yArr = toYB(0.32);
+      cB.fillStyle = 'rgba(225,29,72,0.12)'; cB.fillRect(x0, padB.t, xC - x0, phB);
+      cB.strokeStyle = '#e11d48'; cB.lineWidth = 1.5;
+      cB.beginPath(); cB.moveTo(x0, yArr); cB.lineTo(xC, yArr); cB.stroke();
+      cB.fillStyle = '#e11d48'; cB.font = 'bold 9.5px monospace'; cB.textAlign = 'left';
+      cB.fillText('f_ceo=' + S.fceoRatio.toFixed(2) + 'f_r', xC + 4, yArr + 3);
+    }
+
+    // ===== Panel C: beta-omega Dispersion Space =====
+    var rC = setupCV('ccv-disp'), cC = rC.ctx, padC = { l: 40, r: 14, t: 14, b: 26 };
+    var pwC = rC.w - padC.l - padC.r, phC = rC.h - padC.t - padC.b;
+    var bMax = 8.0, wMax = 8.5;
+    var toXC = function(b) { return padC.l + (b / bMax) * pwC; };
+    var toYC = function(w) { return padC.t + phC * (1 - w / wMax); };
+    cC.strokeStyle = '#d3d1c7'; cC.lineWidth = 1;
+    cC.beginPath(); cC.moveTo(padC.l, toYC(0)); cC.lineTo(rC.w - padC.r, toYC(0)); cC.stroke();
+    cC.beginPath(); cC.moveTo(toXC(0), padC.t); cC.lineTo(toXC(0), toYC(0)); cC.stroke();
+    cC.fillStyle = '#5f5e5a'; cC.font = '10px -apple-system,sans-serif'; cC.textAlign = 'center';
+    cC.fillText('传播常数 β (β_m = 2πm/L)', padC.l + pwC / 2, rC.h - 3);
+    cC.save(); cC.translate(12, padC.t + phC / 2); cC.rotate(-Math.PI / 2); cC.fillText('角频率 ω', 0, 0); cC.restore();
+
+    var b0 = 4.0, w0 = b0 + S.fceoRatio * 1.4; // visual scaling so intercept is clearly visible
+    var interceptW = S.fceoRatio * 1.4;
+    // Cold cavity curved dispersion omega(beta) = w0 + 1.0*(b - b0) + 0.14*D2*(b - b0)^2
+    cC.save(); cC.beginPath(); cC.rect(padC.l, padC.t, pwC, phC); cC.clip();
+    cC.strokeStyle = '#378ADD'; cC.lineWidth = 1.8; cC.setLineDash([5, 3]); cC.beginPath();
+    for (var bc = 0; bc <= 160; bc++) {
+      var bv = (bc / 160) * bMax;
+      var wCav = w0 + (bv - b0) + 0.14 * S.d2 * Math.pow(bv - b0, 2);
+      var pxc = toXC(bv), pyc = toYC(wCav);
+      if (bc === 0) cC.moveTo(pxc, pyc); else cC.lineTo(pxc, pyc);
+    }
+    cC.stroke(); cC.setLineDash([]);
+
+    // Mode-locked straight line: omega = interceptW + 1.0 * beta (slope = v_g)
+    cC.strokeStyle = '#1D9E75'; cC.lineWidth = 2.2; cC.beginPath();
+    cC.moveTo(toXC(0), toYC(interceptW)); cC.lineTo(toXC(bMax), toYC(interceptW + bMax)); cC.stroke();
+
+    // Origin to (b0, w0) secant line (slope = v_p)
+    cC.strokeStyle = '#EF9F27'; cC.lineWidth = 1.6; cC.setLineDash([4, 3]); cC.beginPath();
+    cC.moveTo(toXC(0), toYC(0)); cC.lineTo(toXC(b0), toYC(w0)); cC.stroke(); cC.setLineDash([]);
+
+    // Discrete mode dots on locked line vs cold cavity
+    for (var m2 = 1; m2 <= 7; m2++) {
+      var wLock = interceptW + m2;
+      cC.fillStyle = '#1D9E75'; cC.beginPath(); cC.arc(toXC(m2), toYC(wLock), 2.8, 0, Math.PI * 2); cC.fill();
+      var wCold = w0 + (m2 - b0) + 0.14 * S.d2 * Math.pow(m2 - b0, 2);
+      cC.fillStyle = '#378ADD'; cC.beginPath(); cC.arc(toXC(m2), toYC(wCold), 2.3, 0, Math.PI * 2); cC.fill();
+    }
+    // Center point (b0, w0)
+    cC.fillStyle = '#534AB7'; cC.beginPath(); cC.arc(toXC(b0), toYC(w0), 4.5, 0, Math.PI * 2); cC.fill();
+    // Intercept dot
+    cC.fillStyle = '#e11d48'; cC.beginPath(); cC.arc(toXC(0), toYC(interceptW), 4, 0, Math.PI * 2); cC.fill();
+    cC.restore();
+    cC.fillStyle = '#e11d48'; cC.font = 'bold 9.5px monospace'; cC.textAlign = 'left';
+    cC.fillText('ω_ceo', toXC(0) + 5, toYC(interceptW) - 4);
+    cC.fillStyle = '#0F6E56'; cC.fillText('斜率 v_g', toXC(5.6), toYC(interceptW + 5.6) + 14);
+    cC.fillStyle = '#854F0B'; cC.fillText('斜率 v_p', toXC(1.8), toYC(1.8 * (w0 / b0)) + 14);
+
+    // ===== Panel D: Top = Pulse n=0 vs n=1 carrier slip; Bottom = D_int(mu) =====
+    var rD = setupCV('ccv-cmp'), cD = rD.ctx, padD = { l: 36, r: 12, t: 10, b: 22 };
+    var pwD = rD.w - padD.l - padD.r, midY = rD.h * 0.50;
+    // Top half: n=0 (purple) vs n=1 (crimson) overlapped in [-0.45, 0.45]
+    var hTop = midY - padD.t - 8;
+    var toXD = function(u) { return padD.l + ((u + 0.45) / 0.9) * pwD; };
+    var toYTop = function(y) { return padD.t + hTop * (1 - (y + 1.1) / 2.2); };
+    cD.strokeStyle = '#e4e1d8'; cD.lineWidth = 0.6;
+    cD.beginPath(); cD.moveTo(padD.l, toYTop(0)); cD.lineTo(rD.w - padD.r, toYTop(0)); cD.stroke();
+    cD.strokeStyle = '#534AB7'; cD.lineWidth = 1.6; cD.beginPath();
+    for (var d1 = 0; d1 <= 180; d1++) {
+      var u1 = -0.45 + (d1 / 180) * 0.9, v1 = evalSinglePulse(u1, 0).field;
+      if (d1 === 0) cD.moveTo(toXD(u1), toYTop(v1)); else cD.lineTo(toXD(u1), toYTop(v1));
+    }
+    cD.stroke();
+    cD.strokeStyle = '#e11d48'; cD.lineWidth = 1.5; cD.setLineDash([4, 2]); cD.beginPath();
+    for (var d2 = 0; d2 <= 180; d2++) {
+      var u2 = -0.45 + (d2 / 180) * 0.9, v2 = evalSinglePulse(u2, dPhi).field;
+      if (d2 === 0) cD.moveTo(toXD(u2), toYTop(v2)); else cD.lineTo(toXD(u2), toYTop(v2));
+    }
+    cD.stroke(); cD.setLineDash([]);
+    cD.fillStyle = '#3C3489'; cD.font = '9.5px -apple-system,sans-serif'; cD.textAlign = 'left';
+    cD.fillText('相邻脉冲重叠：n=0 (紫) vs n=1 (红虚, 滑移 Δφ_ce=' + (2 * S.fceoRatio).toFixed(2) + 'π)', padD.l + 3, padD.t + 10);
+
+    // Bottom half: Integrated dispersion D_int(mu) vs Locked Comb (0)
+    var botTop = midY + 12, hBot = rD.h - padD.b - botTop;
+    var toXMu = function(mu) { return padD.l + ((mu + 4) / 8) * pwD; };
+    var toYBot = function(y) { return botTop + hBot * (1 - (y + 2.5) / 5.0); };
+    cD.strokeStyle = '#1D9E75'; cD.lineWidth = 1.6;
+    cD.beginPath(); cD.moveTo(padD.l, toYBot(0)); cD.lineTo(rD.w - padD.r, toYBot(0)); cD.stroke();
+    cD.strokeStyle = '#378ADD'; cD.lineWidth = 1.8; cD.setLineDash([4, 3]); cD.beginPath();
+    for (var d3 = 0; d3 <= 120; d3++) {
+      var mu = -4 + (d3 / 120) * 8, dint = 0.14 * S.d2 * mu * mu;
+      var yd = Math.max(-2.4, Math.min(2.4, dint));
+      if (d3 === 0) cD.moveTo(toXMu(mu), toYBot(yd)); else cD.lineTo(toXMu(mu), toYBot(yd));
+    }
+    cD.stroke(); cD.setLineDash([]);
+    cD.fillStyle = '#185FA5'; cD.font = '9.5px -apple-system,sans-serif';
+    cD.fillText('冷腔积分色散 D_int(μ) (蓝虚) vs 锁模零色散线 (绿)', padD.l + 3, botTop + 9);
+    cD.fillStyle = '#5f5e5a'; cD.textAlign = 'center';
+    cD.fillText('相对纵模序数 μ = m − m₀', padD.l + pwD / 2, rD.h - 4);
+
+    // Update metrics
+    document.getElementById('cm-fceo').textContent = S.fceoRatio.toFixed(2) + ' GHz';
+    document.getElementById('cm-dphi').textContent = (2 * S.fceoRatio).toFixed(2) + 'π';
+    document.getElementById('cm-vgvp').textContent = vgOverVp.toFixed(3);
+    document.getElementById('cm-gdd').textContent = S.gdd.toFixed(2);
+    document.getElementById('cm-state').textContent = Math.abs(S.gdd) < 0.05 ? '变换极限锁模' : (S.gdd > 0 ? '正啁啾频率梳' : '负啁啾频率梳');
+  }
+
+  function syncSliders() {
+    document.getElementById('cs-fceo').value = S.fceoRatio; document.getElementById('cv-fceo').textContent = S.fceoRatio.toFixed(2);
+    document.getElementById('cs-gdd').value = S.gdd; document.getElementById('cv-gdd').textContent = S.gdd.toFixed(2);
+    document.getElementById('cs-tp').value = S.tp; document.getElementById('cv-tp').textContent = S.tp.toFixed(2);
+    document.getElementById('cs-d2').value = S.d2; document.getElementById('cv-d2').textContent = S.d2.toFixed(2);
+  }
+
+  window.combApplyPreset = function(name) {
+    if (isAnim) window.combToggleAnim();
+    var map = {
+      zero:    { fceoRatio: 0.00, gdd: 0.00, tp: 0.14, d2: 0.00 },
+      quarter: { fceoRatio: 0.25, gdd: 0.00, tp: 0.14, d2: 0.35 },
+      half:    { fceoRatio: 0.50, gdd: 0.00, tp: 0.14, d2: 0.35 },
+      chirp:   { fceoRatio: 0.25, gdd: 1.10, tp: 0.12, d2: -0.45 }
+    };
+    Object.assign(S, map[name]);
+    ['zero', 'quarter', 'half', 'chirp'].forEach(function(id) {
+      document.getElementById('cpre-' + id).classList.toggle('active', id === name);
+    });
+    syncSliders();
+    renderAll();
+  };
+
+  function animLoop() {
+    if (!isAnim || !isTabActive) return;
+    S.fceoRatio = (S.fceoRatio + 0.004) % 1.0;
+    syncSliders();
+    renderAll();
+    animId = requestAnimationFrame(animLoop);
+  }
+
+  window.combToggleAnim = function() {
+    isAnim = !isAnim;
+    var btn = document.getElementById('cbtn-anim');
+    btn.classList.toggle('running', isAnim);
+    btn.textContent = isAnim ? '⏸ 暂停扫描' : '▶ 动态扫描 f_ceo';
+    if (isAnim) animId = requestAnimationFrame(animLoop);
+    else if (animId) cancelAnimationFrame(animId);
+  };
+
+  function bind(id, key) {
+    document.getElementById('cs-' + id).addEventListener('input', function(e) {
+      S[key] = parseFloat(e.target.value);
+      document.getElementById('cv-' + id).textContent = S[key].toFixed(2);
+      renderAll();
+    });
+  }
+  bind('fceo', 'fceoRatio'); bind('gdd', 'gdd'); bind('tp', 'tp'); bind('d2', 'd2');
+
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isTabActive = (btn.dataset.panel === 'simulation');
+      if (isTabActive) setTimeout(renderAll, 30);
+      else if (isAnim) window.combToggleAnim();
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  window.addEventListener('resize', function() { if (isTabActive) renderAll(); });
+})();
+</script>
+</body>
+</html>

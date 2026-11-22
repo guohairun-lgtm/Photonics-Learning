@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>F-P 腔激光器 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">3</span>F-P 腔激光器</div>
+    <p class="section-desc">半导体增益介质 + 谐振腔 + 电流注入泵浦：速率方程、阈值条件、稳态光谱与动态行为</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">F-P 腔激光器基本结构</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p>F-P 腔激光器是在法布里-珀罗谐振腔内放置半导体增益介质，通过电流注入实现粒子数反转，产生受激辐射放大。当腔内增益超过总损耗时，激光振荡建立，形成稳定激光输出。</p>
+        <p><strong>核心组件</strong>：</p>
+        <ul>
+          <li><strong>有源区（增益介质）</strong>：半导体异质结（如 InGaAsP/InP），载流子通过电流注入产生粒子数反转，提供光增益 $g(N)$。</li>
+          <li><strong>前腔镜（输出镜）</strong>：具有有限光谱带宽的半反射镜，反射率 $R_2$，带宽 $\Delta\nu_m$。</li>
+          <li><strong>后腔镜（全反射镜）</strong>：反射率 $R_1 \approx 1$，无带宽限制。</li>
+          <li><strong>泵浦源</strong>：电流注入 $I$，产生载流子浓度 $N$，驱动增益。</li>
+        </ul>
+        <div class="diagram-box">
+          <svg viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg" style="max-width:860px;">
+            <defs>
+              <marker id="arrIn2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#EF9F27"/></marker>
+              <marker id="arrOut2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+              <marker id="arrBounce2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#AFA9EC"/></marker>
+              <linearGradient id="gainGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E1F5EE" stop-opacity="0.3"/><stop offset="50%" stop-color="#9FE1CB" stop-opacity="0.5"/><stop offset="100%" stop-color="#E1F5EE" stop-opacity="0.3"/></linearGradient>
+            </defs>
+            <text x="430" y="22" text-anchor="middle" font-size="14" font-weight="600" fill="#3C3489">F-P 腔半导体激光器结构示意</text>
+            <line x1="320" y1="325" x2="320" y2="285" stroke="#EF9F27" stroke-width="2" marker-end="url(#arrIn2)"/>
+            <line x1="380" y1="325" x2="380" y2="285" stroke="#EF9F27" stroke-width="2" marker-end="url(#arrIn2)"/>
+            <line x1="440" y1="325" x2="440" y2="285" stroke="#EF9F27" stroke-width="2" marker-end="url(#arrIn2)"/>
+            <line x1="500" y1="325" x2="500" y2="285" stroke="#EF9F27" stroke-width="2" marker-end="url(#arrIn2)"/>
+            <text x="430" y="346" text-anchor="middle" font-size="12" fill="#854F0B">注入电流 I</text>
+            <rect x="240" y="90" width="380" height="140" rx="4" fill="url(#gainGrad)" stroke="#1D9E75" stroke-width="1" stroke-dasharray="4,2"/>
+            <text x="430" y="165" text-anchor="middle" font-size="12" fill="#0F6E56">有源区增益介质 g(N)</text>
+            <line x1="240" y1="70" x2="240" y2="250" stroke="#534AB7" stroke-width="4" stroke-linecap="round"/>
+            <text x="240" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#534AB7">M₁ (HR, R₁≈1)</text>
+            <line x1="620" y1="70" x2="620" y2="250" stroke="#534AB7" stroke-width="3" stroke-linecap="round"/>
+            <text x="620" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#534AB7">M₂ (OC, R₂, Δνₘ)</text>
+            <line x1="242" y1="130" x2="618" y2="155" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrBounce2)"/>
+            <line x1="618" y1="155" x2="242" y2="185" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrBounce2)"/>
+            <line x1="620" y1="155" x2="780" y2="155" stroke="#1D9E75" stroke-width="2.5" marker-end="url(#arrOut2)"/>
+            <text x="720" y="145" font-size="12" fill="#1D9E75" font-weight="600">激光输出 P_out</text>
+          </svg>
+          <div class="diagram-caption">图 1. F-P 腔半导体激光器结构：电流注入驱动增益介质，腔内多次往返放大，经输出镜射出激光</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">载流子-光子速率方程与第二章的联系</div><span class="topic-badge badge-theory">贯通</span></div>
+      <div class="topic-body">
+        <p><strong>载流子-光子速率方程</strong>是描述半导体激光器动态行为的核心模型。载流子浓度 $N$ 和光子密度 $S$ 的耦合演化：</p>
+        <ul>
+          <li><strong>载流子方程</strong>：电流注入产生载流子，通过受激辐射复合（产生光子）、自发辐射和非辐射复合消耗。</li>
+          <li><strong>光子方程</strong>：受激辐射产生光子，腔损耗（镜面输出 + 内部损耗）消耗光子。</li>
+          <li><strong>增益函数</strong>：线性模型 $g(N) = a(N - N_{\text{tr}})$，$N_{\text{tr}}$ 为透明载流子浓度。</li>
+          <li><strong>阈值条件</strong>：增益 = 腔总损耗（镜面损耗 + 内部损耗），对应阈值电流 $I_{\text{th}}$。</li>
+        </ul>
+        <p><strong>与第二章 GLE 的关系</strong>：光子速率方程是 GLE 在<strong>单模近似、取强度</strong>后的简化形式。GLE 描述光场复振幅（含相位、频谱），速率方程描述光子密度（仅强度）。GLE 中的常数增益 $g_{\text{pk}}$ 在速率方程中被溯源到载流子动力学 $g(N)$，使系统从单变量扩展到双变量耦合，能描述弛豫振荡、载流子钳制等现象。</p>
+        <p><strong>线宽特征</strong>：激光线宽物理来源是自发辐射噪声对相位的随机扰动。Schawlow-Townes 公式给出基本线宽，Henry 线宽增强因子 $\alpha_H$ 使实际线宽增大 $(1+\alpha_H^2)$ 倍。关键影响因素：输出功率（$\Delta\nu \propto 1/P$）、腔长（增大光子寿命）、微分增益、$\alpha_H$、温度。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">载流子-光子速率方程</div><span class="topic-badge badge-theory">推导</span></div>
+      <div class="topic-body">
+        <p><strong>载流子速率方程</strong>（电流注入 → 载流子 → 增益）：</p>
+        <div class="formula-box">
+          $$\frac{dN}{dt} = \frac{\eta_i I}{q V} - \frac{N}{\tau_n} - v_g g(N) S$$
+          <div class="formula-label">$\eta_i$ 注入效率，$V$ 有源区体积，$\tau_n$ 载流子寿命，$v_g$ 群速度</div>
+        </div>
+        <p><strong>光子速率方程</strong>（光场建立 → 稳态激光）：</p>
+        <div class="formula-box">
+          $$\frac{dS}{dt} = \Gamma v_g g(N) S - \frac{S}{\tau_p} + \beta \frac{N}{\tau_n}$$
+          <div class="formula-label">$\Gamma$ 光场限制因子，$\tau_p$ 光子寿命，$\beta$ 自发辐射耦合因子</div>
+        </div>
+        <p><strong>线性增益模型</strong>：</p>
+        <div class="formula-box">
+          $$g(N) = a(N - N_{\text{tr}})$$
+          <div class="formula-label">$a$ 微分增益，$N_{\text{tr}}$ 透明载流子浓度</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">阈值条件与稳态功率</div><span class="topic-badge badge-formula">参数</span></div>
+      <div class="topic-body">
+        <p>腔总损耗（镜面损耗 + 内部损耗）：</p>
+        <div class="formula-box">$$\alpha_{\text{tot}} = \alpha_{\text{int}} + \frac{1}{2L}\ln\frac{1}{R_1 R_2}$$</div>
+        <p>光子寿命与阈值增益：</p>
+        <div class="formula-box">$$\tau_p = \frac{1}{v_g \alpha_{\text{tot}}}, \quad g_{\text{th}} = \frac{\alpha_{\text{tot}}}{\Gamma}$$</div>
+        <p>阈值电流：</p>
+        <div class="formula-box">
+          $$I_{\text{th}} = \frac{qV}{\eta_i \tau_n}\left(N_{\text{tr}} + \frac{g_{\text{th}}}{a}\right)$$
+          <div class="formula-label">阈值条件：增益 = 总损耗</div>
+        </div>
+        <p>稳态输出功率：</p>
+        <div class="formula-box">
+          $$P_{\text{out}} = \eta_d \frac{h\nu}{q}(I - I_{\text{th}})$$
+          <div class="formula-label">$\eta_d$ 微分量子效率</div>
+        </div>
+        <p>输出镜光谱带宽（高斯型）：</p>
+        <div class="formula-box">$$T_2(\nu) = T_{\text{peak}} \exp\!\left[-\left(\frac{\nu - \nu_0}{\Delta\nu_m/2}\right)^2 \ln 2\right]$$</div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">归一化速率方程与稳态解</div><span class="topic-badge badge-formula">归一化</span></div>
+      <div class="topic-body">
+        <p>定义归一化变量（透明密度忽略极限下以阈值密度为基准）：$\tilde{N} = N/N_{\text{th}}$，$\tilde{S} = S/S_0$，$\tilde{t} = t/\tau_n$，$J = I/I_{\text{th}}$，$\gamma = \tau_n/\tau_p$：</p>
+        <div class="formula-box">
+          $$\frac{d\tilde{N}}{d\tilde{t}} = J - \tilde{N} - \tilde{N}\tilde{S}$$
+          <div class="formula-label">归一化载流子速率方程</div>
+        </div>
+        <div class="formula-box">
+          $$\frac{d\tilde{S}}{d\tilde{t}} = \gamma\left[(\tilde{N} - 1)\tilde{S} + \beta\tilde{N}\right]$$
+          <div class="formula-label">归一化光子速率方程，$\gamma = \tau_n/\tau_p$</div>
+        </div>
+        <p>稳态解（$J > 1$，$\beta \ll 1$）：</p>
+        <div class="formula-box">
+          $$\tilde{N}_{\text{ss}} \approx 1, \qquad \tilde{S}_{\text{ss}} \approx J - 1, \qquad \omega_R = \sqrt{\gamma(J - 1)}$$
+          <div class="formula-label">载流子钳制在阈值，光子正比于泵浦，弛豫振荡频率 $f_R = \frac{1}{2\pi}\sqrt{\gamma(J-1)}$</div>
+        </div>
+        <p>稳态激光光谱：</p>
+        <div class="formula-box">
+          $$P(\nu) \propto \frac{\tilde{S}_{\text{ss}} \cdot T_2(\nu)}{1 + F\sin^2(\delta/2)} \cdot \exp\!\left[-4\ln 2\left(\frac{\nu - \nu_0}{\Delta\nu_g}\right)^2\right]$$
+          <div class="formula-label">激光输出谱 = 腔模式（Airy）× 输出镜透过率 × 增益包络</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">激光线宽公式</div><span class="topic-badge badge-formula">线宽</span></div>
+      <div class="topic-body">
+        <p>Schawlow-Townes 基本线宽：</p>
+        <div class="formula-box">$$\Delta\nu_{\text{ST}} = \frac{v_g^2 h\nu g_{\text{th}} n_{\text{sp}} \alpha_m}{8\pi P_{\text{out}}}$$</div>
+        <p>含 Henry 增强的实际线宽：</p>
+        <div class="formula-box">
+          $$\Delta\nu = \Delta\nu_{\text{ST}}(1 + \alpha_H^2), \quad \alpha_H = \frac{\partial n'/\partial N}{\partial n''/\partial N}$$
+          <div class="formula-label">$\alpha_H$ 线宽增强因子（Henry factor），典型值 2–7</div>
+        </div>
+        <p>归一化线宽：</p>
+        <div class="formula-box">
+          $$\Delta\nu_L = \frac{\gamma\beta}{4\pi\tilde{S}_{\text{ss}}}(1 + \alpha_H^2)$$
+          <div class="formula-label">归一化 Schawlow-Townes-Henry 线宽</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">仿真算法：刚性速率方程的自适应子步 RK4 求解</div><span class="topic-badge badge-sim">数值算法</span></div>
+      <div class="topic-body">
+        <p>由于半导体激光器中 $\gamma = \tau_n/\tau_p \sim 10^2\text{--}3\times 10^3$，系统呈强刚性，固定步长容易在 $\gamma$ 较大时发散。仿真器采用经典四阶龙格-库塔法（RK4），每帧动态选取子步长 $\Delta\tilde{t} \le \min\left(10^{-3},\; \frac{0.05}{\gamma}\right)$，保证高 $\gamma$ 下弛豫振荡波形精确稳定。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-canvas-label">① 稳态激光光谱</div>
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group"><div class="sim-label">腔长 L (μm) <span id="sLVal">100</span></div><input type="range" id="sL" min="100" max="1000" step="10" value="100"></div>
+          <div class="sim-control-group"><div class="sim-label">输出镜 R₂ <span id="sR2Val">0.30</span></div><input type="range" id="sR2" min="0.05" max="0.80" step="0.01" value="0.30"></div>
+          <div class="sim-control-group"><div class="sim-label">输出镜带宽 Δνm (GHz) <span id="sBWVal">1000</span></div><input type="range" id="sBW" min="50" max="2000" step="10" value="1000"></div>
+          <div class="sim-control-group"><div class="sim-label">增益带宽 Δνg (GHz) <span id="sGBWVal">300</span></div><input type="range" id="sGBW" min="100" max="3000" step="10" value="300"></div>
+          <div class="sim-control-group"><div class="sim-label">泵浦电流 J/Jth <span id="sJVal">2.0</span></div><input type="range" id="sJ" min="1.05" max="5.0" step="0.05" value="2.0"></div>
+          <div class="sim-control-group"><div class="sim-label">Henry 因子 αH <span id="sAHVal">3.0</span></div><input type="range" id="sAH" min="0" max="7" step="0.1" value="3.0"></div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-wrap-2">
+            <div class="sim-canvas-label">激光稳态输出光谱（Airy 腔模 × 增益包络 × 输出镜带宽）</div>
+            <canvas id="specCanvas" width="640" height="300"></canvas>
+          </div>
+          <div class="sim-metrics">
+            <div class="metric"><div class="val" id="mFsr">—</div><div class="lbl">FSR (GHz)</div></div>
+            <div class="metric"><div class="val" id="mFwhm">—</div><div class="lbl">线宽 (MHz)</div></div>
+            <div class="metric"><div class="val" id="mPout">—</div><div class="lbl">S̃_ss (norm.)</div></div>
+            <div class="metric"><div class="val" id="mModes">—</div><div class="lbl">主模位置</div></div>
+            <div class="metric"><div class="val" id="mSMSR">—</div><div class="lbl">SMSR (dB)</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-canvas-label" style="margin-top:1rem;">② 激光建立时域动态（自适应 RK4 · 双 Y 轴）</div>
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group"><div class="sim-label">泵浦电流 J/Jth <span id="tJVal">3.0</span></div><input type="range" id="tJ" min="1.05" max="5.0" step="0.05" value="3.0"></div>
+          <div class="sim-control-group"><div class="sim-label">γ = τn/τp <span id="tGammaVal">1000</span></div><input type="range" id="tGamma" min="100" max="3000" step="50" value="1000"></div>
+          <div class="sim-control-group"><div class="sim-label">自发辐射 β <span id="tBetaVal">1.0e-5</span></div><input type="range" id="tBeta" min="1" max="100" step="1" value="10"></div>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <button class="sim-btn primary" id="startBtn" style="flex:1;">▶ 启动</button>
+            <button class="sim-btn" id="resetBtn" style="flex:1;">重置</button>
+          </div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-wrap-2">
+            <div class="sim-canvas-label">载流子浓度 Ñ（左轴橙线）与光子密度 S̃（右轴绿线）的时域演化</div>
+            <canvas id="timeCanvas" width="640" height="320"></canvas>
+          </div>
+          <div class="sim-metrics">
+            <div class="metric"><div class="val" id="mTime">0.00</div><div class="lbl">归一化时间 t/τn</div></div>
+            <div class="metric"><div class="val" id="mN">—</div><div class="lbl">载流子 Ñ</div></div>
+            <div class="metric"><div class="val" id="mS">—</div><div class="lbl">光子 S̃</div></div>
+            <div class="metric"><div class="val" id="mFreq">—</div><div class="lbl">弛豫频率 f_R</div></div>
+            <div class="metric"><div class="val" id="mSteady">—</div><div class="lbl">稳态判定</div></div>
+          </div>
+          <div id="timeStatus" style="font-size:12px;color:var(--c-text-hint);margin-top:0.4rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Coldren, L. A., Corzine, S. W. &amp; Mašanović, M. L. <em>Diode Lasers and Photonic Integrated Circuits</em>, 2nd ed. (Wiley, 2012).</li>
+      <li><span class="ref-num">[2]</span>Henry, C. H. Theory of the linewidth of semiconductor lasers. <em>IEEE J. Quantum Electron.</em> <strong>18</strong>, 259–264 (1982).</li>
+      <li><span class="ref-num">[3]</span>Schawlow, A. L. &amp; Townes, C. H. Infrared and optical masers. <em>Phys. Rev.</em> <strong>112</strong>, 1940–1949 (1958).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  var c_light = 3e8, sCanvas = document.getElementById('specCanvas'), sCtx = sCanvas ? sCanvas.getContext('2d') : null;
+  function specDraw() {
+    if (!sCanvas || !sCtx) return;
+    var p = { L_um: parseFloat(document.getElementById('sL').value), R2: parseFloat(document.getElementById('sR2').value), R1: 0.99, BW_m: parseFloat(document.getElementById('sBW').value), BW_g: parseFloat(document.getElementById('sGBW').value), J: parseFloat(document.getElementById('sJ').value), aH: parseFloat(document.getElementById('sAH').value) };
+    var L_m = p.L_um * 1e-6, n = 3.5, fsr = c_light / (2 * n * L_m), fsrGHz = fsr / 1e9;
+    var alpha_tot = 1000 + 1 / (2 * L_m) * Math.log(1 / (p.R1 * p.R2));
+    var tau_p = 1 / ((c_light / n) * alpha_tot), tau_n = 2e-9, gamma = tau_n / tau_p, S_ss = Math.max(0, p.J - 1);
+    var dnuMHz = (gamma * 1e-5 / (4 * Math.PI * Math.max(S_ss, 1e-6)) * (1 + p.aH * p.aH)) / tau_n / 1e6;
+    var Reff = Math.sqrt(p.R1 * p.R2), Fcoef = 4 * Reff / Math.pow(1 - Reff, 2);
+    var BW_m_Hz = p.BW_m * 1e9, BW_g_Hz = p.BW_g * 1e9, fStart = -3000e9, fEnd = 3000e9, fRange = fEnd - fStart, N = 2048;
+    var data = [], peakPower = 0;
+    for (var i = 0; i < N; i++) {
+      var freq = fStart + (i / (N - 1)) * fRange, s = Math.sin(Math.PI * freq / fsr), airy = 1 / (1 + Fcoef * s * s);
+      var T2 = Math.exp(-4 * Math.LN2 * Math.pow(freq / BW_m_Hz, 2)), gain_env = Math.exp(-4 * Math.LN2 * Math.pow(freq / BW_g_Hz, 2));
+      var power = S_ss * airy * T2 * gain_env; data.push({ freq: freq / 1e9, power: power }); if (power > peakPower) peakPower = power;
+    }
+    if (peakPower > 0) for (var j = 0; j < N; j++) data[j].power /= peakPower;
+    var modePositions = [], modePowers = [];
+    for (var m = Math.floor(fStart / fsr); m <= Math.ceil(fEnd / fsr); m++) { var mf = m * fsr; if (mf >= fStart && mf <= fEnd) { var idx = Math.round((mf - fStart) / fRange * (N - 1)); modePositions.push(m); modePowers.push(data[idx].power); } }
+    var smsr = 0, mainModeIdx = 0;
+    if (modePowers.length > 1) {
+      var maxP = 0, maxIdx = 0, secondP = 0;
+      for (var k = 0; k < modePowers.length; k++) { if (modePowers[k] > maxP) { secondP = maxP; maxP = modePowers[k]; maxIdx = k; } else if (modePowers[k] > secondP) secondP = modePowers[k]; }
+      mainModeIdx = modePositions[maxIdx]; if (secondP > 0) smsr = 10 * Math.log10(maxP / secondP);
+    }
+    var dpr = window.devicePixelRatio || 1, cssW = sCanvas.clientWidth || 640, cssH = cssW < 400 ? 240 : 300;
+    sCanvas.width = Math.round(cssW * dpr); sCanvas.height = Math.round(cssH * dpr); sCanvas.style.height = cssH + 'px'; sCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = cssW, H = cssH, padL = 50, padR = 20, padT = 25, padB = 40, plotW = W - padL - padR, plotH = H - padT - padB;
+    sCtx.fillStyle = '#faf9f7'; sCtx.fillRect(0, 0, W, H);
+    var fMin = data[0].freq, fMax = data[N - 1].freq, fSpan = fMax - fMin;
+    sCtx.strokeStyle = '#e0ddd3'; sCtx.lineWidth = 0.5; sCtx.font = '11px -apple-system,sans-serif'; sCtx.fillStyle = '#888780';
+    for (var g = 0; g <= 4; g++) { var yv = g * 0.25, y = padT + plotH * (1 - yv); sCtx.beginPath(); sCtx.moveTo(padL, y); sCtx.lineTo(W - padR, y); sCtx.stroke(); sCtx.textAlign = 'right'; sCtx.fillText(yv.toFixed(2), padL - 6, y + 4); }
+    sCtx.fillStyle = '#5f5e5a'; sCtx.textAlign = 'center'; sCtx.fillText('相对频率 (GHz)', W / 2, H - 6);
+    sCtx.save(); sCtx.translate(14, H / 2); sCtx.rotate(-Math.PI / 2); sCtx.fillText('归一化功率', 0, 0); sCtx.restore();
+    sCtx.fillStyle = 'rgba(29,158,117,0.12)'; sCtx.beginPath(); sCtx.moveTo(padL, padT + plotH);
+    for (var i2 = 0; i2 < N; i2++) sCtx.lineTo(padL + (data[i2].freq - fMin) / fSpan * plotW, padT + plotH * (1 - data[i2].power));
+    sCtx.lineTo(padL + plotW, padT + plotH); sCtx.closePath(); sCtx.fill();
+    sCtx.strokeStyle = '#1D9E75'; sCtx.lineWidth = 1.8; sCtx.beginPath();
+    for (var i3 = 0; i3 < N; i3++) { var x = padL + (data[i3].freq - fMin) / fSpan * plotW, y3 = padT + plotH * (1 - data[i3].power); if (i3 === 0) sCtx.moveTo(x, y3); else sCtx.lineTo(x, y3); }
+    sCtx.stroke();
+    sCtx.strokeStyle = '#EF9F27'; sCtx.lineWidth = 1.4; sCtx.setLineDash([5, 3]); sCtx.beginPath();
+    for (var i4 = 0; i4 < N; i4++) { var ge = Math.exp(-4 * Math.LN2 * Math.pow(data[i4].freq * 1e9 / BW_g_Hz, 2)), x4 = padL + (data[i4].freq - fMin) / fSpan * plotW, y4 = padT + plotH * (1 - ge * 0.95); if (i4 === 0) sCtx.moveTo(x4, y4); else sCtx.lineTo(x4, y4); }
+    sCtx.stroke(); sCtx.setLineDash([]);
+    sCtx.strokeStyle = '#7F77DD'; sCtx.lineWidth = 1.4; sCtx.setLineDash([3, 2]); sCtx.beginPath();
+    for (var i5 = 0; i5 < N; i5++) { var t2 = Math.exp(-4 * Math.LN2 * Math.pow(data[i5].freq * 1e9 / BW_m_Hz, 2)), x5 = padL + (data[i5].freq - fMin) / fSpan * plotW, y5 = padT + plotH * (1 - t2 * 0.95); if (i5 === 0) sCtx.moveTo(x5, y5); else sCtx.lineTo(x5, y5); }
+    sCtx.stroke(); sCtx.setLineDash([]);
+    var lx = W - padR - 95, ly = padT + 10; sCtx.font = '11px -apple-system,sans-serif'; sCtx.textAlign = 'left';
+    sCtx.fillStyle = '#1D9E75'; sCtx.fillRect(lx, ly, 12, 3); sCtx.fillStyle = '#2c2c2a'; sCtx.fillText('激光光谱', lx + 16, ly + 4);
+    sCtx.fillStyle = '#EF9F27'; sCtx.fillRect(lx, ly + 16, 12, 3); sCtx.fillStyle = '#2c2c2a'; sCtx.fillText('增益包络', lx + 16, ly + 20);
+    sCtx.fillStyle = '#7F77DD'; sCtx.fillRect(lx, ly + 32, 12, 3); sCtx.fillStyle = '#2c2c2a'; sCtx.fillText('输出镜带宽', lx + 16, ly + 36);
+    document.getElementById('mFsr').textContent = fsrGHz.toFixed(1); document.getElementById('mFwhm').textContent = dnuMHz < 1 ? dnuMHz.toFixed(3) : dnuMHz.toFixed(1);
+    document.getElementById('mPout').textContent = S_ss.toFixed(2); document.getElementById('mModes').textContent = mainModeIdx + '×FSR'; document.getElementById('mSMSR').textContent = smsr > 0 ? smsr.toFixed(1) : '—';
+    document.getElementById('sLVal').textContent = p.L_um.toFixed(0); document.getElementById('sR2Val').textContent = p.R2.toFixed(2); document.getElementById('sBWVal').textContent = p.BW_m.toFixed(0);
+    document.getElementById('sGBWVal').textContent = p.BW_g.toFixed(0); document.getElementById('sJVal').textContent = p.J.toFixed(2); document.getElementById('sAHVal').textContent = p.aH.toFixed(1);
+  }
+  var tCanvas = document.getElementById('timeCanvas'), tCtx = tCanvas ? tCanvas.getContext('2d') : null;
+  var running = false, animId = null, t = 0, N_val = 0, S_val = 1e-6, t_arr = [], N_arr = [], S_arr = [], steadyCount = 0;
+  function getTParams() { return { J: parseFloat(document.getElementById('tJ').value), gamma: parseFloat(document.getElementById('tGamma').value), beta: parseFloat(document.getElementById('tBeta').value) * 1e-6 }; }
+  function rk4Step(p, dt) {
+    function fN(n, s) { return p.J - n - n * s; } function fS(n, s) { return p.gamma * ((n - 1) * s + p.beta * n); }
+    var k1N = fN(N_val, S_val), k1S = fS(N_val, S_val);
+    var k2N = fN(N_val + 0.5 * dt * k1N, S_val + 0.5 * dt * k1S), k2S = fS(N_val + 0.5 * dt * k1N, S_val + 0.5 * dt * k1S);
+    var k3N = fN(N_val + 0.5 * dt * k2N, S_val + 0.5 * dt * k2S), k3S = fS(N_val + 0.5 * dt * k2N, S_val + 0.5 * dt * k2S);
+    var k4N = fN(N_val + dt * k3N, S_val + dt * k3S), k4S = fS(N_val + dt * k3N, S_val + dt * k3S);
+    N_val = Math.max(0, N_val + (dt / 6) * (k1N + 2 * k2N + 2 * k3N + k4N)); S_val = Math.max(1e-12, S_val + (dt / 6) * (k1S + 2 * k2S + 2 * k3S + k4S)); t += dt;
+  }
+  function isSteady() {
+    if (N_arr.length < 120) return false;
+    var n = N_arr.length, nM = 0, sM = 0; for (var i = n - 80; i < n; i++) { nM += N_arr[i]; sM += S_arr[i]; } nM /= 80; sM /= 80;
+    var nD = 0, sD = 0; for (var j = n - 80; j < n; j++) { nD = Math.max(nD, Math.abs(N_arr[j] - nM)); sD = Math.max(sD, Math.abs(S_arr[j] - sM)); }
+    return nD < 0.004 && sD < Math.max(0.005, sM * 0.008);
+  }
+  function drawTime() {
+    if (!tCanvas || !tCtx) return;
+    var p = getTParams(), dpr = window.devicePixelRatio || 1, cssW = tCanvas.clientWidth || 640, cssH = cssW < 400 ? 260 : 320;
+    tCanvas.width = Math.round(cssW * dpr); tCanvas.height = Math.round(cssH * dpr); tCanvas.style.height = cssH + 'px'; tCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = cssW, H = cssH, padL = 48, padR = 48, padT = 25, padB = 40, plotW = W - padL - padR, plotH = H - padT - padB;
+    tCtx.fillStyle = '#faf9f7'; tCtx.fillRect(0, 0, W, H);
+    var tMax = Math.max(t, 3.0), nMax = 1.6, sMax = Math.max(1.0, (p.J - 1) * 1.4);
+    for (var i = 0; i < N_arr.length; i++) { if (N_arr[i] * 1.1 > nMax) nMax = N_arr[i] * 1.1; if (S_arr[i] * 1.1 > sMax) sMax = S_arr[i] * 1.1; }
+    tCtx.strokeStyle = '#e0ddd3'; tCtx.lineWidth = 0.5; tCtx.font = '10px -apple-system,sans-serif';
+    for (var g = 0; g <= 4; g++) {
+      var y = padT + plotH * (g / 4); tCtx.beginPath(); tCtx.moveTo(padL, y); tCtx.lineTo(W - padR, y); tCtx.stroke();
+      tCtx.fillStyle = '#854F0B'; tCtx.textAlign = 'right'; tCtx.fillText((nMax * (1 - g / 4)).toFixed(2), padL - 6, y + 3);
+      tCtx.fillStyle = '#0F6E56'; tCtx.textAlign = 'left'; tCtx.fillText((sMax * (1 - g / 4)).toFixed(2), W - padR + 6, y + 3);
+    }
+    var tStep = tMax <= 5 ? 0.5 : (tMax <= 10 ? 1 : 2);
+    for (var tg = 0; tg <= tMax + 1e-6; tg += tStep) { var xg = padL + (tg / tMax) * plotW; tCtx.strokeStyle = '#e8e5dd'; tCtx.beginPath(); tCtx.moveTo(xg, padT); tCtx.lineTo(xg, padT + plotH); tCtx.stroke(); tCtx.fillStyle = '#888780'; tCtx.textAlign = 'center'; tCtx.fillText(tg.toFixed(1), xg, H - padB + 15); }
+    var yTh = padT + plotH * (1 - 1 / nMax); tCtx.strokeStyle = '#AFA9EC'; tCtx.lineWidth = 1; tCtx.setLineDash([4, 3]); tCtx.beginPath(); tCtx.moveTo(padL, yTh); tCtx.lineTo(W - padR, yTh); tCtx.stroke(); tCtx.setLineDash([]);
+    tCtx.fillStyle = '#534AB7'; tCtx.textAlign = 'right'; tCtx.fillText('Ñ = 1 (阈值)', W - padR - 4, yTh - 4);
+    tCtx.fillStyle = '#5f5e5a'; tCtx.font = '11px -apple-system,sans-serif'; tCtx.textAlign = 'center'; tCtx.fillText('归一化时间 t / τ_n', W / 2, H - 6);
+    tCtx.save(); tCtx.translate(12, H / 2); tCtx.rotate(-Math.PI / 2); tCtx.fillStyle = '#854F0B'; tCtx.fillText('载流子 Ñ', 0, 0); tCtx.restore();
+    tCtx.save(); tCtx.translate(W - 10, H / 2); tCtx.rotate(Math.PI / 2); tCtx.fillStyle = '#0F6E56'; tCtx.fillText('光子 S̃', 0, 0); tCtx.restore();
+    if (t_arr.length > 1) {
+      tCtx.strokeStyle = '#EF9F27'; tCtx.lineWidth = 2; tCtx.beginPath();
+      for (var i2 = 0; i2 < t_arr.length; i2++) { var x = padL + (t_arr[i2] / tMax) * plotW, y2 = padT + plotH * (1 - N_arr[i2] / nMax); if (i2 === 0) tCtx.moveTo(x, y2); else tCtx.lineTo(x, y2); }
+      tCtx.stroke();
+      tCtx.strokeStyle = '#1D9E75'; tCtx.lineWidth = 2; tCtx.beginPath();
+      for (var i3 = 0; i3 < t_arr.length; i3++) { var x3 = padL + (t_arr[i3] / tMax) * plotW, y3 = padT + plotH * (1 - S_arr[i3] / sMax); if (i3 === 0) tCtx.moveTo(x3, y3); else tCtx.lineTo(x3, y3); }
+      tCtx.stroke();
+    } else { tCtx.fillStyle = '#888780'; tCtx.font = '13px -apple-system,sans-serif'; tCtx.textAlign = 'center'; tCtx.fillText('点击「启动」开始自适应 RK4 时域演化', W / 2, H / 2); }
+  }
+  function updateTMetrics() {
+    var p = getTParams(), rf = p.J > 1 ? Math.sqrt(p.gamma * (p.J - 1)) / (2 * Math.PI) : 0;
+    document.getElementById('mTime').textContent = t.toFixed(2); document.getElementById('mN').textContent = N_val.toFixed(3);
+    document.getElementById('mS').textContent = S_val < 0.01 ? S_val.toExponential(2) : S_val.toFixed(3);
+    document.getElementById('mFreq').textContent = rf > 0 ? rf.toFixed(2) : '—'; document.getElementById('mSteady').textContent = isSteady() ? '✓ 稳态' : (running ? '振荡中' : '就绪');
+    document.getElementById('tJVal').textContent = p.J.toFixed(2); document.getElementById('tGammaVal').textContent = p.gamma.toFixed(0); document.getElementById('tBetaVal').textContent = p.beta.toExponential(1);
+    document.getElementById('timeStatus').textContent = running ? 'RK4 演化中... t = ' + t.toFixed(2) + ' τ_n' : (isSteady() ? '已达稳态：Ñ = ' + N_val.toFixed(3) + '（钳制于阈值 1），S̃ = ' + S_val.toFixed(3) : '点击「启动」观察弛豫振荡与载流子钳制');
+  }
+  function resetTime() { running = false; if (animId) cancelAnimationFrame(animId); t = 0; N_val = 0; S_val = 1e-6; t_arr = []; N_arr = []; S_arr = []; steadyCount = 0; drawTime(); updateTMetrics(); }
+  function animateTime() {
+    if (!running) return;
+    var p = getTParams(), dt = Math.min(0.001, 0.05 / p.gamma), frameDt = 0.02, subSteps = Math.max(1, Math.ceil(frameDt / dt)), actualDt = frameDt / subSteps;
+    for (var i = 0; i < subSteps; i++) rk4Step(p, actualDt);
+    t_arr.push(t); N_arr.push(N_val); S_arr.push(S_val); drawTime(); updateTMetrics();
+    if (isSteady()) { steadyCount++; if (steadyCount >= 25) { running = false; updateTMetrics(); return; } } else steadyCount = 0;
+    if (t > 12) { running = false; updateTMetrics(); return; }
+    animId = requestAnimationFrame(animateTime);
+  }
+  document.getElementById('startBtn').addEventListener('click', function() { if (!running) { if (t === 0 || isSteady()) resetTime(); running = true; animateTime(); } });
+  document.getElementById('resetBtn').addEventListener('click', resetTime);
+  ['sL', 'sR2', 'sBW', 'sGBW', 'sJ', 'sAH'].forEach(function(id) { document.getElementById(id).addEventListener('input', specDraw); });
+  ['tJ', 'tGamma', 'tBeta'].forEach(function(id) { document.getElementById(id).addEventListener('input', function() { if (!running) drawTime(); updateTMetrics(); }); });
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); }); document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      if (btn.dataset.panel === 'simulation') setTimeout(function() { specDraw(); drawTime(); }, 30); else running = false;
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  window.addEventListener('resize', function() { specDraw(); drawTime(); });
+  window.addEventListener('load', function() { specDraw(); resetTime(); });
+})();
+</script>
+</body>
+</html>

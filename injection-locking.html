@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>激光注入锁定 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">4</span>激光注入锁定</div>
+    <p class="section-desc">单谐振峰激光模型 → 外部连续光注入锁定 → Adler 方程、非对称锁定带宽与实时相位演化</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">单谐振峰激光模型</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p>为聚焦注入锁定效应，采用<strong>单纵模</strong>激光模型。在第三章载流子-光子速率方程的基础上做关键简化：载流子动态视为已达稳态，增益系数正比于注入电流，光场用<strong>复振幅</strong>描述（保留相位信息——这是分析注入锁定不可或缺的）。</p>
+        <p><strong>电流-频率红移效应</strong>：增大注入电流引起两个竞争效应——载流子浓度升高使折射率下降（频率蓝移），热效应使折射率增大（频率红移）。大多数半导体激光器中热效应占主导，净效应为随电流增大频率红移：$\omega_c(I) = \omega_{c0} - \alpha_T(I - I_{\text{th}})$。</p>
+        <p><strong>自由运行稳态</strong>：无外部注入时，稳态要求增益 = 损耗（$G = \gamma$），激光以电流决定的腔谐振频率 $\omega_c(I)$ 自由振荡。引入增益饱和限制光场幅度，这是激光稳态存在的必要条件。</p>
+        <p><strong>与第三章的联系</strong>：第三章速率方程描述 $S = |E|^2$ 的强度演化（无相位），此处保留复振幅 $E$ 以分析注入锁定中的相位同步。增益从载流子函数 $g(N)$ 简化为电流控制的常数 $G_0$。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">激光注入锁定：外部光场驱动同步</div><span class="topic-badge badge-theory">注入锁定</span></div>
+      <div class="topic-body">
+        <p>一束外部连续光（主激光器，频率 $\omega_{\text{inj}}$）通过光隔离器注入从激光腔。当注入光频率落在激光腔的<strong>锁定带宽</strong>内时，从激光的振荡频率被强制同步到注入光频率——这就是<strong>注入锁定</strong>。</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 860 250" xmlns="http://www.w3.org/2000/svg" style="max-width:860px;">
+            <defs>
+              <marker id="arrInj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#378ADD"/></marker>
+              <marker id="arrOut" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+            </defs>
+            <rect x="20" y="75" width="120" height="60" rx="8" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+            <text x="80" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#185FA5">主激光器</text>
+            <text x="80" y="117" text-anchor="middle" font-size="10" fill="#185FA5">ω_inj, E_inj</text>
+            <rect x="170" y="90" width="50" height="30" rx="4" fill="#f5f4f0" stroke="#888780" stroke-width="1"/>
+            <text x="195" y="109" text-anchor="middle" font-size="9" fill="#888780">隔离器</text>
+            <rect x="260" y="55" width="240" height="100" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+            <text x="380" y="78" text-anchor="middle" font-size="13" font-weight="600" fill="#0F6E56">从激光腔 (SL)</text>
+            <text x="380" y="96" text-anchor="middle" font-size="11" fill="#0F6E56">ω_c, E(t), G(I_bias)</text>
+            <line x1="280" y1="65" x2="280" y2="145" stroke="#1D9E75" stroke-width="2"/>
+            <line x1="480" y1="65" x2="480" y2="145" stroke="#1D9E75" stroke-width="2"/>
+            <rect x="320" y="108" width="120" height="24" rx="3" fill="#FDF6EC" stroke="#EF9F27" stroke-width="0.8"/>
+            <text x="380" y="124" text-anchor="middle" font-size="10" fill="#854F0B">增益介质 G₀, α_H</text>
+            <line x1="500" y1="105" x2="620" y2="105" stroke="#1D9E75" stroke-width="1.8" marker-end="url(#arrOut)"/>
+            <text x="560" y="96" text-anchor="middle" font-size="10" fill="#0F6E56">锁定输出 ω = ω_inj</text>
+            <line x1="145" y1="105" x2="258" y2="105" stroke="#378ADD" stroke-width="1.8" marker-end="url(#arrInj)"/>
+            <text x="200" y="70" text-anchor="middle" font-size="10" fill="#378ADD">注入项 κ_inj·E_inj</text>
+            <text x="380" y="185" text-anchor="middle" font-size="11" fill="#534AB7">频率失谐 Δω = ω_inj − ω_c</text>
+            <text x="380" y="205" text-anchor="middle" font-size="10" fill="#888780">锁定区外进入拍频态（相位持续滑移）</text>
+          </svg>
+          <div class="diagram-caption">图 1. 注入锁定系统结构：主激光器经隔离器注入从激光腔，锁定后输出频率 = 注入光频率</div>
+        </div>
+        <p><strong>锁定机制</strong>：注入项 $\kappa_{\text{inj}} E_{\text{inj}}$ 是一个恒定复数驱动力（在旋转系中），同时提供能量（振幅驱动）和相位参考（频率牵引）。稳态锁定时激光输出频率完全等于注入光频率。</p>
+        <p><strong>锁定带宽</strong>：锁定存在的条件是 $|\Delta\omega| < \Delta\omega_{\text{lock}}$，其中 $\Delta\omega_{\text{lock}} = \kappa_{\text{inj}}(E_{\text{inj}}/E_0)\sqrt{1+\alpha_H^2}$。注入越强、Henry 因子越大，锁定范围越宽。锁定区外进入<strong>拍频态</strong>。</p>
+        <p><strong>Adler 方程视角</strong>：将方程写成相位形式 $\dot{\phi} = -\Delta\omega + \kappa_{\text{inj}}(E_{\text{inj}}/E_0)\sin(\phi_{\text{inj}} - \phi)$，这正是经典的 Adler 方程——描述受驱动振荡器的相位同步。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">单谐振峰激光方程</div><span class="topic-badge badge-formula">基础</span></div>
+      <div class="topic-body">
+        <p>增益正比于注入电流，载流子已达稳态，计入增益饱和与线宽增强因子（Henry 因子）$\alpha_H$：</p>
+        <div class="formula-box">
+          $$\frac{dE}{dt} = \left[\frac{1}{2}(1 + i\alpha_H)\left(\frac{G_0}{1+|E|^2/E_{\text{sat}}^2} - \gamma\right) + i\omega_c(I)\right]E$$
+          <div class="formula-label">$G_0 \propto I_{\text{bias}} - I_{\text{th}}$，$\gamma = 1/\tau_p$，$\omega_c(I) = \omega_{c0} - \alpha_T(I-I_{\text{th}})$</div>
+        </div>
+        <p>自由运行稳态（$G = \gamma$）：</p>
+        <div class="formula-box">
+          $$|E_0|^2 = E_{\text{sat}}^2\left(\frac{G_0}{\gamma} - 1\right), \quad \omega_{\text{free}} = \omega_c(I)$$
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">注入锁定方程与旋转变换</div><span class="topic-badge badge-formula">注入锁定</span></div>
+      <div class="topic-body">
+        <p>加入外部注入光场项：</p>
+        <div class="formula-box">
+          $$\frac{dE}{dt} = \left[\frac{1}{2}(1 + i\alpha_H)(G - \gamma) + i\omega_c\right]E + \kappa_{\text{inj}} E_{\text{inj}} e^{i\omega_{\text{inj}} t}$$
+        </div>
+        <p>旋转变换 $E(t) = \tilde{E}(t) e^{i\omega_{\text{inj}} t}$，消去公共旋转项：</p>
+        <div class="formula-box">
+          $$\frac{d\tilde{E}}{dt} = \left[\frac{1}{2}(1 + i\alpha_H)(G - \gamma) - i\Delta\omega\right]\tilde{E} + \kappa_{\text{inj}} E_{\text{inj}}$$
+          <div class="formula-label">$\Delta\omega = \omega_{\text{inj}} - \omega_c(I)$，$\tilde{E}$ 在注入光参考系中</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">稳态锁定解与 Adler 方程</div><span class="topic-badge badge-formula">稳态</span></div>
+      <div class="topic-body">
+        <p>稳态锁定解（$d\tilde{E}/dt = 0$）：</p>
+        <div class="formula-box">
+          $$\tilde{E}_{\text{ss}} = \frac{\kappa_{\text{inj}} E_{\text{inj}}}{\frac{1}{2}(1+i\alpha_H)(\gamma - G) + i\Delta\omega}$$
+          <div class="formula-label">锁定时输出频率 = $\omega_{\text{inj}}$</div>
+        </div>
+        <p>Adler 方程（令 $\tilde{E} = E_0 e^{i\phi}$，在弱注入下绝热消去振幅微扰）：</p>
+        <div class="formula-box">
+          $$\frac{d\phi}{dt} = -\Delta\omega - \kappa_{\text{inj}}\frac{E_{\text{inj}}}{E_0}\left[\sin\phi + \alpha_H\cos\phi\right] = -\Delta\omega - \kappa_{\text{inj}}\frac{E_{\text{inj}}}{E_0}\sqrt{1+\alpha_H^2}\,\sin\big(\phi + \arctan\alpha_H\big)$$
+          <div class="formula-label">$\alpha_H$ 为 Henry 因子，$\phi$ 为激光场相对注入场的相位差</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">锁定带宽与非对称稳定性边界</div><span class="topic-badge badge-formula">带宽</span></div>
+      <div class="topic-body">
+        <p>锁定带宽（Adler 存在范围，含 Henry 因子修正）：</p>
+        <div class="formula-box">
+          $$\Delta\omega_{\text{lock}} = \kappa_{\text{inj}}\frac{E_{\text{inj}}}{E_0}\sqrt{1 + \alpha_H^2}$$
+          <div class="formula-label">锁相解存在条件：$|\Delta\omega| < \Delta\omega_{\text{lock}}$</div>
+        </div>
+        <p><strong>物理含义与非对称性</strong>：</p>
+        <ul>
+          <li>注入强度 $\kappa_{\text{inj}} E_{\text{inj}} / E_0$ 越大，锁定带宽越宽。</li>
+          <li>Henry 因子 $\alpha_H \sim 2\text{--}7$ 使锁定存在范围扩大 $\sqrt{1+\alpha_H^2}$ 倍。</li>
+          <li>考虑静态幅度-相位稳定性（增益不能高于自由运行阈值）后，正负失谐锁定边界呈非对称分布：$-\Delta\omega_{\text{lock}} < \Delta\omega < +\kappa_{\text{inj}}\frac{E_{\text{inj}}}{E_0}$。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">仿真算法：复慢变场 RK4 实时推进</div><span class="topic-badge badge-sim">数值算法</span></div>
+      <div class="topic-body">
+        <p>仿真器除解析绘制频谱、调谐曲线与 Adler 区域外，还采用<strong>四阶龙格-库塔法（RK4）</strong>对含 $\alpha_H$ 的复慢变场方程 $\frac{d\tilde{E}}{dt} = F(\tilde{E})$ 进行实时时间推进，在第四视图中展示 $\cos\phi(t)$ 的动态演化：锁定区内收敛至稳态恒定相位，锁定区外呈现周期性拍频振荡。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group"><div class="sim-label">频率失谐 Δω/γ <span id="iDetuneVal">0.00</span></div><input type="range" id="iDetune" min="-3" max="3" step="0.01" value="0"></div>
+          <div class="sim-control-group"><div class="sim-label">注入强度比 E_inj/E_0 <span id="iInjRatioVal">0.30</span></div><input type="range" id="iInjRatio" min="0.01" max="1" step="0.01" value="0.30"></div>
+          <div class="sim-control-group"><div class="sim-label">Henry 因子 α_H <span id="iAlphaVal">3.0</span></div><input type="range" id="iAlpha" min="0" max="7" step="0.1" value="3"></div>
+          <div class="sim-control-group"><div class="sim-label">时间演化速度 <span id="iSpeedVal">1.0×</span></div><input type="range" id="iSpeed" min="0.2" max="3" step="0.1" value="1"></div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-wrap-2">
+            <div class="sim-canvas-label">注入锁定四视图：① 频谱图 ② 输出频率-失谐 ③ Adler 锁定区域 ④ 实时相位 cos φ(t) 演化</div>
+            <canvas id="injCanvas" width="640" height="720"></canvas>
+          </div>
+          <div class="sim-metrics">
+            <div class="metric"><div class="val" id="iLock">—</div><div class="lbl">锁定状态</div></div>
+            <div class="metric"><div class="val" id="iLockBW">—</div><div class="lbl">锁定带宽/γ</div></div>
+            <div class="metric"><div class="val" id="iFreqOut">—</div><div class="lbl">输出频率/γ</div></div>
+            <div class="metric"><div class="val" id="iPhaseDiff">—</div><div class="lbl">稳态相位差</div></div>
+            <div class="metric"><div class="val" id="iBeat">—</div><div class="lbl">拍频/γ</div></div>
+          </div>
+          <div id="injStatus" style="font-size:12px;color:var(--c-text-hint);margin-top:0.4rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Adler, R. A study of locking phenomena in oscillators. <em>Proc. IRE</em> <strong>34</strong>, 351–357 (1946).</li>
+      <li><span class="ref-num">[2]</span>Mogensen, F., Olesen, H. &amp; Jacobsen, G. Locking conditions and stability properties for a semiconductor laser with external light injection. <em>IEEE J. Quantum Electron.</em> <strong>21</strong>, 784–793 (1985).</li>
+      <li><span class="ref-num">[3]</span>Lau, E. K., Wong, L. J. &amp; Wu, M. C. Enhanced modulation characteristics of optical injection-locked lasers: A tutorial. <em>IEEE J. Sel. Top. Quantum Electron.</em> <strong>15</strong>, 618–633 (2009).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  var canvas = document.getElementById('injCanvas'); if (!canvas) return;
+  var ctx = canvas.getContext('2d'), isTabActive = false;
+  var sim = { re: 1.0, im: 0.0, E0: 1.0, Esat: 1.0, G0: 2.0, gamma: 1.0, dt: 0.015, cosHist: [] };
+
+  function getParams() {
+    return {
+      detune: parseFloat(document.getElementById('iDetune').value),
+      injRatio: parseFloat(document.getElementById('iInjRatio').value),
+      alpha: parseFloat(document.getElementById('iAlpha').value),
+      speed: parseFloat(document.getElementById('iSpeed').value)
+    };
+  }
+
+  function rk4Step(p) {
+    var dt = sim.dt * p.speed, injRe = p.injRatio * sim.gamma * sim.E0, dw = p.detune * sim.gamma;
+    function deriv(re, im) {
+      var I2 = re * re + im * im;
+      var gNet = 0.5 * (sim.G0 / (1 + I2) - sim.gamma);
+      return [
+        gNet * (re - p.alpha * im) + dw * im + injRe,
+        gNet * (im + p.alpha * re) - dw * re
+      ];
+    }
+    var k1 = deriv(sim.re, sim.im);
+    var k2 = deriv(sim.re + 0.5 * dt * k1[0], sim.im + 0.5 * dt * k1[1]);
+    var k3 = deriv(sim.re + 0.5 * dt * k2[0], sim.im + 0.5 * dt * k2[1]);
+    var k4 = deriv(sim.re + dt * k3[0], sim.im + dt * k3[1]);
+    sim.re += (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+    sim.im += (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+    if (!isFinite(sim.re) || Math.hypot(sim.re, sim.im) > 20) { sim.re = 1; sim.im = 0; }
+    sim.cosHist.push(Math.cos(Math.atan2(sim.im, sim.re)));
+    if (sim.cosHist.length > 260) sim.cosHist.shift();
+  }
+
+  // Unified asymmetric stable locking boundaries:
+  // Red-detuned (negative) boundary: -inj * sqrt(1 + alpha^2)
+  // Blue-detuned (positive) static stability boundary: +inj
+  function computeLockState(p) {
+    var injS = p.injRatio * sim.gamma;
+    var af = Math.sqrt(1 + p.alpha * p.alpha);
+    var dwMin = -injS * af;
+    var dwMax = +injS;
+    var dw = p.detune * sim.gamma;
+    var isStableLocked = (dw > dwMin && dw < dwMax);
+    var isUnstableEdge = (!isStableLocked && Math.abs(dw) < injS * af);
+    var beatFreq = isStableLocked ? 0 : Math.sqrt(Math.max(0, dw * dw - Math.pow(dw < 0 ? dwMin : dwMax, 2)));
+    var phaseDiff = isStableLocked ? Math.asin(Math.max(-1, Math.min(1, -dw / (injS * af)))) - Math.atan(p.alpha) : 0;
+    return {
+      isLocked: isStableLocked,
+      isUnstableEdge: isUnstableEdge,
+      dwMin: dwMin,
+      dwMax: dwMax,
+      totalBW: dwMax - dwMin,
+      beatFreq: beatFreq,
+      phaseDiff: phaseDiff
+    };
+  }
+
+  function lorentz(c, w, pk, fMin, fMax, N) {
+    var pts = [];
+    for (var i = 0; i <= N; i++) {
+      var f = fMin + (fMax - fMin) * i / N;
+      pts.push([f, pk * w * w / ((f - c) * (f - c) + w * w)]);
+    }
+    return pts;
+  }
+
+  function draw() {
+    var p = getParams(), ls = computeLockState(p), dpr = window.devicePixelRatio || 1;
+    var cssW = canvas.clientWidth || 640, cssH = cssW < 400 ? 620 : 740;
+    if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+      canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr); canvas.style.height = cssH + 'px';
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = cssW, H = cssH; ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    var nP = 4, padL = 50, padR = 16, plotW = W - padL - padR, blockH = H / nP;
+    function pn(idx) { return { titleY: idx * blockH + 15, top: idx * blockH + 22, bot: (idx + 1) * blockH - 22 }; }
+    function toX(val) { return padL + plotW * (val + 3) / 6; }
+
+    // Panel 1: Spectrum
+    var p0 = pn(0), h0 = p0.bot - p0.top;
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(padL, p0.top, plotW, h0);
+    var ptsF = lorentz(0, 0.06, 0.7, -3, 3, 400), ptsI = lorentz(p.detune, 0.025, 0.7, -3, 3, 400);
+    function strokePts(pts, col, lw, dash) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath();
+      for (var i = 0; i < pts.length; i++) {
+        var x = toX(pts[i][0]), y = p0.top + h0 * (1 - pts[i][1]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    strokePts(ptsF, '#1D9E75', 1.5); strokePts(ptsI, '#378ADD', 1.8);
+    if (ls.isLocked) strokePts(lorentz(p.detune, 0.015, 0.9, -3, 3, 400), '#EF9F27', 2.4);
+    else strokePts(ptsF, '#EF9F27', 1.4, [4, 3]);
+    ctx.font = 'bold 11px -apple-system,sans-serif'; ctx.fillStyle = '#3C3489'; ctx.textAlign = 'left';
+    ctx.fillText('① 频谱图（绿：自由运行 · 蓝：注入光 · 橙：输出）', padL + 4, p0.titleY);
+
+    // Panel 2: Output frequency vs detuning (asymmetric stable range [dwMin, dwMax])
+    var p1 = pn(1), h1 = p1.bot - p1.top;
+    var dMin = ls.dwMin / sim.gamma, dMax = ls.dwMax / sim.gamma;
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(padL, p1.top, plotW, h1);
+    var xL = toX(Math.max(-3, dMin)), xR = toX(Math.min(3, dMax));
+    ctx.fillStyle = 'rgba(29,158,117,0.14)'; ctx.fillRect(xL, p1.top, Math.max(0, xR - xL), h1);
+    // Dashed boundaries
+    ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+    if (dMin >= -3) { ctx.beginPath(); ctx.moveTo(xL, p1.top); ctx.lineTo(xL, p1.bot); ctx.stroke(); }
+    if (dMax <= 3) { ctx.beginPath(); ctx.moveTo(xR, p1.top); ctx.lineTo(xR, p1.bot); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#378ADD'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i2 = 0; i2 <= 300; i2++) {
+      var d = -3 + 6 * i2 / 300;
+      var wOut = (d > dMin && d < dMax) ? d : (d <= dMin ? dMin * dMin / (4 * d) : dMax * dMax / (4 * d));
+      var x2 = toX(d), y2 = p1.top + h1 * (3 - Math.max(-3, Math.min(3, wOut))) / 6;
+      if (i2 === 0) ctx.moveTo(x2, y2); else ctx.lineTo(x2, y2);
+    }
+    ctx.stroke();
+    var opW = ls.isLocked ? p.detune : (p.detune <= dMin ? dMin * dMin / (4 * Math.min(p.detune, -0.01)) : dMax * dMax / (4 * Math.max(p.detune, 0.01)));
+    ctx.fillStyle = ls.isLocked ? '#1D9E75' : '#EF9F27'; ctx.beginPath();
+    ctx.arc(toX(p.detune), p1.top + h1 * (3 - Math.max(-3, Math.min(3, opW))) / 6, 5.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = 'bold 11px -apple-system,sans-serif'; ctx.fillStyle = '#3C3489';
+    ctx.fillText('② 输出频率 vs 失谐量（非对称稳定锁定区 [' + dMin.toFixed(2) + ', +' + dMax.toFixed(2) + ']γ）', padL + 4, p1.titleY);
+
+    // Panel 3: Asymmetric Adler Stable Locking Map (matches Panel 2 identically)
+    var p2 = pn(2), h2 = p2.bot - p2.top, af = Math.sqrt(1 + p.alpha * p.alpha);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(padL, p2.top, plotW, h2);
+    ctx.save(); ctx.beginPath(); ctx.rect(padL, p2.top, plotW, h2); ctx.clip();
+    // Stable locking wedge: left edge d = -inj * af, right edge d = +inj
+    ctx.fillStyle = 'rgba(29,158,117,0.18)'; ctx.beginPath();
+    ctx.moveTo(toX(0), p2.bot);
+    ctx.lineTo(toX(-1.0 * af), p2.top);
+    ctx.lineTo(toX(+1.0), p2.top);
+    ctx.closePath(); ctx.fill();
+    // Stable boundary lines
+    ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(toX(0), p2.bot); ctx.lineTo(toX(-1.0 * af), p2.top); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(0), p2.bot); ctx.lineTo(toX(+1.0), p2.top); ctx.stroke();
+    // Faint dashed line for unstable positive existence edge (+inj * af)
+    if (p.alpha > 0.1) {
+      ctx.strokeStyle = 'rgba(239,159,39,0.7)'; ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(toX(0), p2.bot); ctx.lineTo(toX(+1.0 * af), p2.top); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+    // Operating point
+    ctx.fillStyle = ls.isLocked ? '#1D9E75' : '#EF9F27'; ctx.beginPath();
+    ctx.arc(toX(p.detune), p2.top + h2 * (1 - p.injRatio), 5.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = 'bold 11px -apple-system,sans-serif'; ctx.fillStyle = '#3C3489';
+    ctx.fillText('③ 非对称 Adler 锁定区域图（绿区：稳定锁定 · 橙虚线：正失谐失稳边缘）', padL + 4, p2.titleY);
+
+    // Panel 4: Real-time RK4 phase cos(phi(t))
+    var p3 = pn(3), h3 = p3.bot - p3.top;
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(padL, p3.top, plotW, h3);
+    ctx.strokeStyle = '#e0ddd3'; ctx.beginPath(); ctx.moveTo(padL, p3.top + h3 / 2); ctx.lineTo(padL + plotW, p3.top + h3 / 2); ctx.stroke();
+    if (sim.cosHist.length > 1) {
+      ctx.strokeStyle = ls.isLocked ? '#1D9E75' : '#EF9F27'; ctx.lineWidth = 2; ctx.beginPath();
+      for (var i3 = 0; i3 < sim.cosHist.length; i3++) {
+        var x3 = padL + plotW * (i3 / 259), y3 = p3.top + h3 * (1 - (sim.cosHist[i3] + 1) / 2);
+        if (i3 === 0) ctx.moveTo(x3, y3); else ctx.lineTo(x3, y3);
+      }
+      ctx.stroke();
+    }
+    ctx.font = 'bold 11px -apple-system,sans-serif'; ctx.fillStyle = '#3C3489';
+    ctx.fillText('④ 实时 RK4 相位演化 cos φ(t)（稳定锁定→恒定 · 失稳/失锁→周期振荡）', padL + 4, p3.titleY);
+
+    // Metrics
+    var lockText = ls.isLocked ? '✓ 稳定锁定' : (ls.isUnstableEdge ? '⚠ 边缘失稳' : '✗ 拍频失锁');
+    document.getElementById('iLock').textContent = lockText;
+    document.getElementById('iLock').style.color = ls.isLocked ? '#1D9E75' : '#EF9F27';
+    document.getElementById('iLockBW').textContent = (ls.totalBW / sim.gamma).toFixed(2);
+    document.getElementById('iFreqOut').textContent = ls.isLocked ? p.detune.toFixed(2) : '0.00';
+    document.getElementById('iPhaseDiff').textContent = ls.isLocked ? (ls.phaseDiff * 180 / Math.PI).toFixed(1) + '°' : '—';
+    document.getElementById('iBeat').textContent = ls.isLocked ? '0' : (ls.beatFreq / sim.gamma).toFixed(2);
+    document.getElementById('iDetuneVal').textContent = p.detune.toFixed(2);
+    document.getElementById('iInjRatioVal').textContent = p.injRatio.toFixed(2);
+    document.getElementById('iAlphaVal').textContent = p.alpha.toFixed(1);
+    document.getElementById('iSpeedVal').textContent = p.speed.toFixed(1) + '×';
+    document.getElementById('injStatus').textContent = ls.isLocked
+      ? '✓ 稳定锁定：处于非对称稳定区 [' + dMin.toFixed(2) + 'γ, +' + dMax.toFixed(2) + 'γ]，cos φ(t) 收敛至恒定值'
+      : (ls.isUnstableEdge
+        ? '⚠ 正失谐边缘失稳（Hopf 分岔）：虽满足存在条件但动态不稳定，cos φ(t) 出现自脉动/相位振荡，判定为未稳定锁定'
+        : '✗ 失锁拍频态：失谐超出锁定范围，cos φ(t) 呈周期性拍频振荡');
+  }
+
+  function animate() {
+    if (isTabActive) { var p = getParams(); for (var i = 0; i < 3; i++) rk4Step(p); draw(); }
+    requestAnimationFrame(animate);
+  }
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); }); document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isTabActive = (btn.dataset.panel === 'simulation'); if (isTabActive) setTimeout(draw, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  ['iDetune', 'iInjRatio', 'iAlpha', 'iSpeed'].forEach(function(id) { document.getElementById(id).addEventListener('input', function() { if (isTabActive) draw(); }); });
+  window.addEventListener('resize', function() { if (isTabActive) draw(); });
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>

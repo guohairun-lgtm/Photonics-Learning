@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>光场自干涉与傅里叶变换光谱仪 - 光子学学习</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+.ftir-sim { font-family:inherit; background:var(--c-bg); border:0.5px solid var(--c-border); border-radius:var(--radius-lg); overflow:hidden; }
+.ftir-sim input[type="range"].amber-slider::-webkit-slider-thumb { background:var(--c-amber-400); }
+.ftir-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:0.5rem; padding:0.75rem; }
+.ftir-metric { border-radius:var(--radius); background:var(--c-bg-sec); border:0.5px solid var(--c-border); padding:0.5rem 0.6rem; }
+.ftir-metric-label { font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--c-text-hint); }
+.ftir-metric-val { margin-top:3px; display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; }
+.ftir-metric-val .num { font-family:"SF Mono","Fira Code",Consolas,monospace; font-weight:600; font-size:1rem; color:var(--c-purple-600); }
+.ftir-metric-val .unit { font-size:0.7rem; font-family:"SF Mono",monospace; color:var(--c-text-hint); }
+.ftir-layout { display:grid; grid-template-columns:300px 1fr; gap:0.75rem; padding:0 0.75rem 0.75rem; }
+@media (max-width:900px) { .ftir-layout { grid-template-columns:1fr; } }
+.ftir-left-col { display:flex; flex-direction:column; gap:0.75rem; }
+.ftir-sidebar { background:var(--c-bg-sec); border:0.5px solid var(--c-border); border-radius:var(--radius); padding:0.85rem; display:flex; flex-direction:column; gap:0.7rem; }
+.ftir-sidebar h3 { font-size:0.8rem; font-weight:600; color:var(--c-text); margin:0; }
+.ftir-sidebar .ctrl-group { display:flex; flex-direction:column; gap:5px; }
+.ftir-sidebar .ctrl-row { display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:var(--c-text-sec); }
+.ftir-sidebar .ctrl-row .val { font-family:"SF Mono",monospace; font-weight:600; color:var(--c-purple-600); font-size:0.72rem; }
+.ftir-sidebar .hint-row { display:flex; justify-content:space-between; font-size:10px; font-family:"SF Mono",monospace; color:var(--c-text-hint); }
+.ftir-btn { padding:5px 7px; font-size:0.68rem; font-weight:500; border-radius:var(--radius); border:0.5px solid var(--c-border-2); background:var(--c-bg); color:var(--c-text-sec); cursor:pointer; transition:all 0.15s; text-align:left; font-family:inherit; }
+.ftir-btn:hover { border-color:var(--c-purple-400); color:var(--c-purple-600); }
+.ftir-btn.active-coh { background:var(--c-purple-50); border-color:var(--c-purple-400); color:var(--c-purple-600); font-weight:600; }
+.ftir-btn.active-inc { background:var(--c-amber-50); border-color:var(--c-amber-400); color:var(--c-amber-600); font-weight:600; }
+.ftir-btn.active-win { background:var(--c-blue-50); border-color:var(--c-blue-400); color:var(--c-blue-600); font-weight:600; }
+.ftir-btn.active-avg { background:var(--c-amber-50); border-color:var(--c-amber-400); color:var(--c-amber-600); font-weight:600; }
+.ftir-btn-full { grid-column:1/-1; }
+.ftir-btn-center { text-align:center; }
+.ftir-btn .sub { display:block; font-size:9px; opacity:0.65; font-family:"SF Mono",monospace; }
+.btn-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.btn-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; }
+.btn-grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:5px; }
+.ftir-section-label { font-size:10px; font-family:"SF Mono",monospace; text-transform:uppercase; color:var(--c-text-hint); margin-top:4px; }
+.ftir-section-label.warm { color:var(--c-amber-600); }
+.ftir-sidebar .scan-box { border-radius:var(--radius); background:var(--c-bg); border:0.5px solid var(--c-border); padding:0.6rem; display:flex; flex-direction:column; gap:5px; }
+.ftir-sidebar .scan-box .btn-row { display:flex; gap:5px; }
+.ftir-sidebar .scan-box .btn-row .ftir-btn { flex:1; text-align:center; }
+.ftir-sidebar .scan-box .btn-primary { background:var(--c-purple-600); color:#fff; font-weight:600; border-color:var(--c-purple-600); }
+.ftir-sidebar .scan-box .btn-primary.scanning { background:#e11d48; border-color:#e11d48; }
+.ftir-sidebar .inc-box { border-radius:var(--radius); background:var(--c-amber-50); border:0.5px solid var(--c-amber-100); padding:0.6rem; display:flex; flex-direction:column; gap:5px; }
+.ftir-sidebar .inc-box .reseed-btn { font-size:10px; padding:2px 8px; border-radius:4px; background:var(--c-bg); color:var(--c-amber-600); border:0.5px solid var(--c-amber-100); cursor:pointer; }
+.ftir-sidebar .ctrl-divider { border-top:0.5px solid var(--c-border); padding-top:6px; }
+.ftir-sidebar .reset-link { font-size:0.68rem; color:var(--c-text-hint); cursor:pointer; background:none; border:none; }
+.ftir-charts-col { display:flex; flex-direction:column; gap:0.75rem; }
+.ftir-canvas-card { background:var(--c-bg-sec); border:0.5px solid var(--c-border); border-radius:var(--radius); padding:0.65rem; }
+.ftir-canvas-card .header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem; flex-wrap:wrap; gap:4px; }
+.ftir-canvas-card .title-row { display:flex; align-items:center; gap:5px; }
+.ftir-canvas-card .badge { font-size:10px; font-family:"SF Mono",monospace; font-weight:700; padding:2px 5px; border-radius:3px; }
+.ftir-canvas-card .title { font-size:0.78rem; font-weight:600; color:var(--c-text); }
+.ftir-canvas-card .opd-badge { font-size:10px; font-family:"SF Mono",monospace; color:var(--c-amber-600); background:var(--c-amber-50); padding:1px 6px; border-radius:3px; border:0.5px solid var(--c-amber-100); }
+.ftir-canvas-wrap { position:relative; width:100%; border-radius:var(--radius); background:#faf9f7; border:0.5px solid var(--c-border); overflow:hidden; }
+.ftir-canvas-wrap.draggable { cursor:ew-resize; }
+.ftir-canvas-wrap canvas { display:block; width:100%; height:100%; }
+.ftir-tip { border-radius:var(--radius); padding:0.5rem 0.6rem; display:flex; align-items:flex-start; gap:6px; font-size:0.68rem; line-height:1.5; }
+.ftir-tip.info { background:var(--c-blue-50); border:0.5px solid var(--c-blue-100); color:var(--c-blue-600); }
+.ftir-tip.ok { background:var(--c-teal-50); border:0.5px solid var(--c-teal-100); color:var(--c-teal-600); }
+.ftir-tip.warn { background:#fef2f2; border:0.5px solid #fecaca; color:#dc2626; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">8</span>光场自干涉与傅里叶变换光谱仪（FTIR）</div>
+    <p class="section-desc">光场表征需求 → 迈克尔逊自干涉与平方律探测 → 维纳-辛钦定理光谱反演 → 相干与非相干光源统一框架 → 切趾窗与四区联动仿真器</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel (All 5 original cards preserved) ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">光场表征的需求：从时域到频域</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p>光场的完整表征需要同时获取其<strong>时域结构</strong>（电场随时间的演化 $E(t)$）和<strong>频域结构</strong>（功率谱密度 $S(f) = |\tilde{E}(f)|^2$）。两者通过傅里叶变换相互联系：</p>
+        <div class="formula-box">$$\tilde{E}(f) = \int_{-\infty}^{+\infty} E(t)\,e^{-i 2\pi f t}\,\mathrm{d}t \quad \Longleftrightarrow \quad S(f) = |\tilde{E}(f)|^2$$</div>
+        <p>然而，光载波频率高达数百太赫兹（$10^{14}$ Hz 量级），<strong>没有任何电子探测器或示波器能直接记录光场的瞬时振荡</strong>。光电探测器只能响应光强的时间积分（平方律探测），输出的是包络功率信号而非完整电场。因此，如何在不直接测量光场振荡的前提下获取其频谱信息，是光谱测量的核心物理挑战。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">自干涉机制：用延时作为探针</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p>迈克尔逊干涉仪将入射光经分束镜分为两路，其中一路引入可调延时 $\tau$（通过动镜位移实现），重新合束后送入光电探测器。干涉图 $I(\tau)$ 的交流分量恰好是光场电场的<strong>自相关函数</strong> $R_{EE}(\tau)$ 的两倍。根据<strong>维纳-辛钦定理</strong>，去直流后执行傅里叶变换即可无损还原功率谱密度：</p>
+        <div class="formula-box">$$I_{\text{AC}}(\tau) = 2\,R_{EE}(\tau) \quad \Longrightarrow \quad S_{\text{FTIR}}(f) = \tfrac{1}{2}\,\text{Re}\!\left\{\mathcal{F}\{I_{\text{AC}}(\tau)\}\right\} = S_{\text{true}}(f)$$</div>
+        <div class="diagram-box">
+          <svg width="100%" height="270" viewBox="0 0 680 270" style="max-width:680px;">
+            <defs>
+              <marker id="arrFTIR-p" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#7F77DD"/></marker>
+              <marker id="arrFTIR-b" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#378ADD"/></marker>
+              <marker id="arrFTIR-a" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#EF9F27"/></marker>
+              <marker id="arrFTIR-t" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#1D9E75"/></marker>
+            </defs>
+            <rect x="20" y="105" width="60" height="50" rx="6" fill="var(--c-purple-50)" stroke="var(--c-purple-400)" stroke-width="1.5"/>
+            <text x="50" y="134" text-anchor="middle" font-size="11" fill="var(--c-purple-600)" font-weight="600">宽带光源</text>
+            <line x1="80" y1="130" x2="296" y2="130" stroke="var(--c-purple-400)" stroke-width="2.4" marker-end="url(#arrFTIR-p)"/>
+            <text x="185" y="122" text-anchor="middle" font-size="10" fill="var(--c-purple-600)">入射场 E(t)</text>
+            <!-- 45 deg BS -->
+            <line x1="302" y1="112" x2="338" y2="148" stroke="var(--c-text-sec)" stroke-width="3"/>
+            <text x="278" y="162" text-anchor="middle" font-size="9.5" fill="var(--c-text-hint)">分束镜 BS (50:50)</text>
+            <!-- Fixed mirror M1 (bidirectional) -->
+            <line x1="316" y1="126" x2="316" y2="40" stroke="var(--c-blue-400)" stroke-width="1.8" marker-end="url(#arrFTIR-b)"/>
+            <line x1="324" y1="36" x2="324" y2="122" stroke="var(--c-blue-400)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arrFTIR-b)"/>
+            <rect x="288" y="24" width="64" height="10" rx="2" fill="var(--c-blue-50)" stroke="var(--c-blue-400)" stroke-width="1.5"/>
+            <text x="320" y="17" text-anchor="middle" font-size="10.5" fill="var(--c-blue-600)" font-weight="600">定镜 M1</text>
+            <text x="355" y="84" font-size="10" fill="var(--c-blue-600)">E(t)</text>
+            <!-- Moving mirror M2 (bidirectional + travel rail) -->
+            <line x1="326" y1="126" x2="492" y2="126" stroke="var(--c-amber-400)" stroke-width="1.8" marker-end="url(#arrFTIR-a)"/>
+            <line x1="494" y1="134" x2="330" y2="134" stroke="var(--c-amber-400)" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arrFTIR-a)"/>
+            <rect x="496" y="92" width="10" height="76" rx="2" fill="var(--c-amber-50)" stroke="var(--c-amber-400)" stroke-width="1.5"/>
+            <text x="501" y="83" text-anchor="middle" font-size="10.5" fill="var(--c-amber-600)" font-weight="600">动镜 M2</text>
+            <line x1="455" y1="184" x2="545" y2="184" stroke="var(--c-amber-400)" stroke-width="1.2" stroke-dasharray="4,3"/>
+            <text x="500" y="198" text-anchor="middle" font-size="9.5" fill="var(--c-amber-600)">位移 ±Δx（OPD = 2Δx）</text>
+            <text x="415" y="118" text-anchor="middle" font-size="10" fill="var(--c-amber-600)">E(t − τ), τ = 2Δx/c</text>
+            <!-- Detector PD -->
+            <line x1="320" y1="138" x2="320" y2="226" stroke="var(--c-teal-400)" stroke-width="2.4" marker-end="url(#arrFTIR-t)"/>
+            <text x="372" y="192" font-size="10" fill="var(--c-teal-600)">E(t) + E(t − τ)</text>
+            <rect x="282" y="230" width="76" height="24" rx="6" fill="var(--c-teal-50)" stroke="var(--c-teal-400)" stroke-width="1.5"/>
+            <text x="320" y="246" text-anchor="middle" font-size="10.5" fill="var(--c-teal-600)" font-weight="600">探测器 PD</text>
+            <text x="475" y="246" text-anchor="middle" font-size="10" fill="var(--c-text-sec)">→ 干涉图 I(τ) → FFT → 功率谱 S(f)</text>
+          </svg>
+          <div class="diagram-caption">图 1. 迈克尔逊干涉仪光路示意图：OPD = 2Δx，延时 τ = 2Δx/c，经 FFT 反演得功率谱 S(f)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">傅里叶变换光谱仪（FTIR）核心优势</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p>FTIR 由宽带光源、迈克尔逊干涉仪、光电探测器与信号反演单元构成。相比传统色散型光谱仪，FTIR 具有 <strong>Fellgett 优势</strong>（多通道同时探测，信噪比更高）和 <strong>Jacquinot 优势</strong>（圆形光阑通光量大），在中红外光谱分析领域占据主导地位。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">相干光源与非相干光源的统一描述</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p><strong>相干脉冲光源</strong>的干涉图交流分量是脉冲电场的确定性自相关函数；<strong>非相干连续光源</strong>（黑体、自发辐射）在 $|\tau| \lesssim \tau_c$ 内仍保持相位相关，在 $\tau=0$ 附近形成尖锐的<strong>中心爆峰（Central Burst）</strong>，增大积分平均次数 $M$ 可将散斑信噪比按 $\sqrt{M}$ 提升并严格收敛至理论功率谱。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">有限扫描截断与分辨率极限</div><span class="topic-badge badge-theory">原理</span></div>
+      <div class="topic-body">
+        <p>动镜有限行程等价于乘以切趾窗 $W(\tau)$，导致频域卷积 $S_{\text{FTIR}}(f) = S_{\text{true}}(f) * \tilde{W}(f)$。理论分辨率极限由最大扫描延时决定：</p>
+        <div class="formula-box">$$\Delta f \approx \frac{1}{2\tau_{\max}} = \frac{c}{2\,\text{OPD}_{\max}} \quad \Rightarrow \quad \Delta\tilde{\nu} \approx \frac{1}{2\,\text{OPD}_{\max}}$$</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel (ALL 5 ORIGINAL DERIVATION CARDS PRESERVED + CARD 6 ALGORITHM) ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">一、相干脉冲光源的时域表示与真实功率谱密度</div><span class="topic-badge badge-formula">公式</span></div>
+      <div class="topic-body">
+        <p>设入射到迈克尔逊干涉仪的实值脉冲光电场为慢变包络 $A(t)$ 与光载波的乘积：$E(t) = A(t)\cos(2\pi f_0 t)$。</p>
+        <table class="data-table">
+          <thead><tr><th>脉冲形态</th><th>包络表达式 $A(t)$</th><th>频谱特征</th></tr></thead>
+          <tbody>
+            <tr><td><strong>高斯脉冲</strong></td><td>$\exp\!\left[-2\ln 2 \cdot \left(\dfrac{t}{\tau_p}\right)^2\right]$</td><td>频谱仍为高斯型，无旁瓣</td></tr>
+            <tr><td><strong>双曲正割</strong></td><td>$\operatorname{sech}\!\left(1.7627\,\dfrac{t}{\tau_p}\right)$</td><td>孤子脉冲典型形态，频谱呈 $\operatorname{sech}^2$ 衰减</td></tr>
+            <tr><td><strong>洛伦兹型</strong></td><td>$\dfrac{1}{1 + (2t/\tau_p)^2}$</td><td>频谱呈指数衰减</td></tr>
+            <tr><td><strong>矩形脉冲</strong></td><td>$\operatorname{rect}\!\left(\dfrac{t}{\tau_p}\right)$</td><td>频谱为 $\operatorname{sinc}^2$ 函数，带显著旁瓣</td></tr>
+            <tr><td><strong>双色高斯脉冲</strong></td><td>$\tfrac{1}{2}A_{\text{gauss}}(t)\big[\cos(2\pi f_1 t)+\cos(2\pi f_2 t)\big]$</td><td>双峰频谱，用于检验分辨率极限</td></tr>
+          </tbody>
+        </table>
+        <div class="formula-box">$$\tilde{E}(f) = \mathcal{F}\{E(t)\} = \int_{-\infty}^{+\infty} E(t)\,e^{-i 2\pi f t}\,\mathrm{d}t, \qquad S_{\text{true}}(f) = |\tilde{E}(f)|^2$$</div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">二、迈克尔逊干涉仪的延时叠加与光电探测积分</div><span class="topic-badge badge-formula">公式</span></div>
+      <div class="topic-body">
+        <p>脉冲光经 50:50 分束镜分为两束：定镜臂 $E_1(t) = \tfrac{1}{2}E(t)$ 与动镜臂 $E_2(t;\tau) = \tfrac{1}{2}E(t-\tau)$（$\tau = \frac{2\Delta x}{c}$）。将常数系数 $\frac{1}{4}$ 吸收至探测器光强归一化中，合束总电场为 $E_{\text{total}}(t;\tau) = E(t) + E(t-\tau)$，平方律时间积分输出干涉图：</p>
+        <div class="formula-box">$$I(\tau) = \int_{-\infty}^{+\infty} \big|E(t) + E(t - \tau)\big|^2\,\mathrm{d}t = 2\int |E(t)|^2\,\mathrm{d}t + 2\int E(t)E(t - \tau)\,\mathrm{d}t$$</div>
+        <div class="formula-box">$$I(\tau) = I_{\text{DC}} + I_{\text{AC}}(\tau), \quad I_{\text{DC}} = 2\int |E(t)|^2\,\mathrm{d}t, \quad I_{\text{AC}}(\tau) = 2\int E(t)E(t-\tau)\,\mathrm{d}t = 2\,R_{EE}(\tau)$$</div>
+        <p>在零光程差处（ZPD, $\tau = 0$），相长干涉达到极大值 $I(0) = 2\,I_{\text{DC}}$。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">三、去直流与傅里叶变换光谱反演（自相关定理）</div><span class="topic-badge badge-formula">公式</span></div>
+      <div class="topic-body">
+        <p>对去直流后的 $I_{\text{AC}}(\tau) = I(\tau) - I_{\text{DC}}$ 执行傅里叶变换，交换积分次序并作变量替换 $u = t - \tau$：</p>
+        <div class="formula-box">$$\mathcal{F}\{I_{\text{AC}}(\tau)\} = 2\int E(t)\,e^{-i 2\pi f t}\,\mathrm{d}t \int E(u)\,e^{+i 2\pi f u}\,\mathrm{d}u = 2\,\tilde{E}(f)\,\tilde{E}^*(f) = 2\,|\tilde{E}(f)|^2$$</div>
+        <p>由偶对称性 $I_{\text{AC}}(-\tau) = I_{\text{AC}}(\tau)$，其傅里叶变换为纯实数（余弦变换），严格证明：</p>
+        <div class="formula-box">$$S_{\text{FTIR}}(f) = \frac{1}{2}\operatorname{Re}\!\big\{\mathcal{F}\{I_{\text{AC}}(\tau)\}\big\} = \int_{0}^{+\infty} I_{\text{AC}}(\tau)\cos(2\pi f \tau)\,\mathrm{d}\tau = S_{\text{true}}(f)$$</div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">四、非相干连续光源的统计光学推导</div><span class="topic-badge badge-formula">公式</span></div>
+      <div class="topic-body">
+        <p>对于热光源或自发辐射光源，探测器测得系综平均干涉图 $I(\tau) = \big\langle |E(t) + E(t-\tau)|^2 \big\rangle = I_{\text{DC}}[1 + \gamma(\tau)]$，其中一阶时间自相关函数 $\Gamma(\tau) = \langle E(t)E(t-\tau)\rangle$ 满足<strong>维纳-辛钦定理</strong>：</p>
+        <div class="formula-box">$$\Gamma(\tau) = \int_{-\infty}^{+\infty} S(f)\,e^{i 2\pi f \tau}\,\mathrm{d}f \quad \Longleftrightarrow \quad S(f) = \int_{-\infty}^{+\infty} \Gamma(\tau)\,e^{-i 2\pi f \tau}\,\mathrm{d}\tau$$</div>
+        <p><strong>自发辐射光源（洛伦兹线型）</strong>与<strong>黑体辐射光源（普朗克定律）</strong>：</p>
+        <div class="formula-box">$$S_{\text{SE}}(f) \propto \frac{1}{1 + \left[\dfrac{2(f - f_0)}{\Delta f}\right]^2}, \qquad \tau_c = \frac{1}{\pi\,\Delta f}$$</div>
+        <div class="formula-box">$$S_{\text{BB}}(f, T) = \frac{2 h f^3}{c^2}\frac{1}{\exp\!\left(\dfrac{h f}{k_B T}\right) - 1}, \qquad f_{\text{peak}} \approx 2.82144\,\frac{k_B T}{h} \approx 0.05879\,T\;\text{(THz)}$$</div>
+        <p><strong>有限积分平均次数 $M$</strong>：单次短曝光（$M=1$）存在 $100\%$ 相对标准差的指数散斑涨落，对 $M$ 次独立相干片段累加平均后：</p>
+        <div class="formula-box">$$\overline{I_{\text{AC}}}(\tau) = \frac{1}{M}\sum_{m=1}^{M} I_{\text{AC}}^{(m)}(\tau) \quad \Longrightarrow \quad \text{SNR} \propto \sqrt{M}$$</div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">五、有限延时截断、切趾窗函数与分辨率极限</div><span class="topic-badge badge-formula">公式</span></div>
+      <div class="topic-body">
+        <div class="formula-box">$$I_{\text{AC,win}}(\tau) = I_{\text{AC}}(\tau)\cdot W(\tau), \qquad S_{\text{FTIR}}(f) = S_{\text{true}}(f) * \tilde{W}(f)$$</div>
+        <table class="data-table">
+          <thead><tr><th>窗函数</th><th>$W(\tau)$</th><th>$\tilde{W}(f)$（仪器线型 ILS）</th><th>特征</th></tr></thead>
+          <tbody>
+            <tr><td><strong>矩形窗 Boxcar</strong></td><td>$\operatorname{rect}\!\left(\frac{\tau}{2\tau_{\max}}\right)$</td><td>$2\tau_{\max}\,\operatorname{sinc}(2 f \tau_{\max})$</td><td>最窄主瓣，存在 $-22\%$ 负旁瓣振铃</td></tr>
+            <tr><td><strong>三角窗 Bartlett</strong></td><td>$1 - \frac{|\tau|}{\tau_{\max}}$</td><td>$\tau_{\max}\,\operatorname{sinc}^2(f \tau_{\max})$</td><td>消除负旁瓣，主瓣宽度略微展宽</td></tr>
+            <tr><td><strong>汉宁窗 Hann</strong></td><td>$\frac{1}{2}\left[1 + \cos\!\left(\frac{\pi \tau}{\tau_{\max}}\right)\right]$</td><td>旁瓣抑制 $-31.5$ dB</td><td>适用于高动态范围光谱测量</td></tr>
+          </tbody>
+        </table>
+        <div class="formula-box">$$\Delta f \approx \frac{1}{2\tau_{\max}}, \qquad \Delta\tilde{\nu} = \frac{\Delta f}{c} \approx \frac{1}{2\,\text{OPD}_{\max}}$$</div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">六、仿真算法：离散 FFT 反演与随机相位场合成</div><span class="topic-badge badge-sim">数值算法</span></div>
+      <div class="topic-body">
+        <ul>
+          <li><strong>确定性脉冲</strong>：在 $N=4096, \Delta t=0.5\,\text{fs}$ 网格上经循环移位与 Radix-2 FFT 计算 $S_{\text{true}}(f)$，逆 FFT 精确生成自相关干涉图 $I_{\text{AC}}(\tau)$，乘以切趾窗 $W(\tau)$ 后再次 FFT 得 $S_{\text{FTIR}}(f)$。</li>
+          <li><strong>非相干随机场</strong>：在频域用 Box-Muller 变换生成独立复高斯随机振幅，逆 FFT 合成平稳随机波形 $E(t)$；有限平均 $M$ 通过对各频点叠加 $M$ 个独立指数随机变量（Gamma 分布）模拟散斑收敛。</li>
+          <li><strong>定量评价</strong>：在显示频段内实时计算决定系数 $R^2$ 与均方根误差 $\text{RMSE}$。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="ftir-sim">
+      <div class="ftir-metrics">
+        <div class="ftir-metric"><div class="ftir-metric-label">当前延时 τ / OPD</div><div class="ftir-metric-val"><span id="metric-tau" class="num" style="color:var(--c-amber-600)">0.0 fs</span><span class="unit">|</span><span id="metric-opd" class="unit" style="color:var(--c-text);font-weight:600">0.00 μm</span></div></div>
+        <div class="ftir-metric"><div class="ftir-metric-label">理论分辨率 Δf</div><div class="ftir-metric-val"><span id="metric-df" class="num">3.33 THz</span><span id="metric-wavenum" class="unit">(111 cm⁻¹)</span></div></div>
+        <div class="ftir-metric"><div class="ftir-metric-label">光谱吻合度 R²</div><div class="ftir-metric-val"><span id="metric-r2" class="num" style="color:var(--c-teal-600)">100.00%</span><span id="metric-r2-badge" class="unit">极高吻合</span></div></div>
+        <div class="ftir-metric"><div class="ftir-metric-label">均方根误差 RMSE</div><div class="ftir-metric-val"><span id="metric-rmse" class="num">0.0000</span></div></div>
+        <div id="physics-tip-box" class="ftir-tip ok"><span id="physics-tip-text">正在初始化物理引擎...</span></div>
+      </div>
+      <div class="ftir-layout">
+        <div class="ftir-left-col">
+          <div class="ftir-canvas-card">
+            <div class="header-row"><div class="title-row"><span class="badge" style="background:var(--c-purple-50);color:var(--c-purple-600);">A</span><span class="title">迈克尔逊干涉仪动态光路</span></div><span id="badge-opd-a" class="opd-badge">OPD = 0.00 μm</span></div>
+            <div class="ftir-canvas-wrap" style="height:210px"><canvas id="canvas-interferometer"></canvas></div>
+          </div>
+          <aside class="ftir-sidebar">
+            <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--c-border);padding-bottom:0.4rem;"><h3>实验参数控制</h3><button id="btn-reset" class="reset-link">重置默认</button></div>
+            <div class="ctrl-group">
+              <div class="ctrl-row"><span>光源类型</span><span id="label-shape-formula" style="font-family:monospace;font-size:10px;color:var(--c-purple-600)">Gaussian</span></div>
+              <div class="ftir-section-label">相干脉冲光源</div>
+              <div class="btn-grid">
+                <button class="ftir-btn" data-shape="gaussian">高斯脉冲<span class="sub">Gaussian</span></button>
+                <button class="ftir-btn" data-shape="sech">双曲正割<span class="sub">Sech</span></button>
+                <button class="ftir-btn" data-shape="lorentzian">洛伦兹型<span class="sub">Lorentzian</span></button>
+                <button class="ftir-btn" data-shape="square">矩形脉冲<span class="sub">Square</span></button>
+              </div>
+              <button class="ftir-btn ftir-btn-full" data-shape="dual" style="display:flex;justify-content:space-between;"><span>双色高斯脉冲 (f₀±15 THz)</span><span style="color:#dc2626;">分辨率测试</span></button>
+              <div class="ftir-section-label warm">非相干连续光源</div>
+              <div class="btn-grid">
+                <button class="ftir-btn" data-shape="spontaneous">自发辐射源<span class="sub">ASE · 随机相位</span></button>
+                <button class="ftir-btn" data-shape="blackbody">黑体辐射源<span class="sub">Planck 热辐射</span></button>
+              </div>
+            </div>
+            <div id="ctrl-taup" class="ctrl-group"><div class="ctrl-row"><label id="label-taup">脉冲宽度 τ<sub>p</sub></label><span id="val-taup" class="val">30 fs</span></div><input id="slider-taup" type="range" min="10" max="100" step="1" value="30"><div class="hint-row"><span id="hint-taup-left">10 fs</span><span id="hint-taup-right">100 fs</span></div></div>
+            <div id="ctrl-f0" class="ctrl-group"><div class="ctrl-row"><label>中心频率 f<sub>0</sub></label><span id="val-f0" class="val">100 THz</span></div><input id="slider-f0" type="range" min="60" max="140" step="1" value="100"></div>
+            <div id="ctrl-temp" class="ctrl-group" style="display:none;"><div class="ctrl-row"><label style="color:var(--c-amber-600)">黑体温度 T</label><span id="val-temp" class="val" style="color:var(--c-amber-600)">1500 K</span></div><input id="slider-temp" type="range" min="600" max="3000" step="50" value="1500" class="amber-slider"></div>
+            <div id="ctrl-incoherent" class="inc-box" style="display:none;"><div class="ctrl-row"><span>积分平均次数 M</span><button id="btn-reseed" class="reseed-btn">刷新相位</button></div><div class="btn-grid-4"><button class="ftir-btn ftir-btn-center" data-avg="1">M=1</button><button class="ftir-btn ftir-btn-center" data-avg="10">M=10</button><button class="ftir-btn ftir-btn-center" data-avg="50">M=50</button><button class="ftir-btn ftir-btn-center" data-avg="0">M=∞</button></div></div>
+            <div class="ctrl-group ctrl-divider"><div class="ctrl-row"><label>最大扫描延时 τ<sub>max</sub></label><span id="val-taumax" class="val">150 fs</span></div><input id="slider-taumax" type="range" min="20" max="300" step="2" value="150"></div>
+            <div class="scan-box"><div class="ctrl-row"><label>当前延时 τ</label><span id="val-tau" class="val" style="color:var(--c-amber-600)">0.0 fs</span></div><input id="slider-tau" type="range" min="-150" max="150" step="0.5" value="0" class="amber-slider"><div class="btn-row"><button id="btn-scan" class="ftir-btn btn-primary"><span id="text-scan">自动扫描</span></button><button id="btn-zero-tau" class="ftir-btn">归零 (ZPD)</button></div></div>
+            <div class="ctrl-group ctrl-divider"><div class="ctrl-row"><span>切趾窗函数</span></div><div class="btn-grid-3"><button class="ftir-btn ftir-btn-center" data-win="boxcar">矩形窗</button><button class="ftir-btn ftir-btn-center" data-win="hann">汉宁窗</button><button class="ftir-btn ftir-btn-center" data-win="triangular">三角窗</button></div></div>
+            <button id="btn-preset-res" class="ftir-btn ftir-btn-full ftir-btn-center" style="background:#fef2f2;color:#dc2626;border-color:#fecaca">双峰分辨演示</button>
+          </aside>
+        </div>
+        <div class="ftir-charts-col">
+          <div class="ftir-canvas-card"><div class="header-row"><div class="title-row"><span class="badge" style="background:var(--c-blue-50);color:var(--c-blue-600);">B</span><span class="title">时域电场延时叠加</span></div></div><div class="ftir-canvas-wrap" style="height:175px"><canvas id="canvas-timedomain"></canvas></div></div>
+          <div class="ftir-canvas-card"><div class="header-row"><div class="title-row"><span class="badge" style="background:var(--c-amber-50);color:var(--c-amber-600);">C</span><span class="title">光电探测干涉图 I(τ)（可拖动）</span></div></div><div class="ftir-canvas-wrap draggable" style="height:195px"><canvas id="canvas-interferogram"></canvas></div></div>
+          <div class="ftir-canvas-card"><div class="header-row"><div class="title-row"><span class="badge" style="background:#fef2f2;color:#dc2626;">D</span><span class="title">反演光谱 S_FTIR 与源光谱 S_true 对比</span></div></div><div class="ftir-canvas-wrap" style="height:195px"><canvas id="canvas-spectrum"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Griffiths, P. R. &amp; de Haseth, J. A. <em>Fourier Transform Infrared Spectrometry</em>, 2nd ed. (Wiley, 2007).</li>
+      <li><span class="ref-num">[2]</span>Goodman, J. W. <em>Statistical Optics</em>, 2nd ed., Ch. 5: Temporal Coherence and the Wiener-Khinchin Theorem (Wiley, 2015).</li>
+      <li><span class="ref-num">[3]</span>Bell, R. J. <em>Introductory Fourier Transform Spectroscopy</em> (Academic Press, 1972).</li>
+    </ol>
+  </div>
+</div>
+<script src="ftir-sim.js"></script>
+</body>
+</html>

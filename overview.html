@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="common.css">
+<title>目录 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">i</span>内容概述</div>
+    <div class="book-abstract">
+      <p>本页面以“在线书本”的形式组织光子学学习内容。每个主题对应一个章节，统一包含<strong>原理阐述</strong>、<strong>理论推导</strong>（含物理模型与仿真算法）和<strong>交互仿真</strong>三个模块，从基本概念到数学推导再到可视化仿真，形成完整的学习闭环。</p>
+      <p>当前已收录十个章节：F-P 光学腔 → F-P 腔动力学方程 → F-P 腔激光器 → 激光注入锁定 → 激光-微腔自注入锁定 → Kerr 耗散孤子 → 广义耗散孤子 → 光场自干涉与傅里叶变换光谱仪 → 脉冲自相关与频率分辨时域门测量（FROG）→ 脉冲式激光的时频域关系。十章层层递进，覆盖从线性光学谐振腔、有源激光与频率锁定、非线性微腔与锁模孤子、超快脉冲干涉/FROG 表征，到光学频率梳与 β-ω 空间统一理论的完整知识体系。</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">≡</span>目录</div>
+    <div class="toc-list">
+      <a class="toc-item" href="fp-cavity.html" data-tab="fp-cavity.html">
+        <span class="toc-num">1</span>
+        <div class="toc-info">
+          <div class="toc-chapter">F-P 光学腔</div>
+          <div class="toc-desc">法布里-珀罗腔基本原理、多光束干涉推导、Airy 函数、FSR / Finesse / FWHM / Q 因子公式，以及含折射率与峰值自适应采样的反射/透射/损耗谱仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="fp-dynamics.html" data-tab="fp-dynamics.html">
+        <span class="toc-num">2</span>
+        <div class="toc-info">
+          <div class="toc-chapter">F-P 腔动力学方程</div>
+          <div class="toc-desc">从离散往返到连续微分：LLE 与 GLE 的两条推导路径、归一化方程、Cardano 立方求根算法，以及稳态 Kerr 双稳态与 Airy 函数对比仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="fp-laser.html" data-tab="fp-laser.html">
+        <span class="toc-num">3</span>
+        <div class="toc-info">
+          <div class="toc-chapter">F-P 腔激光器</div>
+          <div class="toc-desc">半导体增益模型、载流子-光子速率方程、阈值条件、Schawlow-Townes-Henry 线宽、自适应步长 RK4 算法，以及稳态多纵模光谱与弛豫振荡时域仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="injection-locking.html" data-tab="injection-locking.html">
+        <span class="toc-num">4</span>
+        <div class="toc-info">
+          <div class="toc-chapter">激光注入锁定</div>
+          <div class="toc-desc">单谐振峰激光模型（含 Henry 因子 α_H）、外部连续光注入锁定、Adler 方程与非对称锁定边界，以及频谱/调谐/Adler 区域/实时相位演化四视图仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="self-injection-locking.html" data-tab="self-injection-locking.html">
+        <span class="toc-num">5</span>
+        <div class="toc-info">
+          <div class="toc-chapter">激光-微腔自注入锁定</div>
+          <div class="toc-desc">Lang-Kobayashi 与耦合 LLE 方程、S 曲线解析推导、锁定带宽与线宽窄化、单调分支追踪算法，以及 S 曲线与微腔总线传输谱交互仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="kerr-dissipative-soliton.html" data-tab="kerr-dissipative-soliton.html">
+        <span class="toc-num">6</span>
+        <div class="toc-info">
+          <div class="toc-chapter">无源 Kerr 谐振腔中的时域耗散孤子</div>
+          <div class="toc-desc">归一化 LLE（含色散 d₂/d₃、失谐 δ₀、泵浦 S）、拉格朗日变分法 sech 解析解、分叉与呼吸子稳定性、Strang 分裂 SSFM 求解器，以及时域/频梳/收敛曲线三面板仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="general-dissipative-soliton.html" data-tab="general-dissipative-soliton.html">
+        <span class="toc-num">7</span>
+        <div class="toc-info">
+          <div class="toc-chapter">广义耗散孤子（CGLE / Kelly 边带 / 纯四次孤子）</div>
+          <div class="toc-desc">三次-五次 CGLE 主方程、高阶色散与纯四次孤子（PQS）、分立腔 Round-Trip 映射与 Kelly 边带、自适应步长 SSFM-RK4 千圈长程演化与 DW/Kelly 双共振仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="ftir-spectroscopy.html" data-tab="ftir-spectroscopy.html">
+        <span class="toc-num">8</span>
+        <div class="toc-info">
+          <div class="toc-chapter">光场自干涉与傅里叶变换光谱仪</div>
+          <div class="toc-desc">迈克尔逊干涉仪延时叠加与平方律探测、维纳-辛钦定理光谱反演、相干脉冲与非相干热光源统一框架、切趾窗与分辨率极限，以及四区联动交互仿真器</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="frog-measurement.html" data-tab="frog-measurement.html">
+        <span class="toc-num">9</span>
+        <div class="toc-info">
+          <div class="toc-chapter">脉冲自相关与频率分辨时域门测量（FROG）</div>
+          <div class="toc-desc">基于和频（SFG/SHG）的非线性强度自相关/互相关、2D FROG 时谱图与边缘分布定理、PCGPA 广义投影反演算法，以及耗散孤子/平顶啁啾/孤子+色散波/TOD 脉冲可调门宽交互仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+      <a class="toc-item" href="pulsed-laser-comb.html" data-tab="pulsed-laser-comb.html">
+        <span class="toc-num">10</span>
+        <div class="toc-info">
+          <div class="toc-chapter">脉冲式激光的时频域关系</div>
+          <div class="toc-desc">周期脉冲激光与光学频率梳的等价性、β-ω 空间中的群速度/相速度/f_ceo 几何起源、啁啾脉冲序列的频率梳不变性、冷腔反函数纵模色散统一理解，以及 f_ceo 四视图交互仿真</div>
+        </div>
+        <span class="toc-arrow">›</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Photonics Learning WebBook | 光子学在线学习平台</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  var links = document.querySelectorAll('.toc-item[data-tab]');
+  links.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      if (window.parent && window.parent !== window) {
+        e.preventDefault();
+        window.parent.postMessage({ type: 'switchTab', src: 'tabs/' + this.dataset.tab }, '*');
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

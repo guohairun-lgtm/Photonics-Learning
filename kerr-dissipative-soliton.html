@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>Kerr 耗散孤子 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">6</span>Kerr 耗散孤子（Dissipative Kerr Soliton）</div>
+    <p class="section-desc">LLE 归一化方程 → 拉格朗日密度函数 → 变分法稳态孤子解 → 分岔稳定性 → Strang 分裂 SSFM 数值验证与光频梳表征</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>耗散 Kerr 孤子的基本概念</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">什么是耗散 Kerr 孤子？</div><span class="topic-badge badge-theory">概述</span></div>
+        <div class="topic-body">
+          <p><strong>耗散 Kerr 孤子（Dissipative Kerr Soliton, DKS）</strong>是在<strong>连续波（CW）泵浦驱动的光学微腔</strong>中，由 Kerr 非线性效应与色散的平衡，以及泵浦与损耗的平衡共同维持的超短光脉冲。它是光学频率梳产生的核心物理机制之一。</p>
+          <p>与传统的<strong>保守孤子</strong>（如光纤中的基孤子）不同，DKS 存在于<strong>耗散系统</strong>中——腔内光场不断被损耗，又被外部泵浦持续补充。孤子的存在依赖于两种动态平衡：</p>
+          <ul>
+            <li><strong>色散 ↔ 非线性平衡</strong>：群速度色散（GVD）使脉冲展宽，Kerr 自相位调制（SPM）使脉冲压缩，两者平衡维持脉冲形状。</li>
+            <li><strong>损耗 ↔ 泵浦平衡</strong>：腔内线性损耗耗散光能量，外部 CW 泵浦持续注入能量，两者平衡维持脉冲能量。</li>
+          </ul>
+          <p>正是这种双重平衡使得 DKS 成为<strong>耗散结构</strong>的典型范例——远离热力学平衡态的开放系统中自发形成的时空有序结构。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>形成机制与相图</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">从调制不稳定性到孤子</div><span class="topic-badge badge-theory">物理图像</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>CW 背景</strong>：CW 泵浦光耦入微腔后，首先建立稳定的连续波背景场 $\psi_0$。</li>
+            <li><strong>调制不稳定性（MI）</strong>：当泵浦功率超过 MI 阈值，CW 态对微扰变得不稳定，自发产生周期性调制图案（Turing pattern）。</li>
+            <li><strong>亚谐振激发</strong>：进一步调节失谐 $\delta_0$（扫频进入谐振），调制图案演化为局部能量集中的脉冲结构。</li>
+            <li><strong>孤子锁定</strong>：当失谐足够大，单个或多个 sech 型孤子在 CW 背景上稳定形成——即耗散 Kerr 孤子。</li>
+          </ul>
+          <div class="diagram-box">
+            <svg width="100%" height="185" viewBox="0 0 680 185" style="max-width:680px;">
+              <defs><marker id="arrowG1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#888780"/></marker></defs>
+              <rect x="10" y="18" width="130" height="54" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/><text x="75" y="42" text-anchor="middle" font-size="11" fill="#185FA5" font-weight="600">CW 泵浦</text><text x="75" y="58" text-anchor="middle" font-size="9" fill="#5f5e5a">均匀背景场</text>
+              <line x1="140" y1="45" x2="178" y2="45" stroke="#888780" stroke-width="1.5" marker-end="url(#arrowG1)"/>
+              <rect x="180" y="18" width="130" height="54" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1.5"/><text x="245" y="42" text-anchor="middle" font-size="11" fill="#854F0B" font-weight="600">调制不稳定性</text><text x="245" y="58" text-anchor="middle" font-size="9" fill="#5f5e5a">周期 Turing 图案</text>
+              <line x1="310" y1="45" x2="348" y2="45" stroke="#888780" stroke-width="1.5" marker-end="url(#arrowG1)"/>
+              <rect x="350" y="18" width="130" height="54" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/><text x="415" y="42" text-anchor="middle" font-size="11" fill="#0F6E56" font-weight="600">多脉冲态</text><text x="415" y="58" text-anchor="middle" font-size="9" fill="#5f5e5a">局部能量集中</text>
+              <line x1="480" y1="45" x2="518" y2="45" stroke="#888780" stroke-width="1.5" marker-end="url(#arrowG1)"/>
+              <rect x="520" y="18" width="145" height="54" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/><text x="592" y="42" text-anchor="middle" font-size="11" fill="#534AB7" font-weight="600">单孤子锁定</text><text x="592" y="58" text-anchor="middle" font-size="9" fill="#5f5e5a">sech 稳态脉冲</text>
+              <line x1="25" y1="115" x2="125" y2="115" stroke="#378ADD" stroke-width="2"/>
+              <path d="M 185 115 Q 200 100 215 115 T 245 115 T 275 115 T 305 115" fill="none" stroke="#EF9F27" stroke-width="2"/>
+              <path d="M 355 117 L 370 117 L 380 85 L 390 117 L 420 117 L 430 83 L 440 117 L 470 117 L 480 87 L 490 117" fill="none" stroke="#1D9E75" stroke-width="2"/>
+              <path d="M 535 117 L 562 117 Q 582 58 592 58 Q 602 58 622 117 L 650 117" fill="none" stroke="#7F77DD" stroke-width="2.5"/>
+              <text x="340" y="162" text-anchor="middle" font-size="10" fill="#5f5e5a">泵浦功率增大 / 失谐加深 →</text>
+            </svg>
+            <div class="diagram-caption">图 1. DKS 形成的四个阶段：从 CW 背景到调制不稳定性、多脉冲态、最终锁定为单孤子</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">色散区域的符号约束</div><span class="topic-badge badge-theory">色散</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>反常色散（$d_2 > 0$）</strong>：要求 $\delta_0 > 0$（与 $d_2$ 同号），产生<strong>亮孤子</strong>——脉冲峰值高于 CW 背景，呈 sech 型包络。</li>
+            <li><strong>正常色散（$d_2 < 0$）</strong>：要求 $\delta_0 < 0$，产生<strong>暗孤子</strong>——脉冲为 CW 背景上的凹陷，呈 tanh 型包络。</li>
+          </ul>
+          <p>这一符号约束源于变分解析解 $A = \sqrt{2\delta_0}$ 和 $W = \sqrt{d_2/(2\delta_0)}$ 均需实数，即 $\delta_0$ 与 $d_2$ 必须同号。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>关键物理现象</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">光频梳（Optical Frequency Comb）</div><span class="topic-badge badge-theory">频梳</span></div>
+        <div class="topic-body">
+          <p>DKS 在频域表现为等间距的梳状谱线，模式间隔等于微腔自由光谱范围（FSR），广泛应用于精密计量、分子光谱学、WDM 光通信与天文定标。</p>
+        </div>
+      </div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">呼吸子与混沌</div><span class="topic-badge badge-theory">动力学</span></div>
+        <div class="topic-body">
+          <p>当泵浦 $S$ 增大或失谐 $\delta_0$ 减小时，稳态孤子通过 <strong>Hopf 分岔</strong>失稳，演化为<strong>呼吸子（Breather）</strong>——脉冲振幅与脉宽以频率 $\omega_H$ 周期性振荡；进一步失稳则进入混沌态。</p>
+        </div>
+      </div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">Cherenkov 辐射与色散波</div><span class="topic-badge badge-theory">辐射</span></div>
+        <div class="topic-body">
+          <p>当三阶色散（TOD, $d_3$）不为零时，孤子辐射<strong>色散波（Cherenkov radiation）</strong>，在频域表现为孤子谱包络之外的尖峰，同时引起孤子在方位角空间中的群速度漂移。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">4</span>与其他章节的联系</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">DKS 在光子学体系中的位置</div><span class="topic-badge badge-theory">知识关联</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>第 1 章（F-P 光学腔）</strong>：微腔的 Airy 函数传输谱是 DKS 产生的线性基础。</li>
+            <li><strong>第 2 章（F-P 腔动力学）</strong>：归一化 LLE 方程直接来源于第 2 章的微腔 LLE，DKS 是 LLE 在强非线性区的稳态解。</li>
+            <li><strong>第 5 章（自注入锁定）</strong>：SIL 提供窄线宽 CW 泵浦源，是实现片上 DKS 光频梳的重要泵浦方案。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>归一化 Lugiato-Lefever 方程</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">标准归一化 LLE</div><span class="topic-badge badge-theory">LLE</span></div>
+        <div class="topic-body">
+          <p>在光学微腔中，描述慢变包络光场 $\psi(\theta, t)$ 演化的无量纲 LLE 为：</p>
+          <div class="formula-box">
+            $$i \frac{\partial \psi}{\partial t} + \frac{d_2}{2} \frac{\partial^2 \psi}{\partial \theta^2} + i\frac{d_3}{6}\frac{\partial^3 \psi}{\partial \theta^3} + |\psi|^2 \psi - \delta_0 \psi = -i \psi + i S$$
+            <div class="formula-label">归一化 LLE（含三阶色散 $d_3$）</div>
+          </div>
+          <ul>
+            <li>$t$：慢时间（归一化至光子寿命），$\theta \in [-\pi, \pi]$：微腔方位角（快时间）。</li>
+            <li>$d_2$：群速度色散系数（$d_2 > 0$ 为反常色散，支持亮孤子）；$d_3$：三阶色散。</li>
+            <li>$\delta_0$：频率失谐量（反常色散要求 $\delta_0 > 0$）；$S$：外部 CW 泵浦振幅。</li>
+            <li><strong>方程结构</strong>：左侧为保守演化部分；右侧 $-i\psi$ 为腔内线性损耗，$iS$ 为外部泵浦驱动。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>拉格朗日密度函数与变分原理</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">保守内核与拉格朗日密度 $\mathcal{L}_0$</div><span class="topic-badge badge-theory">变分法</span></div>
+        <div class="topic-body">
+          <p><strong>核心思路</strong>：剥离右侧非保守项（损耗 $-i\psi$、驱动 $iS$），系统退化为带失谐的 NLSE。通过逆变分积分构造作用量泛函 $\mathcal{A} = \iint \mathcal{L}_0 \, d\theta \, dt$：</p>
+          <div class="formula-box">$$i \frac{\partial \psi}{\partial t} + \frac{d_2}{2} \frac{\partial^2 \psi}{\partial \theta^2} + |\psi|^2 \psi - \delta_0 \psi = 0$$</div>
+          <p><strong>拉格朗日密度函数</strong>：</p>
+          <div class="formula-box">
+            $$\mathcal{L}_0 = \frac{i}{2} \left( \psi^* \frac{\partial \psi}{\partial t} - \psi \frac{\partial \psi^*}{\partial t} \right) - \frac{d_2}{2} \left| \frac{\partial \psi}{\partial \theta} \right|^2 + \frac{1}{2} |\psi|^4 - \delta_0 |\psi|^2$$
+            <div class="formula-label">动能项 · 色散梯度能量 · Kerr 非线性势能 · 失谐势阱</div>
+          </div>
+          <p><strong>带阻尼的欧拉-拉格朗日方程</strong>（非保守广义力 $\mathcal{R} = -i\psi + iS$）：</p>
+          <div class="formula-box">$$\frac{\partial \mathcal{L}_0}{\partial \psi^*} - \frac{\partial}{\partial t}\left( \frac{\partial \mathcal{L}_0}{\partial \psi^*_t} \right) - \frac{\partial}{\partial \theta}\left( \frac{\partial \mathcal{L}_0}{\partial \psi^*_\theta} \right) = \mathcal{R}$$</div>
+          <p><strong>偏导验证</strong>：</p>
+          <ul>
+            <li>$\frac{\partial \mathcal{L}_0}{\partial \psi^*} = \frac{i}{2} \psi_t + |\psi|^2 \psi - \delta_0 \psi$</li>
+            <li>$-\frac{\partial}{\partial t}\left( \frac{\partial \mathcal{L}_0}{\partial \psi^*_t} \right) = \frac{i}{2} \psi_t$</li>
+            <li>$-\frac{\partial}{\partial \theta}\left( \frac{\partial \mathcal{L}_0}{\partial \psi^*_\theta} \right) = \frac{d_2}{2} \psi_{\theta\theta}$</li>
+          </ul>
+          <p>三项相加得 $i \psi_t + \frac{d_2}{2}\psi_{\theta\theta} + |\psi|^2\psi - \delta_0 \psi$，令其等于 $\mathcal{R} = -i\psi + iS$，严格重构出完整 LLE。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>集体坐标变分法求解稳态孤子</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">sech 试探解与约化拉格朗日量</div><span class="topic-badge badge-formula">Ansatz</span></div>
+        <div class="topic-body">
+          <p><strong>试探解（Ansatz）</strong>：设反常色散区（$d_2 > 0$）光场由弱连续波背景 $\psi_0$ 与双曲正割孤子脉冲叠加：</p>
+          <div class="formula-box">$$\psi(\theta, t) = \psi_0 + A(t)\, \operatorname{sech}\left(\frac{\theta - \theta_0(t)}{W(t)}\right) e^{i\phi(t)}$$<div class="formula-label">CW 背景 + sech 孤子脉冲叠加</div></div>
+          <p><strong>CW 背景解</strong>（高失谐线性近似）：</p>
+          <div class="formula-box">$$\psi_0 \approx \frac{iS}{-\delta_0 + i}$$</div>
+          <p><strong>约化拉格朗日量</strong>：对快时间 $\theta$ 积分 $L_0 = \int_{-\infty}^{+\infty} \mathcal{L}_0 \, d\theta$：</p>
+          <div class="formula-box">$$L_0(A, W, \phi) = -2 A^2 W \frac{d\phi}{dt} - \frac{d_2 A^2}{3 W} + \frac{2}{3} A^4 W - 2 \delta_0 A^2 W$$</div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">稳态解析孤子参数</div><span class="topic-badge badge-formula">解析解</span></div>
+        <div class="topic-body">
+          <p>利用带广义力的欧拉-拉格朗日方程 $\frac{\partial L_0}{\partial q_j} - \frac{d}{dt}\left(\frac{\partial L_0}{\partial \dot{q}_j}\right) = 2\,\text{Re}\int \mathcal{R} \frac{\partial \psi_s^*}{\partial q_j} d\theta$，令稳态导数 $\dot{A} = \dot{W} = \dot{\phi} = 0$：</p>
+          <div class="formula-box">$$A = \sqrt{2\delta_0}, \quad W = \sqrt{\frac{d_2}{2\delta_0}}, \quad \cos\phi = \frac{2A}{\pi S} = \frac{2\sqrt{2\delta_0}}{\pi S}$$<div class="formula-label">峰值振幅 · 脉冲宽度 · 锁定相位</div></div>
+          <p><strong>存在条件</strong>：稳定上支取 $\sin\phi > 0$，最小泵浦阈值：</p>
+          <div class="formula-box">$$S_{\min} = \frac{2\sqrt{2\delta_0}}{\pi}$$<div class="formula-label">孤子存在的最小泵浦阈值</div></div>
+          <p><strong>完整解析近似解</strong>：</p>
+          <div class="formula-box">$$\psi_{\text{DKS}}(\theta) \approx \frac{iS}{-\delta_0 + i} + \sqrt{2\delta_0}\, \operatorname{sech}\left( \sqrt{\frac{2\delta_0}{d_2}} (\theta - \theta_0) \right) e^{i \arccos\left(\frac{2\sqrt{2\delta_0}}{\pi S}\right)}$$<div class="formula-label">CW 背景 + sech 孤子脉冲 = 完整稳态 DKS 解</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">4</span>线性稳定性分析：分岔与呼吸子</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">鞍结分岔（Saddle-Node Bifurcation）</div><span class="topic-badge badge-theory">稳定性</span></div>
+        <div class="topic-body">
+          <p>引入孤子总能量 $E = A^2 W$，将 ODE 系统改写为自治动力系统 $\dot{\mathbf{X}} = \mathbf{F}(\mathbf{X})$（$\mathbf{X} = (E, W, \phi)^T$），雅可比矩阵特征多项式为：</p>
+          <div class="formula-box">$$\lambda^3 + c_2 \lambda^2 + c_1 \lambda + c_0 = 0$$</div>
+          <ul>
+            <li><strong>下支</strong>（$\sin\phi_s < 0$）：$c_0 < 0$，至少一个正实部特征值 → <strong>无条件不稳定</strong>。</li>
+            <li><strong>上支</strong>（$\sin\phi_s > 0$）：$c_0 > 0$，在 $S = S_{\min}$（即 $\phi_s = 0$）处与下支发生<strong>鞍结分岔</strong>。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">Hopf 分岔与呼吸子（Breather）</div><span class="topic-badge badge-theory">呼吸子</span></div>
+        <div class="topic-body">
+          <p>随泵浦 $S$ 增大或失谐 $\delta_0$ 减小，上支孤子振荡失稳。根据 Routh-Hurwitz 判据，当特征多项式系数满足：</p>
+          <div class="formula-box">$$c_1 c_2 - c_0 = 0 \quad (\text{且 } c_1 > 0, c_2 > 0)$$<div class="formula-label">超临界 Hopf 分岔边界</div></div>
+          <p>雅可比矩阵一对共轭复特征值 $\lambda = \pm i\omega_H$ 穿越虚轴，稳态孤子的振幅 $A(t)$ 和脉宽 $W(t)$ 以频率 $\omega_H$ 周期性呼吸振荡，演化为<strong>呼吸子孤子（Breathing DKS）</strong>。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">5</span>数值求解方法</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">Newton-Raphson 稳态迭代法（理论参考）</div><span class="topic-badge badge-sim">稳态求解</span></div>
+        <div class="topic-body">
+          <p>将复光场拆分为实部与虚部 $\psi(\theta) = u(\theta) + iv(\theta)$，利用傅里叶谱微分矩阵 $\mathbf{D}_2$ 构造稳态代数残差方程 $\mathbf{F}(\mathbf{u}, \mathbf{v}) = \mathbf{0}$ 及其解析雅可比矩阵 $\mathbf{J}$：</p>
+          <div class="formula-box">
+            $$\mathbf{F}_u = \frac{d_2}{2}\mathbf{D}_2 \mathbf{u} + (u^2+v^2)\mathbf{u} - \delta_0 \mathbf{u} - \mathbf{v}$$
+            $$\mathbf{F}_v = \frac{d_2}{2}\mathbf{D}_2 \mathbf{v} + (u^2+v^2)\mathbf{v} - \delta_0 \mathbf{v} + \mathbf{u} - S$$
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">分步傅里叶法（Strang Splitting SSFM，交互仿真采用）</div><span class="topic-badge badge-sim">动态演化</span></div>
+        <div class="topic-body">
+          <p>交互仿真器以变分解析解作为初值，采用二阶对称分步格式（Strang splitting）：线性部分（损耗+失谐+GVD+TOD）在频域精确推进，非线性部分（Kerr+泵浦）在时域以 RK2 半步对称推进：</p>
+          <div class="formula-box">
+            $$\hat{L}(\mu) = -1 - i\delta_0 - \frac{id_2}{2}\mu^2 + \frac{id_3}{6}\mu^3$$
+            <div class="formula-label">频域线性算子（预分配缓冲区 + 分帧推进，实时绘制峰值功率收敛/呼吸子曲线）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group"><div class="sim-label">色散 d₂ <span id="val-d2">0.020</span></div><input type="range" id="slider-d2" min="0.005" max="0.05" step="0.001" value="0.02"></div>
+          <div class="sim-control-group"><div class="sim-label">三阶色散 d₃ <span id="val-d3">0.0000</span></div><input type="range" id="slider-d3" min="0" max="0.002" step="0.0001" value="0"></div>
+          <div class="sim-control-group"><div class="sim-label">失谐 δ₀ <span id="val-delta">4.0</span></div><input type="range" id="slider-delta" min="0.5" max="8.0" step="0.1" value="4.0"></div>
+          <div class="sim-control-group"><div class="sim-label">泵浦 S <span id="val-S">2.50</span></div><input type="range" id="slider-S" min="0.5" max="5.0" step="0.05" value="2.5"></div>
+          <div class="sim-control-group"><div class="sim-label">演化步数 <span id="val-steps">4000</span></div><input type="range" id="slider-steps" min="1000" max="12000" step="500" value="4000"></div>
+          <div class="sim-control-group"><div class="sim-label">时间步长 dt <span id="val-dt">0.004</span></div><input type="range" id="slider-dt" min="0.001" max="0.008" step="0.001" value="0.004"></div>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <button class="sim-btn primary" id="btn-run" style="flex:1;">▶ 运行仿真</button>
+            <button class="sim-btn" id="btn-reset" style="flex:1;">重置</button>
+          </div>
+          <div style="margin-top:4px;">
+            <div class="checkbox-row"><input type="checkbox" id="chk-var" checked><label for="chk-var">叠加变分解析解</label></div>
+            <div class="checkbox-row"><input type="checkbox" id="chk-cw" checked><label for="chk-cw">显示 CW 背景线</label></div>
+          </div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-stack">
+            <div class="sim-canvas-wrap-2"><div class="sim-canvas-label">① 时域强度 |ψ(θ)|²（θ ∈ [−π, π]，完整腔周期）</div><canvas id="canvas-time" width="640" height="190"></canvas></div>
+            <div class="sim-canvas-wrap-2"><div class="sim-canvas-label">② 频域光频梳 P(μ) (dB)</div><canvas id="canvas-freq" width="640" height="190"></canvas></div>
+            <div class="sim-canvas-wrap-2"><div class="sim-canvas-label">③ 峰值功率 |ψ|²_max 随慢时间 t 演化曲线（收敛 / 呼吸子诊断）</div><canvas id="canvas-conv" width="640" height="130"></canvas></div>
+          </div>
+          <div class="sim-metrics">
+            <div class="metric"><div class="val" id="m-A">—</div><div class="lbl">振幅 A</div></div>
+            <div class="metric"><div class="val" id="m-W">—</div><div class="lbl">脉宽 W</div></div>
+            <div class="metric"><div class="val" id="m-phi">—</div><div class="lbl">相位 φ (rad)</div></div>
+            <div class="metric"><div class="val" id="m-Smin">—</div><div class="lbl">阈值 S_min</div></div>
+            <div class="metric"><div class="val" id="m-peak">—</div><div class="lbl">峰值功率</div></div>
+            <div class="metric"><div class="val" id="m-energy">—</div><div class="lbl">脉冲能量</div></div>
+          </div>
+          <div id="status-msg" style="font-size:12px; color:var(--c-text-hint); margin-top:0.4rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Herr, T. et al. Temporal solitons in optical microresonators. <em>Nat. Photonics</em> <strong>8</strong>, 145–152 (2014).</li>
+      <li><span class="ref-num">[2]</span>Kippenberg, T. J., Gaeta, A. L., Lipson, M. &amp; Gorodetsky, M. L. Dissipative Kerr solitons in optical microresonators. <em>Science</em> <strong>361</strong>, eaan8083 (2018).</li>
+      <li><span class="ref-num">[3]</span>Coen, S., Randle, H. G., Sylvestre, T. &amp; Erkintalo, M. Modeling of octave-spanning Kerr frequency combs using a generalized mean-field Lugiato-Lefever model. <em>Opt. Lett.</em> <strong>38</strong>, 37–39 (2013).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+  var N = 512, L = 2 * Math.PI, theta = new Float64Array(N), mu = new Float64Array(N);
+  for (var i = 0; i < N; i++) { theta[i] = -L / 2 + (L / N) * i; mu[i] = i < N / 2 ? i : i - N; }
+  var k1r = new Float64Array(N), k1i = new Float64Array(N), midr = new Float64Array(N), midi = new Float64Array(N), k2r = new Float64Array(N), k2i = new Float64Array(N), linRe = new Float64Array(N), linIm = new Float64Array(N);
+  var defaults = { d2: 0.02, d3: 0.0, delta0: 4.0, S: 2.5, steps: 4000, dt: 0.004 }, params = Object.assign({}, defaults);
+  var currentResult = null, currentVS = null, peakHistory = [], animHandle = null;
+
+  function fft(re, im, inv) {
+    var n = re.length;
+    for (var i = 1, j = 0; i < n; i++) { var bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { var tr = re[i]; re[i] = re[j]; re[j] = tr; var ti = im[i]; im[i] = im[j]; im[j] = ti; } }
+    var sign = inv ? 1 : -1;
+    for (var len = 2; len <= n; len <<= 1) {
+      var half = len >> 1, ang = sign * 2 * Math.PI / len, wRe = Math.cos(ang), wIm = Math.sin(ang);
+      for (var i2 = 0; i2 < n; i2 += len) {
+        var curRe = 1, curIm = 0;
+        for (var k = 0; k < half; k++) {
+          var u = i2 + k, v = u + half, tRe = curRe * re[v] - curIm * im[v], tIm = curRe * im[v] + curIm * re[v];
+          re[v] = re[u] - tRe; im[v] = im[u] - tIm; re[u] += tRe; im[u] += tIm;
+          var nr = curRe * wRe - curIm * wIm; curIm = curRe * wIm + curIm * wRe; curRe = nr;
+        }
+      }
+    }
+    if (inv) for (var i3 = 0; i3 < n; i3++) { re[i3] /= n; im[i3] /= n; }
+  }
+  function variationalSoliton(d2, delta0, S) {
+    var Smin = 2 * Math.sqrt(2 * delta0) / Math.PI;
+    if (S < Smin) return { valid: false, Smin: Smin, A: 0, W: 0, phi: 0, psi0_re: 0, psi0_im: 0 };
+    var A = Math.sqrt(2 * delta0), W = Math.sqrt(d2 / (2 * delta0)), phi = Math.acos(2 * A / (Math.PI * S)), denom = delta0 * delta0 + 1;
+    return { valid: true, Smin: Smin, A: A, W: W, phi: phi, psi0_re: S / denom, psi0_im: -S * delta0 / denom };
+  }
+  function buildAnalyticalPsi(vs) {
+    var re = new Float64Array(N), im = new Float64Array(N); if (!vs.valid) return { re: re, im: im };
+    for (var i = 0; i < N; i++) { var sech = 1 / Math.cosh(theta[i] / vs.W); re[i] = vs.psi0_re + vs.A * sech * Math.cos(vs.phi); im[i] = vs.psi0_im + vs.A * sech * Math.sin(vs.phi); }
+    return { re: re, im: im };
+  }
+  function setupCanvas(id, cssH) {
+    var c = document.getElementById(id), dpr = window.devicePixelRatio || 1, cssW = c.clientWidth || 640;
+    c.width = Math.round(cssW * dpr); c.height = Math.round(cssH * dpr); c.style.height = cssH + 'px';
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx: ctx, w: cssW, h: cssH };
+  }
+  function drawTimeDomain(re, im, vs, showVar, showCW) {
+    var r = setupCanvas('canvas-time', 190), ctx = r.ctx, w = r.w, h = r.h; ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    var power = new Float64Array(N), maxP = 1e-6;
+    for (var i = 0; i < N; i++) { power[i] = re[i] * re[i] + im[i] * im[i]; if (power[i] > maxP) maxP = power[i]; }
+    var xScale = w / (2 * Math.PI), yScale = (h - 28) / (maxP * 1.15);
+    ctx.strokeStyle = '#e0ddd3'; ctx.beginPath(); ctx.moveTo(0, h - 20); ctx.lineTo(w, h - 20); ctx.stroke();
+    ctx.fillStyle = '#888780'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    var ticks = [-Math.PI, -Math.PI / 2, 0, Math.PI / 2, Math.PI], labels = ['-π', '-π/2', '0', 'π/2', 'π'];
+    for (var t = 0; t < ticks.length; t++) ctx.fillText(labels[t], (ticks[t] + Math.PI) * xScale, h - 6);
+    if (showCW && vs.valid) { var cwP = vs.psi0_re * vs.psi0_re + vs.psi0_im * vs.psi0_im, cwY = h - 20 - cwP * yScale; ctx.strokeStyle = '#888780'; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(0, cwY); ctx.lineTo(w, cwY); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.strokeStyle = '#378ADD'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var j = 0; j < N; j++) { var px = (theta[j] + Math.PI) * xScale, py = h - 20 - power[j] * yScale; if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+    ctx.stroke();
+    if (showVar && vs.valid) { ctx.strokeStyle = '#EF9F27'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]); ctx.beginPath(); for (var k = 0; k < N; k++) { var sech = 1 / Math.cosh(theta[k] / vs.W), sr = vs.psi0_re + vs.A * sech * Math.cos(vs.phi), si = vs.psi0_im + vs.A * sech * Math.sin(vs.phi), px2 = (theta[k] + Math.PI) * xScale, py2 = h - 20 - (sr * sr + si * si) * yScale; if (k === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2); } ctx.stroke(); ctx.setLineDash([]); }
+  }
+  function drawFreqDomain(re, im) {
+    var r = setupCanvas('canvas-freq', 190), ctx = r.ctx, w = r.w, h = r.h; ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    var fRe = new Float64Array(re), fIm = new Float64Array(im); fft(fRe, fIm, false);
+    var half = N >> 1, dbArr = new Float64Array(N), realMax = -200;
+    for (var i = 0; i < N; i++) { var si = (i + half) % N, p = (fRe[si] * fRe[si] + fIm[si] * fIm[si]) / (N * N), db = p > 1e-16 ? 10 * Math.log10(p) : -120; dbArr[i] = db; if (db > realMax) realMax = db; }
+    var dbMax = realMax + 5, dbMin = realMax - 80, span = 120, sIdx = half - span, eIdx = half + span, xScale = w / (eIdx - sIdx + 1), yScale = (h - 28) / (dbMax - dbMin);
+    ctx.strokeStyle = '#e0ddd3'; ctx.beginPath(); ctx.moveTo(0, h - 20); ctx.lineTo(w, h - 20); ctx.stroke();
+    for (var k = sIdx; k <= eIdx; k++) { var px = (k - sIdx) * xScale, py = h - 20 - Math.max(0, dbArr[k] - dbMin) * yScale, isC = (k === half); ctx.strokeStyle = isC ? '#e11d48' : '#378ADD'; ctx.lineWidth = isC ? 2 : 1; ctx.beginPath(); ctx.moveTo(px, h - 20); ctx.lineTo(px, py); ctx.stroke(); }
+  }
+  function drawConvergence(hist) {
+    var r = setupCanvas('canvas-conv', 130), ctx = r.ctx, w = r.w, h = r.h; ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    if (!hist || hist.length < 2) { ctx.fillStyle = '#888780'; ctx.font = '12px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('点击「运行仿真」观察峰值功率随慢时间 t 的收敛或呼吸子振荡', w / 2, h / 2); return; }
+    var padL = 42, padR = 14, padT = 12, padB = 22, pw = w - padL - padR, ph = h - padT - padB, yMin = Infinity, yMax = -Infinity;
+    for (var i = 0; i < hist.length; i++) { if (hist[i] < yMin) yMin = hist[i]; if (hist[i] > yMax) yMax = hist[i]; }
+    if (yMax - yMin < 0.2) { yMin = Math.max(0, yMin - 0.5); yMax += 0.5; }
+    ctx.strokeStyle = '#e0ddd3'; ctx.lineWidth = 0.5; ctx.font = '10px monospace'; ctx.fillStyle = '#888780';
+    for (var g = 0; g <= 2; g++) { var yv = yMin + (g / 2) * (yMax - yMin), py = padT + ph * (1 - g / 2); ctx.beginPath(); ctx.moveTo(padL, py); ctx.lineTo(w - padR, py); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(yv.toFixed(1), padL - 5, py + 3); }
+    ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var j = 0; j < hist.length; j++) { var px = padL + (j / (hist.length - 1)) * pw, py2 = padT + ph * (1 - (hist[j] - yMin) / (yMax - yMin)); if (j === 0) ctx.moveTo(px, py2); else ctx.lineTo(px, py2); }
+    ctx.stroke();
+  }
+  function updateMetrics(re, im, vs) {
+    var maxP = 0, cwP = vs.valid ? (vs.psi0_re * vs.psi0_re + vs.psi0_im * vs.psi0_im) : 0, energy = 0;
+    for (var i = 0; i < N; i++) { var p = re[i] * re[i] + im[i] * im[i]; if (p > maxP) maxP = p; energy += Math.max(0, p - cwP) * (L / N); }
+    document.getElementById('m-A').textContent = vs.valid ? vs.A.toFixed(3) : 'N/A'; document.getElementById('m-W').textContent = vs.valid ? vs.W.toFixed(4) : 'N/A';
+    document.getElementById('m-phi').textContent = vs.valid ? vs.phi.toFixed(3) : 'N/A'; document.getElementById('m-Smin').textContent = vs.Smin.toFixed(3);
+    document.getElementById('m-peak').textContent = maxP.toFixed(2); document.getElementById('m-energy').textContent = energy.toFixed(3);
+  }
+  function runSimulation() {
+    if (animHandle) cancelAnimationFrame(animHandle);
+    var d2 = params.d2, d3 = params.d3, delta0 = params.delta0, S = params.S, totalSteps = params.steps, dt = params.dt;
+    var vs = variationalSoliton(d2, delta0, S); currentVS = vs; var init = buildAnalyticalPsi(vs), re = new Float64Array(init.re), im = new Float64Array(init.im);
+    for (var i = 0; i < N; i++) { var ea = Math.exp(-dt), imArg = (-delta0 - 0.5 * d2 * mu[i] * mu[i] + (1 / 6) * d3 * mu[i] * mu[i] * mu[i]) * dt; linRe[i] = ea * Math.cos(imArg); linIm[i] = ea * Math.sin(imArg); }
+    peakHistory = []; var step = 0, chunkSize = 150, btn = document.getElementById('btn-run'), st = document.getElementById('status-msg');
+    btn.disabled = true; btn.textContent = '演化中...';
+    function nlHalf(reA, imA) {
+      for (var j = 0; j < N; j++) {
+        var m2 = reA[j] * reA[j] + imA[j] * imA[j]; k1r[j] = -imA[j] * m2 + S; k1i[j] = reA[j] * m2;
+        midr[j] = reA[j] + k1r[j] * (dt * 0.25); midi[j] = imA[j] + k1i[j] * (dt * 0.25);
+        var m2m = midr[j] * midr[j] + midi[j] * midi[j]; k2r[j] = -midi[j] * m2m + S; k2i[j] = midr[j] * m2m;
+        reA[j] += k2r[j] * (dt * 0.5); imA[j] += k2i[j] * (dt * 0.5);
+      }
+    }
+    function tick() {
+      var end = Math.min(totalSteps, step + chunkSize);
+      for (; step < end; step++) {
+        nlHalf(re, im); fft(re, im, false);
+        for (var k = 0; k < N; k++) { var nr = re[k] * linRe[k] - im[k] * linIm[k]; im[k] = re[k] * linIm[k] + im[k] * linRe[k]; re[k] = nr; }
+        fft(re, im, true); nlHalf(re, im);
+        if (step % 20 === 0) { var mp = 0; for (var m = 0; m < N; m++) { var p = re[m] * re[m] + im[m] * im[m]; if (p > mp) mp = p; } peakHistory.push(mp); }
+      }
+      currentResult = { re: re, im: im };
+      drawTimeDomain(re, im, vs, document.getElementById('chk-var').checked, document.getElementById('chk-cw').checked); drawFreqDomain(re, im); drawConvergence(peakHistory); updateMetrics(re, im, vs);
+      st.textContent = 'SSFM 进度：' + step + ' / ' + totalSteps + ' 步';
+      if (step < totalSteps) animHandle = requestAnimationFrame(tick);
+      else { btn.disabled = false; btn.textContent = '▶ 运行仿真'; st.textContent = vs.valid ? ('✓ 演化完成（' + totalSteps + ' 步）') : ('⚠ S < S_min = ' + vs.Smin.toFixed(3)); }
+    }
+    animHandle = requestAnimationFrame(tick);
+  }
+  function redrawAll() {
+    var vs = currentVS || variationalSoliton(params.d2, params.delta0, params.S), res = currentResult || buildAnalyticalPsi(vs);
+    drawTimeDomain(res.re, res.im, vs, document.getElementById('chk-var').checked, document.getElementById('chk-cw').checked); drawFreqDomain(res.re, res.im); drawConvergence(peakHistory); updateMetrics(res.re, res.im, vs);
+  }
+  function bind(id, key, fmt) { var s = document.getElementById('slider-' + id), l = document.getElementById('val-' + id); s.addEventListener('input', function() { params[key] = parseFloat(s.value); l.textContent = fmt(params[key]); }); }
+  bind('d2', 'd2', function(v) { return v.toFixed(3); }); bind('d3', 'd3', function(v) { return v.toFixed(4); }); bind('delta', 'delta0', function(v) { return v.toFixed(1); });
+  bind('S', 'S', function(v) { return v.toFixed(2); }); bind('steps', 'steps', function(v) { return String(v); }); bind('dt', 'dt', function(v) { return v.toFixed(3); });
+  document.getElementById('btn-run').addEventListener('click', runSimulation);
+  document.getElementById('btn-reset').addEventListener('click', function() {
+    if (animHandle) cancelAnimationFrame(animHandle); params = Object.assign({}, defaults); currentResult = null; currentVS = null; peakHistory = [];
+    document.getElementById('slider-d2').value = defaults.d2; document.getElementById('val-d2').textContent = defaults.d2.toFixed(3);
+    document.getElementById('slider-d3').value = defaults.d3; document.getElementById('val-d3').textContent = defaults.d3.toFixed(4);
+    document.getElementById('slider-delta').value = defaults.delta0; document.getElementById('val-delta').textContent = defaults.delta0.toFixed(1);
+    document.getElementById('slider-S').value = defaults.S; document.getElementById('val-S').textContent = defaults.S.toFixed(2);
+    document.getElementById('slider-steps').value = defaults.steps; document.getElementById('val-steps').textContent = String(defaults.steps);
+    document.getElementById('slider-dt').value = defaults.dt; document.getElementById('val-dt').textContent = defaults.dt.toFixed(3);
+    redrawAll();
+  });
+  document.getElementById('chk-var').addEventListener('change', redrawAll); document.getElementById('chk-cw').addEventListener('change', redrawAll);
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); }); document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      if (btn.dataset.panel === 'simulation') setTimeout(redrawAll, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  window.addEventListener('resize', redrawAll); window.addEventListener('load', redrawAll);
+})();
+</script>
+</body>
+</html>

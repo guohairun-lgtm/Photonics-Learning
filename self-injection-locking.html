@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>激光-微腔自注入锁定 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">5</span>激光-微腔自注入锁定（Self-Injection Locking）</div>
+    <p class="section-desc">反馈物理机制 → 归一化耦合方程 → S 曲线解析推导 → 锁定带宽与线宽窄化 → 交互式仿真器</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>自注入锁定的基本概念</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">什么是自注入锁定？</div><span class="topic-badge badge-theory">概述</span></div>
+        <div class="topic-body">
+          <p><strong>自注入锁定（Self-Injection Locking, SIL）</strong>是一种利用外部高 $Q$ 光学微腔对半导体激光器进行频率稳定和线宽窄化的技术。与传统的<strong>外部注入锁定</strong>（使用独立的主激光器注入从激光器）不同，SIL 中的反馈光<strong>来自激光器自身</strong>——激光输出经总线波导耦入微腔，微腔存储并回散射的光场返回激光腔形成自洽反馈，无需额外的主激光器。</p>
+          <p>这一技术的核心优势在于：</p>
+          <ul>
+            <li><strong>线宽大幅压缩</strong>：理论上可将 Schawlow-Townes 本征线宽压缩 $\sim 1/S^2$ 倍，实现 Hz 级线宽。</li>
+            <li><strong>频率锁定到微腔谐振</strong>：激光频率被“钉扎”在微腔高 $Q$ 谐振频率附近，长期频率稳定性由微腔材料决定。</li>
+            <li><strong>结构紧凑</strong>：激光二极管与微环腔通过总线波导耦合，适合光子集成电路（PIC）集成。</li>
+            <li><strong>无需独立泵浦源</strong>：反馈光来自激光自身，系统功耗和复杂度显著降低。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>物理机制与反馈路径</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">反馈来源与频率选择性</div><span class="topic-badge badge-theory">物理图像</span></div>
+        <div class="topic-body">
+          <p><strong>反馈来源</strong>：激光器输出光通过总线波导耦入外部高 $Q$ 环形微腔。接近谐振频率 $\omega_c$ 的光场被微腔捕获存储，存储的光场通过耦合区反馈回总线波导，返回激光腔内。</p>
+          <p><strong>频率选择性</strong>：微腔的窄谐振（线宽 $\kappa = \omega_c/Q$）提供了反馈的频率选择性——只有在谐振附近的频率分量获得强反馈，从而将激光频率“拉”向微腔谐振频率。</p>
+          <div class="diagram-box">
+            <svg width="100%" height="180" viewBox="0 0 680 180" style="max-width:680px;">
+              <defs>
+                <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#378ADD"/></marker>
+                <marker id="arrowPurple" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7F77DD"/></marker>
+                <marker id="arrowPurpleRev" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 z" fill="#7F77DD"/></marker>
+                <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1D9E75"/></marker>
+                <marker id="arrowGrey" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#888780"/></marker>
+              </defs>
+              <rect x="20" y="70" width="84" height="40" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+              <text x="62" y="95" text-anchor="middle" font-size="12" fill="#185FA5" font-weight="600">激光二极管</text>
+              <text x="62" y="125" text-anchor="middle" font-size="10" fill="#888780">LD (ω₀)</text>
+              <line x1="104" y1="90" x2="160" y2="90" stroke="#378ADD" stroke-width="2" marker-end="url(#arrowBlue)"/>
+              <line x1="160" y1="90" x2="560" y2="90" stroke="#888780" stroke-width="2"/>
+              <text x="360" y="80" text-anchor="middle" font-size="10" fill="#5f5e5a">总线波导 (Bus Waveguide)</text>
+              <circle cx="360" cy="140" r="36" fill="none" stroke="#7F77DD" stroke-width="2.5"/>
+              <text x="360" y="143" text-anchor="middle" font-size="11" fill="#534AB7" font-weight="600">高 Q 微环腔</text>
+              <text x="360" y="158" text-anchor="middle" font-size="9" fill="#7F77DD">Q ≈ 10⁶–10⁸</text>
+              <line x1="360" y1="102" x2="360" y2="118" stroke="#7F77DD" stroke-width="1.5" marker-end="url(#arrowPurple)" marker-start="url(#arrowPurpleRev)"/>
+              <text x="374" y="113" font-size="9" fill="#534AB7">η_c</text>
+              <line x1="560" y1="90" x2="620" y2="90" stroke="#888780" stroke-width="2" marker-end="url(#arrowGrey)"/>
+              <text x="642" y="94" text-anchor="middle" font-size="11" fill="#5f5e5a">输出</text>
+              <path d="M 324 140 Q 200 160 116 110" fill="none" stroke="#1D9E75" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arrowGreen)"/>
+              <text x="215" y="170" text-anchor="middle" font-size="10" fill="#0F6E56">瑞利背散射反馈 (CCW → LD)</text>
+            </svg>
+            <div class="diagram-caption">图 1. 激光二极管-总线波导-微环腔耦合系统结构示意：CW 模式由激光耦入，瑞利背散射产生 CCW 模式返回激光腔</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>关键物理现象</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">瑞利背散射与模式分裂</div><span class="topic-badge badge-theory">模式耦合</span></div>
+        <div class="topic-body">
+          <p>微腔中的瑞利背散射（耦合率 $\beta = 2\gamma/\kappa$）将 CW 模式能量转移到 CCW 模式，CCW 场经延迟返回激光腔形成反馈。当 $\beta > 0$ 时，原本简并的 CW/CCW 模式发生分裂，传输谱出现双谷结构。</p>
+        </div>
+      </div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">S 曲线与锁定平台</div><span class="topic-badge badge-theory">调谐特性</span></div>
+        <div class="topic-body">
+          <p>$\xi$-$\zeta$ 曲线描述了自由运行激光频率 $\omega_0$（横轴 $\xi$）与锁定后实际发射频率 $\omega$（纵轴 $\zeta$）之间的关系。锁定平台上 $\zeta$ 几乎不随 $\xi$ 变化，正向扫描和反向扫描遵循不同分支并呈现滞回行为，边界由鞍结分岔决定。</p>
+        </div>
+      </div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">线宽窄化机制</div><span class="topic-badge badge-theory">线宽压缩</span></div>
+        <div class="topic-body">
+          <p>锁定后激光频率噪声被稳定因子 $S = 1 + 2K\cos\psi$ 压缩，本征线宽缩小 $1/S^2$ 倍。$\psi = 0$ 时压缩最优，$\psi = \pi$ 时反馈反而增宽。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">4</span>与其他章节的联系</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">SIL 在光子学体系中的位置</div><span class="topic-badge badge-theory">知识关联</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>第 2 章（F-P 腔动力学）</strong>：微腔侧的 CW/CCW 耦合 LLE 直接源自第 2 章的归一化 LLE。</li>
+            <li><strong>第 4 章（注入锁定）</strong>：SIL 可视为“自身成为主激光器”的自洽推广，锁定带宽由 $K$ 系数主导。</li>
+            <li><strong>第 6 章（Kerr 耗散孤子）</strong>：SIL 提供的窄线宽泵浦可直接驱动高 $Q$ 微腔产生孤子光频梳。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>归一化与无量纲参数</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">统一时间尺度归一化</div><span class="topic-badge badge-theory">归一化</span></div>
+        <div class="topic-body">
+          <p>所有频率和衰减率均归一化到微腔的加载半线宽（$\kappa / 2 = \omega_c / 2Q$），慢时间标度为：</p>
+          <div class="formula-box">$$\tau = \frac{\kappa}{2} t$$<div class="formula-label">归一化慢时间</div></div>
+          <table class="data-table">
+            <thead><tr><th>符号</th><th>定义</th><th>物理意义</th></tr></thead>
+            <tbody>
+              <tr><td>$\xi$</td><td>$\frac{2(\omega_0 - \omega_c)}{\kappa}$</td><td>自由运行激光相对于冷腔谐振 $\omega_c$ 的失谐</td></tr>
+              <tr><td>$\zeta$</td><td>$\frac{2(\omega - \omega_c)}{\kappa}$</td><td>锁定发射频率失谐</td></tr>
+              <tr><td>$\beta$</td><td>$\frac{2\gamma}{\kappa}$</td><td>归一化瑞利背散射耦合率（CW-CCW 模式间）</td></tr>
+              <tr><td>$K$</td><td>$2\beta\tilde{\kappa}\sqrt{1+\alpha_g^2}$</td><td>无量纲稳定/锁定系数</td></tr>
+              <tr><td>$\psi$</td><td>$\omega\tau_s - \arctan(\alpha_g)$</td><td>有效反馈相位（与 Step 5 严格统一）</td></tr>
+              <tr><td>$\alpha_g$</td><td>—</td><td>半导体激光线宽增强因子（Henry 因子）</td></tr>
+              <tr><td>$\eta_c$</td><td>$\frac{\kappa_{\text{ext}}}{\kappa}$</td><td>总线波导-微腔耦合比（临界耦合时 $\eta_c = 0.5$）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>完整耦合动力学方程</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">激光二极管速率方程（Lang-Kobayashi 框架）</div><span class="topic-badge badge-theory">Lang-Kobayashi</span></div>
+        <div class="topic-body">
+          <div class="formula-box">
+            $$\frac{da_L}{d\tau} = \left[(1+i\alpha_g)\, g_N (N - N_{\text{th}}) - i\xi\right] a_L + \kappa_{\text{fb}}\, e^{i\phi_0}\, b_0(\tau - \tau_s)$$
+            <div class="formula-label">激光二极管电场方程（含光反馈延迟项）</div>
+          </div>
+          <div class="formula-box">
+            $$\frac{dN}{d\tau} = J - \gamma_N N - G(N)|a_L|^2$$
+            <div class="formula-label">载流子速率方程</div>
+          </div>
+          <ul>
+            <li>$g_N$：归一化到 $\kappa/2$ 的微分光增益；$N_{\text{th}}$：孤立激光二极管阈值载流子密度。</li>
+            <li>$\kappa_{\text{fb}}$：微腔回馈到激光腔的无量纲反馈耦合率；$\phi_0 = \omega_c \tau_s$：外部往返延迟静态传播相位。</li>
+            <li>$b_0(\tau - \tau_s)$：微腔回散射的 CCW 场（延迟项）；$J, \gamma_N, G(N)$：归一化泵浦电流、载流子衰减率、饱和增益函数。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">微腔耦合 LLE（CW / CCW 模式）</div><span class="topic-badge badge-theory">耦合 LLE</span></div>
+        <div class="topic-body">
+          <div class="formula-box">
+            $$\frac{\partial a}{\partial \tau} = -(1+i\zeta_0)\,a + i\,d_2\frac{\partial^2 a}{\partial \theta^2} + i\left(|a|^2 + 2|b|^2\right)a + i\beta\,b + f$$
+            <div class="formula-label">CW 模式 LLE</div>
+          </div>
+          <div class="formula-box">
+            $$\frac{\partial b}{\partial \tau} = -(1+i\zeta_0)\,b + i\,d_2\frac{\partial^2 b}{\partial \theta^2} + i\left(|b|^2 + 2|a|^2\right)b + i\beta\,a$$
+            <div class="formula-label">CCW 模式 LLE（无外部泵浦，仅背散射驱动）</div>
+          </div>
+          <ul>
+            <li>$\zeta_0 = \frac{2(\omega_c - \omega_{\text{ref}})}{\kappa}$：冷腔失谐；$d_2$：归一化 GVD 系数。</li>
+            <li>$|a|^2 + 2|b|^2$：SPM + XPM Kerr 非线性频移；$f = \eta_{\text{in}}\,a_L$：激光耦入 CW 模式的泵浦振幅。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>SIL 调谐方程解析推导（S 曲线）</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">稳态锁定调谐曲线的逐步推导</div><span class="topic-badge badge-formula">解析推导</span></div>
+        <div class="topic-body">
+          <p>在线性 CW 单纵模区域中，忽略色散与 Kerr 频移，逐步推导稳态 S 曲线：</p>
+          <p><strong>Step 1：稳态谐波 ansatz</strong> — 设激光与微腔锁定到共同频率 $\omega$，对应归一化失谐 $\zeta = \frac{2(\omega - \omega_c)}{\kappa}$：</p>
+          <div class="formula-box">$$a_L(\tau) = A_L\,e^{-i\zeta\tau}, \quad a(\tau) = A\,e^{-i\zeta\tau}, \quad b(\tau) = B\,e^{-i\zeta\tau}$$</div>
+          <p><strong>Step 2：求解微腔代数方程</strong> — 代入线性化单模 LLE 令 $\partial a/\partial\tau = \partial b/\partial\tau = 0$：</p>
+          <div class="formula-box">$$(1 - i\zeta)\,A - i\beta\,B = f, \qquad -i\beta\,A + (1 - i\zeta)\,B = 0$$</div>
+          <p>由第二式得 $A = \frac{1-i\zeta}{i\beta}B$，代入第一式得：</p>
+          <div class="formula-box">$$B = \frac{i\beta}{(1-i\zeta)^2 + \beta^2}\,f, \qquad A = \frac{1-i\zeta}{(1-i\zeta)^2 + \beta^2}\,f$$</div>
+          <p><strong>Step 3：激光方程的绝热载流子消去</strong> — 稳态下延迟 CCW 反馈场 $b(\tau-\tau_s) = B\,e^{i\zeta\tau_s}e^{-i\zeta\tau}$，代入激光方程并除以 $A_L$：</p>
+          <div class="formula-box">$$-i\zeta = (1+i\alpha_g)\,\Delta g - i\xi + \frac{i\beta\,\kappa_{\text{fb}}\,\eta_{\text{in}}\,e^{i\omega\tau_s}}{(1-i\zeta)^2 + \beta^2}$$</div>
+          <p><strong>Step 4：分离实部和虚部</strong> — 定义微腔复反射传递函数 $\chi(\zeta)$：</p>
+          <div class="formula-box">$$\chi(\zeta) = \frac{i\beta}{(1-i\zeta)^2 + \beta^2} = \frac{-2\beta\zeta + i\beta(1+\beta^2-\zeta^2)}{(1+\beta^2-\zeta^2)^2 + 4\zeta^2}$$</div>
+          <p>令 $\tilde{\kappa} = \kappa_{\text{fb}}\eta_{\text{in}}$，$\theta_s = \omega\tau_s$，分离实部与虚部得 $\Delta g = -\tilde{\kappa}\,\text{Re}[e^{i\theta_s}\chi(\zeta)]$ 与 $-\zeta = \alpha_g\Delta g - \xi + \tilde{\kappa}\,\text{Im}[e^{i\theta_s}\chi(\zeta)]$。</p>
+          <p><strong>Step 5：消去 $\Delta g$ 得到解析调谐曲线</strong> — 定义 $\psi = \omega\tau_s - \arctan(\alpha_g)$ 与 $K = 2\beta\tilde{\kappa}\sqrt{1+\alpha_g^2}$：</p>
+          <div class="formula-box">
+            $$\xi(\zeta) = \zeta + K\,\frac{2\zeta\cos\psi + (1+\beta^2-\zeta^2)\sin\psi}{(1+\beta^2-\zeta^2)^2 + 4\zeta^2}$$
+            <div class="formula-label">SIL 解析调谐 S 曲线（与 $\chi(\zeta)$ 分子符号严格一致）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">4</span>锁定带宽、线宽窄化与微腔传输谱</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">锁定范围与线宽压缩</div><span class="topic-badge badge-formula">锁定特性</span></div>
+        <div class="topic-body">
+          <div class="formula-box">$$\Delta\omega_{\text{lock}} \approx \frac{\kappa}{2}\,K$$<div class="formula-label">强反馈（$K \gg 1$）与最优相位（$\psi = 0$）下的近似锁定带宽</div></div>
+          <p>在谐振中心 $\zeta = 0$（$\beta \ll 1$）处对 S 曲线求导，得频率稳定因子与线宽压缩比：</p>
+          <div class="formula-box">
+            $$S = \left.\frac{d\xi}{d\zeta}\right|_{\zeta=0,\beta\ll 1} = 1 + 2K\cos\psi, \qquad \frac{\delta\omega}{\delta\omega_0} = \left(\frac{d\zeta}{d\xi}\right)^2 = \frac{1}{(1 + 2K\cos\psi)^2}$$
+            <div class="formula-label">稳定因子与线宽压缩比（与 S 曲线分子 $2\zeta\cos\psi$ 严格一致）</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">总线波导功率传输</div><span class="topic-badge badge-formula">传输谱</span></div>
+        <div class="topic-body">
+          <p>由输入-输出耦合理论，$s_{\text{out}} = f - 2\eta_c A$，代入稳态解 $A$ 得归一化输出功率传输：</p>
+          <div class="formula-box">$$T(\zeta) = \left|1 - \frac{2\eta_c(1-i\zeta)}{(1-i\zeta)^2+\beta^2}\right|^2$$</div>
+          <ul>
+            <li><strong>远离谐振</strong>（$|\zeta| \gg 1$）：$T(\zeta) \to 1$（全传输）。</li>
+            <li><strong>锁定范围内</strong>（$\zeta \approx 0$）：$T(\zeta)$ 跌入宽平谐振吸收谷；$\beta > 0$ 时出现分裂双谷。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">5</span>仿真算法：单调稳定分支分段索引</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">$O(M\log N)$ 扫频分支追踪算法</div><span class="topic-badge badge-sim">数值算法</span></div>
+        <div class="topic-body">
+          <p>将参数化曲线 $(\xi(\zeta), \zeta)$ 按导数符号 $d\xi/d\zeta > 0$ 切分为若干单调递增的<strong>稳定分支段</strong>。对每个扫描点 $\xi_m$，在覆盖该点的稳定段内采用<strong>二分查找 + 线性插值</strong>定位候选根 $\zeta$，再根据轨迹模式（中心锁定/正向/反向扫频）择优，将计算复杂度从 $O(MN)$ 降至 $O(M\log N)$。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group"><div class="sim-label">锁定强度 K <span id="val-K">8.0</span></div><input type="range" id="slider-K" min="0" max="25" step="0.1" value="8.0"></div>
+          <div class="sim-control-group"><div class="sim-label">反馈相位 ψ (rad) <span id="val-psi">0.00</span></div><input type="range" id="slider-psi" min="-3.14159" max="3.14159" step="0.05" value="0"></div>
+          <div class="sim-control-group"><div class="sim-label">模式分裂 β <span id="val-beta">0.40</span></div><input type="range" id="slider-beta" min="0" max="2.5" step="0.02" value="0.4"></div>
+          <div class="sim-control-group"><div class="sim-label">耦合率 η_c <span id="val-eta">0.50</span></div><input type="range" id="slider-eta" min="0.05" max="0.95" step="0.02" value="0.5"></div>
+          <div style="border-top: 0.5px solid var(--c-border); padding-top: 0.5rem;">
+            <div style="font-size:12px; color:var(--c-text-sec); margin-bottom:0.25rem; font-weight:500;">轨迹模式</div>
+            <div class="mode-selector">
+              <label><input type="radio" name="mode" value="center" checked>中心锁定（最小线宽）</label>
+              <label><input type="radio" name="mode" value="forward">正向扫描（ξ 递增）</label>
+              <label><input type="radio" name="mode" value="backward">反向扫描（ξ 递减）</label>
+            </div>
+          </div>
+          <div class="sim-status">
+            <div class="status-line"><span>锁定范围</span><strong id="lockRange">—</strong></div>
+            <div class="status-line"><span>稳定因子 S</span><strong id="stabFactor">—</strong></div>
+            <div class="status-line"><span>线宽压缩比</span><strong id="linewidthRatio">—</strong></div>
+            <div class="status-line"><span>状态</span><strong id="lockStatus">计算中…</strong></div>
+          </div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-stack">
+            <div class="sim-canvas-wrap-2"><div class="sim-canvas-label">频率调谐 S 曲线：锁定激光失谐 ζ vs 自由运行失谐 ξ</div><canvas id="canvasScurve" width="700" height="320"></canvas></div>
+            <div class="sim-canvas-wrap-2"><div class="sim-canvas-label">微腔总线波导功率传输 T(ξ)</div><canvas id="canvasTrans" width="700" height="230"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Kondratiev, N. M. et al. Self-injection locking of a laser diode to a high-Q WGM microresonator. <em>Opt. Express</em> <strong>25</strong>, 28167–28178 (2017).</li>
+      <li><span class="ref-num">[2]</span>Li, B. et al. Reaching fiber-laser coherence in integrated photonics. <em>Opt. Lett.</em> <strong>46</strong>, 5201–5204 (2021).</li>
+      <li><span class="ref-num">[3]</span>Lang, R. &amp; Kobayashi, K. External optical feedback effects on semiconductor injection laser properties. <em>IEEE J. Quantum Electron.</em> <strong>16</strong>, 347–355 (1980).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  function computeSILCurves(K, psi, beta, etaC, nPoints) {
+    nPoints = nPoints || 2400;
+    var zeta = new Float64Array(nPoints), xi = new Float64Array(nPoints), T = new Float64Array(nPoints), dxiDzeta = new Float64Array(nPoints), isLocked = new Uint8Array(nPoints);
+    var cosP = Math.cos(psi), sinP = Math.sin(psi), b2 = beta * beta;
+    for (var i = 0; i < nPoints; i++) {
+      var z = -18.0 + (36.0 * i) / (nPoints - 1); zeta[i] = z;
+      var term = 1.0 + b2 - z * z, denom = term * term + 4.0 * z * z;
+      xi[i] = z + K * (2.0 * z * cosP + term * sinP) / denom;
+      var cdRe = term, cdIm = -2.0 * z, numRe = 2.0 * etaC, numIm = -2.0 * etaC * z;
+      var tfRe = 1.0 - (numRe * cdRe + numIm * cdIm) / denom, tfIm = -(numIm * cdRe - numRe * cdIm) / denom;
+      T[i] = tfRe * tfRe + tfIm * tfIm;
+    }
+    var dz = 36.0 / (nPoints - 1);
+    for (var j = 0; j < nPoints; j++) dxiDzeta[j] = j === 0 ? (xi[1] - xi[0]) / dz : (j === nPoints - 1 ? (xi[j] - xi[j - 1]) / dz : (xi[j + 1] - xi[j - 1]) / (2 * dz));
+    var bound = Math.max(2.5, 1.5 * beta + 1.5);
+    for (var k = 0; k < nPoints; k++) isLocked[k] = (dxiDzeta[k] > 1.35 && Math.abs(zeta[k]) < bound) ? 1 : 0;
+    return { zeta: zeta, xi: xi, T: T, dxiDzeta: dxiDzeta, isLocked: isLocked };
+  }
+  function extractPhysicalSweep(data, mode) {
+    var zeta = data.zeta, xi = data.xi, T = data.T, dxi = data.dxiDzeta, N = zeta.length, segments = [], segStart = -1;
+    for (var i = 0; i < N; i++) { if (dxi[i] > 0) { if (segStart < 0) segStart = i; } else { if (segStart >= 0 && i - 1 > segStart) segments.push([segStart, i - 1]); segStart = -1; } }
+    if (segStart >= 0 && N - 1 > segStart) segments.push([segStart, N - 1]);
+    var nGrid = 1200, xiGrid = new Float64Array(nGrid), zetaEff = new Float64Array(nGrid), TEff = new Float64Array(nGrid);
+    for (var g = 0; g < nGrid; g++) {
+      var xVal = -14.0 + (28.0 * g) / (nGrid - 1); xiGrid[g] = xVal; zetaEff[g] = NaN; TEff[g] = NaN;
+      var bestZ = NaN, bestT = NaN, bestKey = (mode === 'backward') ? -Infinity : Infinity;
+      for (var s = 0; s < segments.length; s++) {
+        var lo = segments[s][0], hi = segments[s][1]; if (xVal < xi[lo] || xVal > xi[hi]) continue;
+        while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (xi[mid] <= xVal) lo = mid; else hi = mid; }
+        var frac = (xVal - xi[lo]) / (xi[hi] - xi[lo] + 1e-15), zc = zeta[lo] + frac * (zeta[hi] - zeta[lo]), tc = T[lo] + frac * (T[hi] - T[lo]);
+        var key = mode === 'center' ? Math.abs(zc) : zc;
+        if ((mode === 'backward' && key > bestKey) || (mode !== 'backward' && key < bestKey)) { bestKey = key; bestZ = zc; bestT = tc; }
+      }
+      zetaEff[g] = bestZ; TEff[g] = bestT;
+    }
+    return { xiGrid: xiGrid, zetaEff: zetaEff, TEff: TEff };
+  }
+  function setupCanvas(canvas, cssH) {
+    var dpr = window.devicePixelRatio || 1, cssW = canvas.clientWidth || 640;
+    canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr); canvas.style.height = cssH + 'px';
+    var ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx: ctx, w: cssW, h: cssH };
+  }
+  function drawPlot(canvas, cssH, data, sweep, isTrans) {
+    var r = setupCanvas(canvas, cssH), ctx = r.ctx, w = r.w, h = r.h;
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    var xMin = -14, xMax = 14, yMin = isTrans ? -0.05 : -10, yMax = isTrans ? 1.12 : 10, padL = 45, padR = 15, padT = 14, padB = 34, plotW = w - padL - padR, plotH = h - padT - padB;
+    var px = function(x) { return padL + (x - xMin) / (xMax - xMin) * plotW; }, py = function(y) { return padT + (yMax - y) / (yMax - yMin) * plotH; };
+    ctx.strokeStyle = '#e8e6df'; ctx.lineWidth = 0.5;
+    for (var gx = -12; gx <= 12; gx += 4) { ctx.beginPath(); ctx.moveTo(px(gx), padT); ctx.lineTo(px(gx), padT + plotH); ctx.stroke(); }
+    var yTicks = isTrans ? [0, 0.25, 0.5, 0.75, 1] : [-8, -4, 0, 4, 8];
+    ctx.font = '10px -apple-system,sans-serif'; ctx.fillStyle = '#888780';
+    for (var yt = 0; yt < yTicks.length; yt++) { var yv = yTicks[yt]; ctx.beginPath(); ctx.moveTo(padL, py(yv)); ctx.lineTo(padL + plotW, py(yv)); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(isTrans ? yv.toFixed(2) : String(yv), padL - 6, py(yv) + 3); }
+    ctx.textAlign = 'center'; for (var tx = -12; tx <= 12; tx += 4) ctx.fillText(String(tx), px(tx), h - 14);
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '11px -apple-system,sans-serif'; ctx.fillText('自由运行激光失谐 ξ', padL + plotW / 2, h - 2);
+    ctx.save(); ctx.translate(12, padT + plotH / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(isTrans ? '归一化传输 T' : '锁定激光失谐 ζ', 0, 0); ctx.restore();
+    var xiMin = 0, xiMax = 0, hasLock = false;
+    for (var i = 0; i < data.isLocked.length; i++) if (data.isLocked[i]) { if (!hasLock) { xiMin = data.xi[i]; xiMax = data.xi[i]; hasLock = true; } else { xiMin = Math.min(xiMin, data.xi[i]); xiMax = Math.max(xiMax, data.xi[i]); } }
+    if (hasLock) { ctx.fillStyle = 'rgba(29,158,117,0.12)'; ctx.fillRect(px(xiMin), padT, px(xiMax) - px(xiMin), plotH); }
+    if (!isTrans) { ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(px(-10), py(-10)); ctx.lineTo(px(10), py(10)); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.4; ctx.beginPath(); var started = false, yArr = isTrans ? data.T : data.zeta;
+    for (var j = 0; j < data.xi.length; j++) { var x = data.xi[j], y = yArr[j]; if (x < xMin || x > xMax || y < yMin || y > yMax) { started = false; continue; } if (!started) { ctx.moveTo(px(x), py(y)); started = true; } else ctx.lineTo(px(x), py(y)); }
+    ctx.stroke();
+    if (!isTrans) { ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 3; ctx.beginPath(); started = false; for (var k = 0; k < data.isLocked.length; k++) { if (!data.isLocked[k]) { started = false; continue; } var xk = data.xi[k], yk = data.zeta[k]; if (xk < xMin || xk > xMax || yk < yMin || yk > yMax) { started = false; continue; } if (!started) { ctx.moveTo(px(xk), py(yk)); started = true; } else ctx.lineTo(px(xk), py(yk)); } ctx.stroke(); }
+    ctx.strokeStyle = isTrans ? '#dc2626' : '#2563eb'; ctx.lineWidth = 2.2; ctx.beginPath(); started = false; var sArr = isTrans ? sweep.TEff : sweep.zetaEff;
+    for (var m = 0; m < sweep.xiGrid.length; m++) { var xm = sweep.xiGrid[m], ym = sArr[m]; if (isNaN(ym) || xm < xMin || xm > xMax || ym < yMin || ym > yMax) { started = false; continue; } if (!started) { ctx.moveTo(px(xm), py(ym)); started = true; } else ctx.lineTo(px(xm), py(ym)); }
+    ctx.stroke();
+  }
+  function updateSim() {
+    var K = parseFloat(document.getElementById('slider-K').value), psi = parseFloat(document.getElementById('slider-psi').value), beta = parseFloat(document.getElementById('slider-beta').value), etaC = parseFloat(document.getElementById('slider-eta').value);
+    var mode = (document.querySelector('input[name="mode"]:checked') || { value: 'center' }).value;
+    document.getElementById('val-K').textContent = K.toFixed(1); document.getElementById('val-psi').textContent = psi.toFixed(2); document.getElementById('val-beta').textContent = beta.toFixed(2); document.getElementById('val-eta').textContent = etaC.toFixed(2);
+    var data = computeSILCurves(K, psi, beta, etaC), sweep = extractPhysicalSweep(data, mode), isMobile = window.innerWidth < 480;
+    drawPlot(document.getElementById('canvasScurve'), isMobile ? 240 : 320, data, sweep, false); drawPlot(document.getElementById('canvasTrans'), isMobile ? 180 : 230, data, sweep, true);
+    var hasLock = false, xiMin = 0, xiMax = 0;
+    for (var i = 0; i < data.isLocked.length; i++) if (data.isLocked[i]) { if (!hasLock) { xiMin = data.xi[i]; xiMax = data.xi[i]; hasLock = true; } else { xiMin = Math.min(xiMin, data.xi[i]); xiMax = Math.max(xiMax, data.xi[i]); } }
+    var S = 1 + 2 * K * Math.cos(psi);
+    document.getElementById('lockRange').textContent = hasLock ? ('Δξ = ' + (xiMax - xiMin).toFixed(2)) : '无';
+    document.getElementById('stabFactor').textContent = S.toFixed(2);
+    document.getElementById('linewidthRatio').textContent = S > 0 ? (1 / (S * S)).toFixed(4) + '×' : '不稳定';
+    var st = document.getElementById('lockStatus'); st.textContent = hasLock ? '🔒 已锁定' : '⚠️ 未锁定'; st.style.color = hasLock ? '#1D9E75' : '#EF9F27';
+  }
+  document.querySelectorAll('#slider-K, #slider-psi, #slider-beta, #slider-eta').forEach(function(el) { el.addEventListener('input', updateSim); });
+  document.querySelectorAll('input[name="mode"]').forEach(function(el) { el.addEventListener('change', updateSim); });
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); }); document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      if (btn.dataset.panel === 'simulation') setTimeout(updateSim, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  window.addEventListener('resize', updateSim); window.addEventListener('load', updateSim);
+})();
+</script>
+</body>
+</html>

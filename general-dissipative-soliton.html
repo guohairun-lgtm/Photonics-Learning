@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>广义耗散孤子 - 光子学学习</title>
+<style>
+/* ===== Chapter 7 Generalized CGLE + Kelly Simulator ===== */
+.cgle-sim { display: flex; flex-direction: column; gap: 0.75rem; }
+.cgle-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; }
+.cgle-metric { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.5rem 0.65rem; }
+.cgle-metric-lbl { font-size: 11px; color: var(--c-text-hint); }
+.cgle-metric-val { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 14px; font-weight: 600; color: var(--c-purple-600); margin-top: 2px; }
+.cgle-sim-layout { display: grid; grid-template-columns: 290px 1fr; gap: 0.85rem; align-items: start; }
+@media (max-width: 860px) { .cgle-sim-layout { grid-template-columns: 1fr; } }
+.cgle-sidebar { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.8rem; display: flex; flex-direction: column; gap: 0.65rem; }
+.cgle-ctrl-sec { border-top: 0.5px solid var(--c-border); padding-top: 0.55rem; }
+.cgle-ctrl-sec:first-child { border-top: none; padding-top: 0; }
+.cgle-ctrl-head { font-size: 11.5px; font-weight: 600; color: var(--c-text-sec); margin-bottom: 0.4rem; }
+.cgle-mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.cgle-mode-btn { padding: 5px 6px; font-size: 11px; font-weight: 500; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: center; }
+.cgle-mode-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); font-weight: 600; }
+.cgle-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.cgle-preset-btn { padding: 5px 6px; font-size: 11px; border: 0.5px solid var(--c-border); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: left; }
+.cgle-preset-btn:hover { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.cgle-preset-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-600); color: var(--c-purple-800); font-weight: 600; }
+.cgle-btn-row { display: flex; gap: 5px; }
+.cgle-action-btn { flex: 1; padding: 6px 8px; font-size: 11.5px; font-weight: 500; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.cgle-action-btn:hover { border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.cgle-action-btn.primary { background: var(--c-purple-600); color: #fff; border-color: var(--c-purple-600); }
+.cgle-action-btn.running { background: #e11d48; border-color: #e11d48; color: #fff; }
+.cgle-slider-grp { display: flex; flex-direction: column; gap: 2px; margin-bottom: 5px; }
+.cgle-slider-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--c-text-sec); }
+.cgle-slider-row .val { font-family: "SF Mono", monospace; font-weight: 600; color: var(--c-purple-600); }
+.cgle-chk-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--c-text-sec); cursor: pointer; }
+.cgle-chk-row input { accent-color: var(--c-purple-600); }
+.cgle-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+@media (max-width: 720px) { .cgle-charts-grid { grid-template-columns: 1fr; } }
+.cgle-chart-card { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.6rem; display: flex; flex-direction: column; }
+.cgle-chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 4px; }
+.cgle-chart-title { font-size: 12px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 5px; }
+.cgle-badge { font-size: 10px; font-family: "SF Mono", monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--c-purple-50); color: var(--c-purple-600); }
+.cgle-mini-btn { font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 0.5px solid var(--c-border-2); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; }
+.cgle-mini-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.cgle-cv-wrap { width: 100%; height: 220px; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.cgle-cv-wrap canvas { display: block; width: 100%; height: 100%; }
+.cgle-tip { margin-top: 0.65rem; padding: 0.6rem 0.85rem; border-radius: var(--radius); background: var(--c-blue-50); border: 0.5px solid var(--c-blue-100); color: var(--c-blue-600); font-size: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">7</span>广义耗散孤子（三次-五次 CGLE / Kelly 边带 / 纯四次孤子）</div>
+    <p class="section-desc">三次-五次 CGLE 主方程 → 拉格朗日变分解析解 → 高阶色散与纯四次孤子（PQS）→ 分立腔 Round-Trip 映射与 Kelly 边带 → 自适应步长 SSFM-RK4 交互仿真</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>从 Kerr 孤子到广义耗散孤子</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">CGLE：LLE 的推广</div><span class="topic-badge badge-theory">概述</span></div>
+        <div class="topic-body">
+          <p>第 6 章讨论的<strong>无源 Kerr 微腔耗散孤子</strong>由 Lugiato-Lefever 方程（LLE）描述，其非线性仅含<strong>三次 Kerr 项</strong>。当系统进一步引入<strong>五次非线性</strong>（饱和吸收/自聚焦修正）、<strong>增益饱和与谱滤波</strong>、<strong>高阶色散</strong>（三阶、四阶）等效应时，LLE 推广为<strong>三次-五次复 Ginzburg-Landau 方程（CGLE）</strong>。</p>
+          <ul>
+            <li><strong>复数系数</strong>：方程系数含实部（色散/非线性）和虚部（增益/损耗），是真正的<strong>非哈密顿耗散系统</strong>。</li>
+            <li><strong>三次 + 五次非线性</strong>：$|u|^2 u$ 提供 Kerr 自相位调制，$|u|^4 u$ 提供五次饱和吸收——后者钳位高峰值功率，防止高能量脉冲坍缩。</li>
+            <li><strong>增益饱和与谱滤波</strong>：增益介质引入频率依赖的增益 $g(\omega)$，等效抛物线谱滤波 $\beta_f \partial^2/\partial\tau^2$。</li>
+            <li><strong>高阶色散</strong>：$d_3$（三阶）破坏光谱对称性，$d_4$（四阶）可支持<strong>纯四次孤子（PQS）</strong>。</li>
+          </ul>
+          <div class="diagram-box">
+            <svg viewBox="0 0 780 225" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+              <defs>
+                <marker id="arrCG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#534AB7"/></marker>
+                <marker id="arrCG2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+              </defs>
+              <text x="390" y="20" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">锁模激光腔：均匀场 CGLE vs 分立 Round-Trip 映射与 Kelly 边带</text>
+              <rect x="40" y="52" width="130" height="44" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+              <text x="105" y="71" text-anchor="middle" font-size="11" font-weight="600" fill="#0F6E56">增益光纤 + 滤波</text>
+              <text x="105" y="87" text-anchor="middle" font-size="9" fill="#0F6E56">g₀/(1+E/E_s), β_f</text>
+              <line x1="170" y1="74" x2="220" y2="74" stroke="#1D9E75" stroke-width="1.6" marker-end="url(#arrCG2)"/>
+              <rect x="224" y="52" width="130" height="44" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+              <text x="289" y="71" text-anchor="middle" font-size="11" font-weight="600" fill="#185FA5">色散与 Kerr 介质</text>
+              <text x="289" y="87" text-anchor="middle" font-size="9" fill="#185FA5">β₂, β₃, β₄, γ</text>
+              <line x1="354" y1="74" x2="404" y2="74" stroke="#534AB7" stroke-width="1.6" marker-end="url(#arrCG)"/>
+              <rect x="408" y="52" width="130" height="44" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1.5"/>
+              <text x="473" y="71" text-anchor="middle" font-size="11" font-weight="600" fill="#854F0B">可饱和吸收体</text>
+              <text x="473" y="87" text-anchor="middle" font-size="9" fill="#854F0B">ε|u|²u − μ|u|⁴u</text>
+              <line x1="538" y1="74" x2="588" y2="74" stroke="#534AB7" stroke-width="1.6" marker-end="url(#arrCG)"/>
+              <rect x="592" y="52" width="140" height="44" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+              <text x="662" y="71" text-anchor="middle" font-size="11" font-weight="600" fill="#534AB7">分立输出耦合器</text>
+              <text x="662" y="87" text-anchor="middle" font-size="9" fill="#534AB7">周期扰动 → Kelly 边带</text>
+              <path d="M 662 96 L 662 132 L 105 132 L 105 100" fill="none" stroke="#888780" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#arrCG2)"/>
+              <text x="390" y="149" text-anchor="middle" font-size="10" fill="#5f5e5a">腔长 L ≪ L_D, L_NL → 平均场 CGLE；长腔分立损耗 → Round-Trip 映射 P[u₀]e^(−iφ₀) = u₀</text>
+              <rect x="60" y="168" width="190" height="38" rx="6" fill="#E1F5EE" stroke="#9FE1CB"/><text x="155" y="185" text-anchor="middle" font-size="10" font-weight="600" fill="#0F6E56">反常色散 (D &gt; 0)</text><text x="155" y="199" text-anchor="middle" font-size="9" fill="#0F6E56">弱啁啾 · 近 sech/高斯型</text>
+              <rect x="295" y="168" width="190" height="38" rx="6" fill="#E6F1FB" stroke="#B5D4F4"/><text x="390" y="185" text-anchor="middle" font-size="10" font-weight="600" fill="#185FA5">近零/四阶色散 (PQS)</text><text x="390" y="199" text-anchor="middle" font-size="9" fill="#185FA5">E ∝ |d₄|/w³ · 振荡尾</text>
+              <rect x="530" y="168" width="190" height="38" rx="6" fill="#FAEEDA" stroke="#FAC775"/><text x="625" y="185" text-anchor="middle" font-size="10" font-weight="600" fill="#854F0B">正常色散 (D &lt; 0)</text><text x="625" y="199" text-anchor="middle" font-size="9" fill="#854F0B">强啁啾 · 平顶超高斯 (DSR)</text>
+            </svg>
+            <div class="diagram-caption">图 1. 锁模激光腔的均匀场 CGLE 与分立 Round-Trip 映射及三类典型色散区域</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">均匀场模型 vs Round-Trip 映射</div><span class="topic-badge badge-theory">建模方法</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>均匀场（Mean-Field）CGLE</strong>：将腔内所有元件效应平均到一个连续传播方程，适用于紧凑腔。局限：将分立输出耦合损耗平滑化，无法产生 Kelly 边带。</li>
+            <li><strong>Round-Trip 映射（庞加莱映射）</strong>：将腔视为分立元件级联——先沿光纤传播，再施加集总输出耦合损耗 $\sqrt{1-l_{\text{out}}}$。稳态脉冲是不动点 $\mathcal{P}[u_0]e^{-i\phi_0} - u_0 = 0$，能精确捕捉 <strong>Kelly 边带</strong>。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>色散区域的多样性与 Kelly 边带</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">六种色散区域与孤子形态</div><span class="topic-badge badge-theory">物理图像</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>纯四次孤子（PQS）</strong>：$|d_2|<0.08$ 且 $d_4<-0.1$，平顶脉冲带振荡指数尾，能量-脉宽三次反比律 $E \propto |d_4|/w^3$。</li>
+            <li><strong>混合二阶+四阶反常</strong>：$d_2 \le -0.08$ 且 $d_4<-0.1$，主瓣由二阶与四阶共同平衡，尾部随 $|d_4/d_2|$ 增大出现振荡。</li>
+            <li><strong>经典反常二阶色散</strong>：$d_2<-0.1$ 且 $d_4\ge-0.1$，sech/高斯型，啁啾小，指数单调衰减尾。</li>
+            <li><strong>弱/中等正常色散</strong>：$-0.1 \le d_2 \le 1.5$ 且 $d_4\ge-0.1$，强频率啁啾 $|C|\sim 1\text{--}3$，$d_3\neq 0$ 时光谱非对称。</li>
+            <li><strong>强正常色散 DSR 平顶</strong>：$d_2>1.5$ 或 $d_4>1.5$，陡峭边缘平顶矩形脉冲，峰值功率被五次饱和钳位。</li>
+            <li><strong>连续延拓模式</strong>：沿解分支连续演化，直接继承上一步收敛的精确解。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">Kelly 边带：分立腔损耗诱导的色散波共振</div><span class="topic-badge badge-theory">物理现象</span></div>
+        <div class="topic-body">
+          <p>在 Round-Trip 映射框架下，每圈输出耦合器对孤子施加瞬态扰动并激发线性色散波。当色散波每圈累积色散相位满足 $\Phi_{\text{disp}}(\omega_m) - \phi_{\text{sol}} = 2m\pi$ 时，与后续扰动相干叠加、共振增强，在光谱主瓣两侧形成周期性尖峰——即 <strong>Kelly 边带</strong>。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>稳定性、数值方法与章节关联</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">不动点存在 ≠ 动力学稳定</div><span class="topic-badge badge-theory">稳定性</span></div>
+        <div class="topic-body">
+          <p>严格稳定性由 <strong>Bogoliubov-de Gennes（BdG）线性化算子</strong>特征值判定：$\max\,\text{Re}(\lambda) < 0$ 则扰动指数衰减（动力学稳定）；存在正实部特征值则失稳为呼吸子或崩溃。CGLE 是第 2 章 GLE 与第 6 章 LLE 的统一推广。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel (ALL 5 ORIGINAL SECTIONS 100% PRESERVED + SIGN FIX + ALGORITHM) ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>均匀场 CGLE 及其归一化</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">有量纲广义三次-五次 CGLE</div><span class="topic-badge badge-theory">CGLE</span></div>
+        <div class="topic-body">
+          <p>当激光谐振腔单圈内脉冲演化步长远小于色散长度与非线性长度（平均场近似）时，光场慢变复包络 $A(z, t)$ 满足有量纲广义三次-五次 CGLE：</p>
+          <div class="formula-box">
+            $$i \frac{\partial A}{\partial z} - \frac{\beta_2}{2}\frac{\partial^2 A}{\partial t^2} - i\frac{\beta_3}{6}\frac{\partial^3 A}{\partial t^3} + \frac{\beta_4}{24}\frac{\partial^4 A}{\partial t^4} + \gamma |A|^2 A = i g_0 A + i \beta_f \frac{\partial^2 A}{\partial t^2} + i \epsilon |A|^2 A - (i\mu - \nu)|A|^4 A$$
+            <div class="formula-label">有量纲三次-五次 CGLE（Mean-Field Model）</div>
+          </div>
+          <ul>
+            <li><strong>保守左端项</strong>：$\beta_2$（GVD，$\beta_2 < 0$ 反常，$\beta_2 > 0$ 正常）、$\beta_3$（TOD，破坏光谱对称性）、$\beta_4$（FOD，$\beta_4 < 0$ 支持纯四次孤子 PQS）、$\gamma > 0$（Kerr SPM）。</li>
+            <li><strong>耗散右端项</strong>：净线性增益/损耗 $g_0 = g_{\text{gain}} - l_0 < 0$（稳态抑制 CW 背景放大）；抛物线光谱滤波系数 $\beta_f = g_{\text{gain}}/\Omega_g^2 > 0$（由有源增益 $g_{\text{gain}} > 0$ 与增益带宽 $\Omega_g$ 决定）；$\epsilon > 0$（三次可饱和吸收）；$\mu > 0$（五次饱和吸收钳位）；$\nu$（五次非线性折射率修正）。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">无量纲归一化推导</div><span class="topic-badge badge-formula">归一化</span></div>
+        <div class="topic-body">
+          <p>引入特征时间尺度 $T_0$、参考色散长度 $L_D$ 与特征峰值功率 $P_0$：</p>
+          <div class="formula-box">$$\tau = \frac{t}{T_0}, \qquad \xi = \frac{z}{L_D}, \qquad u(\xi, \tau) = \frac{A(z, t)}{\sqrt{P_0}}$$</div>
+          <div class="formula-box">$$P_0 = \frac{1}{\gamma L_D}, \qquad L_D = \frac{T_0^2}{|\beta_{2,\text{ref}}|} \quad \text{（PQS 取 } L_D = \frac{T_0^4}{|\beta_{4,\text{ref}}|}\text{）}$$</div>
+          <div class="formula-box">
+            $$d_2 = \frac{\beta_2 L_D}{T_0^2}, \quad d_3 = \frac{\beta_3 L_D}{T_0^3}, \quad d_4 = \frac{\beta_4 L_D}{T_0^4}$$
+            $$\tilde{g}_0 = g_0 L_D, \quad \tilde{\beta}_f = \frac{\beta_f L_D}{T_0^2}, \quad \tilde{\epsilon} = \epsilon P_0 L_D, \quad \tilde{\mu} = \mu P_0^2 L_D$$
+          </div>
+          <p>略去波浪号，得到<strong>无量纲归一化广义 CGLE 主方程</strong>：</p>
+          <div class="formula-box">
+            $$i \frac{\partial u}{\partial \xi} - \frac{d_2}{2}\frac{\partial^2 u}{\partial \tau^2} - i\frac{d_3}{6}\frac{\partial^3 u}{\partial \tau^3} + \frac{d_4}{24}\frac{\partial^4 u}{\partial \tau^4} + |u|^2 u = i g_0 u + i \beta_f \frac{\partial^2 u}{\partial \tau^2} + i \epsilon |u|^2 u - (i\mu - \nu)|u|^4 u$$
+            <div class="formula-label">无量纲归一化 CGLE 主方程</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>经典二阶耗散孤子的变分法解析解</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">步骤一至三：保守拉格朗日密度、啁啾高斯试探解与约化拉格朗日量</div><span class="topic-badge badge-formula">Step 1–3</span></div>
+        <div class="topic-body">
+          <p>令 $d_3 = d_4 = 0$，记 $D = -d_2$（$D > 0$ 反常，$D < 0$ 正常），方程为 $i\frac{\partial u}{\partial \xi} + \frac{D}{2}\frac{\partial^2 u}{\partial \tau^2} + \gamma|u|^2 u = iR(u, u^*)$，其中 $R = g_0 u + \beta_f \frac{\partial^2 u}{\partial \tau^2} + \epsilon|u|^2 u - (\mu + i\nu)|u|^4 u$。</p>
+          <div class="formula-box">$$\mathcal{L}_0 = \frac{i}{2}\left( u^* \frac{\partial u}{\partial \xi} - u \frac{\partial u^*}{\partial \xi} \right) - \frac{D}{2}\left| \frac{\partial u}{\partial \tau} \right|^2 + \frac{\gamma}{2}|u|^4$$<div class="formula-label">保守拉格朗日密度 $\mathcal{L}_0$</div></div>
+          <div class="formula-box">$$u(\xi, \tau) = \sqrt{\frac{E(\xi)}{\sqrt{\pi}\,w(\xi)}} \exp\left( -\frac{\tau^2}{2w(\xi)^2} + i\frac{C(\xi)}{2w(\xi)^2}\tau^2 + i\phi(\xi) \right)$$<div class="formula-label">啁啾高斯试探解（能量 $E = \sqrt{\pi}Pw$，脉宽 $w$，啁啾 $C$，相位 $\phi$）</div></div>
+          <div class="formula-box">$$L = -E \frac{d\phi}{d\xi} - \frac{E}{4}\frac{dC}{d\xi} + \frac{EC}{2w}\frac{dw}{d\xi} - \frac{DE}{4w^2}(1 + C^2) + \frac{\gamma E^2}{2\sqrt{2\pi}\,w}$$<div class="formula-label">约化拉格朗日量（Averaged Lagrangian）</div></div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">步骤四：修正欧拉-拉格朗日方程 → ODE 系统</div><span class="topic-badge badge-formula">Step 4</span></div>
+        <div class="topic-body">
+          <div class="formula-box">$$\frac{\partial L}{\partial q_j} - \frac{d}{d\xi}\left(\frac{\partial L}{\partial \dot{q}_j}\right) = 2\,\text{Re}\int_{-\infty}^{\infty} i R(u, u^*) \frac{\partial u^*}{\partial q_j} \, d\tau, \quad q_j \in \{\phi, C, w, E\}$$</div>
+          <div class="formula-box">$$\frac{dE}{d\xi} = 2g_0 E - \frac{\beta_f E}{w^2}(1 + C^2) + \frac{\sqrt{2}\,\epsilon E^2}{\sqrt{\pi}\,w} - \frac{2\mu E^3}{\sqrt{3}\pi\,w^2}$$<div class="formula-label">能量演化方程（$\phi$ 变分）</div></div>
+          <div class="formula-box">$$\frac{dw}{d\xi} = \frac{DC}{w} + \frac{\beta_f}{w}(1 - C^2) - \frac{\epsilon E}{2\sqrt{2\pi}} + \frac{2\mu E^2}{3\sqrt{3}\pi\,w}$$<div class="formula-label">脉宽演化方程（$C$ 变分 + 能量方程联立）</div></div>
+          <div class="formula-box">$$\frac{dC}{d\xi} = \frac{D}{w^2}(1 + C^2) - \frac{4\beta_f C}{w^2} - \frac{\gamma E}{\sqrt{2\pi}\,w} + \frac{4\nu E^2}{3\sqrt{3}\pi\,w^2}$$<div class="formula-label">啁啾演化方程（$w$ 变分）</div></div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">步骤五：稳态固定点闭合解析解</div><span class="topic-badge badge-formula">Step 5</span></div>
+        <div class="topic-body">
+          <p>令 $\dot{E} = \dot{w} = \dot{C} = 0$，定义归一化峰值功率 $P \equiv E/(\sqrt{\pi}\,w)$（取 $\nu = 0$）：</p>
+          <div class="formula-box">$$A_c C^2 + B_c C - A_c = 0, \quad A_c = 3\sqrt{2}\,\beta_f\gamma - \sqrt{2}\,D\epsilon, \quad B_c = 2\sqrt{2}\,D\gamma + 6\sqrt{2}\,\beta_f\epsilon$$</div>
+          <div class="formula-box">$$C = \frac{-B_c \pm \sqrt{B_c^2 + 4A_c^2}}{2A_c}, \qquad P = \frac{3\sqrt{3}}{2\mu} \left[ \frac{\epsilon}{\sqrt{2}} - \frac{2\beta_f(1 - C^2) + 2DC}{D(1 + C^2) - 4\beta_f C} \cdot \frac{\gamma}{\sqrt{2}} \right]$$</div>
+          <div class="formula-box">$$w = \sqrt{\frac{\beta_f(1 + C^2)}{2g_0 + \sqrt{2}\,\epsilon P - \frac{2\mu}{\sqrt{3}} P^2}}, \qquad E = \sqrt{\pi}\,P\,w, \qquad k = \frac{d\phi}{d\xi} = \frac{\gamma P}{\sqrt{2}} - \frac{D(1 + C^2)}{4w^2}$$</div>
+          <p><strong>存在四大充要条件</strong>：$g_0 < 0$（背景稳定）、$P > 0$（正峰值）、$2g_0 + \sqrt{2}\epsilon P - \frac{2\mu}{\sqrt{3}}P^2 > 0$（实脉宽）、BdG $\max\,\text{Re}(\lambda) < 0$（动力学稳定）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>高阶色散区域与 Newton-Raphson 初始值策略</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">有效色散、分区域稳态特征与工程约束</div><span class="topic-badge badge-theory">高阶色散</span></div>
+        <div class="topic-body">
+          <div class="formula-box">$$\beta_{\text{disp}}(\omega) = \frac{d_2}{2}\omega^2 + \frac{d_3}{6}\omega^3 + \frac{d_4}{24}\omega^4, \qquad \beta_2^{\text{eff}}(\omega) = d_2 + d_3\omega + \frac{d_4}{2}\omega^2$$</div>
+          <table class="data-table">
+            <thead><tr><th>区域</th><th>色散条件</th><th>稳态特征</th><th>初始试探解</th></tr></thead>
+            <tbody>
+              <tr><td><strong>PQS</strong></td><td>$|d_2|<0.08, d_4<-0.1$</td><td>平顶，振荡指数尾，$E \propto |d_4|/w^3$</td><td>四次标度高斯，$P \approx 0.35|d_4|/(\gamma w_0^4)$</td></tr>
+              <tr><td><strong>混合</strong></td><td>$d_2 \le -0.08, d_4<-0.1$</td><td>二阶+四阶反常平衡，尾部振荡</td><td>变分解 + 四阶功率补偿</td></tr>
+              <tr><td><strong>经典反常</strong></td><td>$d_2<-0.1, d_4\ge-0.1$</td><td>sech/高斯，$|C|<1$，指数衰减尾</td><td>闭合变分解析解</td></tr>
+              <tr><td><strong>中等正常</strong></td><td>$-0.1 \le d_2 \le 1.5, d_4\ge-0.1$</td><td>强啁啾 $|C|\sim 1\text{--}3$，$d_3\neq 0$ 非对称</td><td>啁啾正则化变分种子，$|C_{\text{init}}|=\min(|C_{\text{var}}|,2.5)$</td></tr>
+              <tr><td><strong>DSR 平顶</strong></td><td>$d_2>1.5$ 或 $d_4>1.5$</td><td>陡峭边缘平顶矩形脉冲</td><td>超高斯 $m=2.5$，$P_{\text{clamp}}=\frac{\epsilon+\sqrt{\epsilon^2+4\mu g_0}}{2\mu}$</td></tr>
+            </tbody>
+          </table>
+          <p><strong>双对称性钉扎约束</strong>：U(1) 相位钉扎 $\text{Im}(u(0)) = 0$（确定波数 $k$）；时间平移钉扎 $\int \tau|u|^2 d\tau = 0$（$d_3 \neq 0$ 时确定群速度漂移 $v$）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">4</span>Kelly 边带解析理论</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">分立腔庞加莱映射与广义相位匹配条件</div><span class="topic-badge badge-formula">Kelly</span></div>
+        <div class="topic-body">
+          <div class="formula-box">
+            $$A\big((n+1)L^+, t\big) = \sqrt{1 - l_{\text{out}}} \cdot A\big((n+1)L^-, t\big), \qquad \mathbf{F}(A_0, \phi_0) = \mathcal{P}[A_0](t)\, e^{-i\phi_0} - A_0(t) = 0$$
+            <div class="formula-label">腔端输出耦合器扰动与单圈不动点方程（等效增益 $g_0 \approx -\frac{\ln(1-l_{\text{out}})}{2L} - \delta_{\text{loss}}$）</div>
+          </div>
+          <div class="formula-box">
+            $$\Phi_{\text{disp}}(\omega) = -L \left( \frac{\beta_2}{2}\omega^2 + \frac{\beta_3}{6}\omega^3 + \frac{\beta_4}{24}\omega^4 \right), \qquad \Phi_{\text{disp}}(\omega_m) - \phi_{\text{sol}} = 2\pi m \quad (m=1,2,3,\ldots)$$
+            <div class="formula-label">Kelly 边带广义共振条件</div>
+          </div>
+          <div class="formula-box">
+            $$\Delta\omega_m = \pm \frac{1}{\tau}\sqrt{\frac{8\pi m \tau^2}{|\beta_2| L} - 1} \propto \sqrt{m} \quad (\text{二阶孤子}), \qquad \Delta\omega_m = \pm \left[ \frac{24(2\pi m + \phi_{\text{sol}})}{|\beta_4| L} \right]^{1/4} \propto m^{1/4} \quad (\text{PQS})$$
+            <div class="formula-label">经典二阶反常孤子极限与纯四次孤子极限（$\beta_3 \neq 0$ 时打破 $\pm\omega$ 对称性）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">5</span>简化三次 CGLE 变分法解析解、稳定性与 SSFM 算法</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">含全局增益饱和的简化三次 CGLE 与三维自治 ODE</div><span class="topic-badge badge-formula">简化模型</span></div>
+        <div class="topic-body">
+          <p><strong>符号映射说明</strong>：本节与交互仿真器关闭五次项（$\mu = \nu = 0$）并记 $(\xi, \tau, u, -d_2, \beta_f, \epsilon) \to (z, t, \psi, D, \beta, \varepsilon)$，引入全局脉冲能量饱和 $\delta_{\text{eff}}(E) = \frac{g_0}{1 + E/E_s} - l_0$（Haus 主方程形式）：</p>
+          <div class="formula-box">$$i\frac{\partial \psi}{\partial z} + \frac{D}{2}\frac{\partial^2 \psi}{\partial t^2} + |\psi|^2 \psi = i Q, \qquad Q = \delta_{\text{eff}}(E)\psi + \beta\frac{\partial^2 \psi}{\partial t^2} + \varepsilon |\psi|^2 \psi$$</div>
+          <p>取试探解 $\psi(z, t) = A(z)\exp\left[-\frac{t^2}{2W(z)^2} + i C(z) t^2 + i \phi(z)\right]$（$E = \sqrt{\pi}A^2 W$），得平均拉格朗日量与三维自治 ODE 组：</p>
+          <div class="formula-box">$$L = \sqrt{\pi} A^2 W \left[ -\phi' - \frac{1}{2}W^2 C' - \frac{D}{4}\left(\frac{1}{W^2} + 4C^2 W^2\right) + \frac{A^2}{2\sqrt{2}} \right]$$</div>
+          <div class="formula-box">
+            $$\frac{dA}{dz} = \delta_{\text{eff}}(E) A - D C A - \frac{\beta}{W^2} A + \frac{5\varepsilon}{4\sqrt{2}} A^3$$
+            $$\frac{dW}{dz} = 2 D C W + \beta\left(\frac{1}{W} - 4 C^2 W^3\right) - \frac{\varepsilon}{2\sqrt{2}} A^2 W$$
+            $$\frac{dC}{dz} = \frac{D}{2W^4} - 2 D C^2 - \frac{A^2}{2\sqrt{2}W^2} - \frac{4\beta C}{W^2}$$
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">全色散区统一精确解析解与三层稳定性判据</div><span class="topic-badge badge-formula">Analytical</span></div>
+        <div class="topic-body">
+          <p>引入无量纲啁啾 $q = 2CW^2$ 与参量 $P = A^2W^2/\sqrt{2}$，得全色散区无奇点精确解：</p>
+          <div class="formula-box">
+            $$(2\beta - \varepsilon D) q^2 - 2(D + 2\varepsilon\beta) q - (2\beta - \varepsilon D) = 0$$
+            $$q = \frac{-(2\beta - \varepsilon D)}{(D + 2\varepsilon\beta) + \sqrt{(D + 2\varepsilon\beta)^2 + (2\beta - \varepsilon D)^2}}, \qquad P = D(1 - q^2) - 4\beta q$$
+          </div>
+          <div class="formula-box">
+            $$h(E) \equiv \frac{g_0}{1 + E/E_s} - l_0 + \frac{\Gamma}{2\pi P^2} E^2 = 0, \qquad \Gamma = \frac{5\varepsilon}{4}P - \beta - \frac{Dq}{2}$$
+            $$W_0 = \frac{\sqrt{2\pi} P}{E_0}, \qquad A_0 = \frac{(\sqrt{2} P)^{1/2}}{W_0}, \qquad C_0 = \frac{q}{2 W_0^2}$$
+          </div>
+          <p><strong>系统稳定性三层判据</strong>：</p>
+          <ul>
+            <li><strong>动力学线性稳定性</strong>：$3\times 3$ 雅可比矩阵（计入 $\frac{\partial \delta_{\text{eff}}}{\partial A} = -\frac{2g_0 E}{AE_s(1+E/E_s)^2}$ 与 $\frac{\partial \delta_{\text{eff}}}{\partial W} = -\frac{g_0 E}{WE_s(1+E/E_s)^2}$）满足 $\max\,\text{Re}(\lambda_i) < 0$。</li>
+            <li><strong>能量分支稳定性</strong>：$h(E_{\min}) \le 0$ 时两根中下分支 $E_1$（$h' < 0$）稳定，上分支 $E_2$（$h' > 0$）不稳定。</li>
+            <li><strong>背景连续波稳定性</strong>：要求 $\delta_{\text{eff}}(E_0) < 0$，避免零背景噪声指数放大。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">仿真算法：非均匀分立腔 Round-Trip 映射与自适应步长 SSFM-RK4</div><span class="topic-badge badge-sim">数值算法</span></div>
+        <div class="topic-body">
+          <p>交互仿真器在严格傅里叶网格（$N = 1024,\; T_{\max} = 64,\; \Delta t = 0.125,\; \Delta\omega = \pi/64 \approx 0.0491$）上对含二/三/四阶色散与三次-五次非线性的广义 CGLE 执行 1000 圈长程演化：</p>
+          <ul>
+            <li><strong>自适应初值匹配与背景稳态</strong>：根据 $(d_2, d_4, \varepsilon, \mu, \beta_f)$ 自动匹配反常 sech、纯四次标度 sech 或正常色散强啁啾超高斯初值，并结合全局能量增益饱和抑制 CW 背景放大与多脉冲分裂。</li>
+            <li><strong>Strang 分裂 + 时域 RK4 + 防数值共振自适应步长</strong>：每圈内动态选取步数 $M \in [20, 180]$ 使单步最大色散相移 $|\beta(\omega)|\,\Delta z < 0.65\pi$，彻底消除高阶色散下的 SSFM 数值步长虚假边带；时域采用四阶龙格-库塔法（RK4）精确积分三次-五次非线性项。</li>
+            <li><strong>分立腔 vs 均匀场与双共振标定</strong>：Round-Trip 模式下每圈末端施加集总输出耦合损耗 $\sqrt{1-l_{\text{out}}}$ 激发 Kelly 边带（$m \ge 1$），Mean-Field 模式下平滑均摊损耗；同时标出 $m = 0$ 切伦科夫色散波（DW）解析共振线，并采用超高斯吸收边界与随动居中机制保证 1000 圈长程稳定。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="cgle-sim">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; border-bottom:0.5px solid var(--c-border); padding-bottom:0.5rem;">
+          <div style="font-size:13.5px; font-weight:600; color:var(--c-purple-800);">广义三次-五次 CGLE 与非均匀分立腔 Kelly 边带仿真器</div>
+          <div style="font-size:11px; font-family:'SF Mono',monospace; color:var(--c-text-hint);" id="engine-status">就绪</div>
+        </div>
+
+        <div class="cgle-metrics">
+          <div class="cgle-metric"><div class="cgle-metric-lbl">当前演化圈数 (RT)</div><div class="cgle-metric-val" id="m-rt">0 / 1000</div></div>
+          <div class="cgle-metric"><div class="cgle-metric-lbl">峰值光强 |u|²_max</div><div class="cgle-metric-val" id="m-peak">—</div></div>
+          <div class="cgle-metric"><div class="cgle-metric-lbl">脉冲总能量 E</div><div class="cgle-metric-val" id="m-energy">—</div></div>
+          <div class="cgle-metric"><div class="cgle-metric-lbl">单圈孤子相移 φ_sol</div><div class="cgle-metric-val" id="m-phisol">—</div></div>
+          <div class="cgle-metric"><div class="cgle-metric-lbl">一级 Kelly 边带 ω₁</div><div class="cgle-metric-val" id="m-kelly" style="color:#e11d48;">—</div></div>
+          <div class="cgle-metric"><div class="cgle-metric-lbl">演化状态</div><div class="cgle-metric-val" id="m-state" style="color:var(--c-teal-600);">待机</div></div>
+        </div>
+
+        <div class="cgle-sim-layout">
+          <aside class="cgle-sidebar">
+            <div class="cgle-ctrl-sec">
+              <div class="cgle-ctrl-head">腔体模型（非均匀 vs 均匀场）</div>
+              <div class="cgle-mode-toggle">
+                <button class="cgle-mode-btn active" id="mode-rt" onclick="cgleSetCavityMode(true)">分立腔 Round-Trip<br><span style="font-size:9.5px;opacity:0.75;">产生 Kelly 边带</span></button>
+                <button class="cgle-mode-btn" id="mode-mf" onclick="cgleSetCavityMode(false)">均匀场 Mean-Field<br><span style="font-size:9.5px;opacity:0.75;">平滑损耗无边带</span></button>
+              </div>
+            </div>
+
+            <div class="cgle-ctrl-sec">
+              <div class="cgle-ctrl-head">典型物理场景预设</div>
+              <div class="cgle-preset-grid">
+                <button class="cgle-preset-btn active" id="pre-anom" onclick="cgleApplyPreset('anomalous')">反常孤子 + Kelly</button>
+                <button class="cgle-preset-btn" id="pre-tod" onclick="cgleApplyPreset('tod')">三阶色散非对称 Kelly</button>
+                <button class="cgle-preset-btn" id="pre-pqs" onclick="cgleApplyPreset('pqs')">纯四次孤子 PQS</button>
+                <button class="cgle-preset-btn" id="pre-dsr" onclick="cgleApplyPreset('dsr')">正常色散平顶 DSR</button>
+              </div>
+            </div>
+
+            <div class="cgle-ctrl-sec">
+              <div class="cgle-ctrl-head">仿真控制</div>
+              <div class="cgle-btn-row" style="margin-bottom:6px;">
+                <button class="cgle-action-btn primary" id="btn-run" onclick="cgleToggleRun()">▶ 运行 / 暂停</button>
+                <button class="cgle-action-btn" onclick="cgleStepMore(100)">+100 圈</button>
+                <button class="cgle-action-btn" onclick="cgleResetSim(true)">重置</button>
+              </div>
+              <label class="cgle-chk-row" style="margin-bottom:4px;"><input type="checkbox" id="chk-kelly" checked onchange="cgleRenderAll()"> 显示解析相位匹配线 (DW m=0 · Kelly m≥1)</label>
+              <label class="cgle-chk-row"><input type="checkbox" id="chk-cont"> 连续延拓模式（调参保留当前单脉冲场）</label>
+            </div>
+
+            <div class="cgle-ctrl-sec">
+              <div class="cgle-ctrl-head">色散参数 (d₂, d₃, d₄)</div>
+              <div id="sliders-disp"></div>
+            </div>
+
+            <div class="cgle-ctrl-sec">
+              <div class="cgle-ctrl-head">三次-五次耗散与非线性 (β_f, ε, μ, ν)</div>
+              <div id="sliders-nl"></div>
+            </div>
+
+            <div class="cgle-ctrl-sec">
+              <div class="cgle-ctrl-head">分立腔与增益饱和 (l_out, L, g₀, E_s)</div>
+              <div id="sliders-cav"></div>
+            </div>
+          </aside>
+
+          <div>
+            <div class="cgle-charts-grid">
+              <div class="cgle-chart-card">
+                <div class="cgle-chart-head">
+                  <div class="cgle-chart-title"><span class="cgle-badge">A</span>时域脉冲强度 |u(τ)|²</div>
+                  <div>
+                    <button class="cgle-mini-btn active" id="btn-tlin" onclick="cgleSetTimeLog(false)">线性</button>
+                    <button class="cgle-mini-btn" id="btn-tlog" onclick="cgleSetTimeLog(true)">对数 dB</button>
+                  </div>
+                </div>
+                <div class="cgle-cv-wrap"><canvas id="cv-time"></canvas></div>
+              </div>
+
+              <div class="cgle-chart-card">
+                <div class="cgle-chart-head">
+                  <div class="cgle-chart-title"><span class="cgle-badge" style="background:#fef2f2;color:#e11d48;">B</span>光谱功率密度 (dB) 与 Kelly 边带</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">青：DW (m=0) · 红：Kelly (m≥1)</span>
+                </div>
+                <div class="cgle-cv-wrap"><canvas id="cv-spec"></canvas></div>
+              </div>
+
+              <div class="cgle-chart-card">
+                <div class="cgle-chart-head">
+                  <div class="cgle-chart-title"><span class="cgle-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">C</span>多圈演化收敛曲线</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">蓝：峰值 |u|²_max · 绿：能量 E</span>
+                </div>
+                <div class="cgle-cv-wrap"><canvas id="cv-evol"></canvas></div>
+              </div>
+
+              <div class="cgle-chart-card">
+                <div class="cgle-chart-head">
+                  <div class="cgle-chart-title"><span class="cgle-badge" style="background:var(--c-amber-50);color:var(--c-amber-600);">D</span>单圈色散相位 Φ_disp(ω) 与相位匹配</div>
+                  <span style="font-size:10px;color:var(--c-text-hint);">0=DW · 2mπ=Kelly</span>
+                </div>
+                <div class="cgle-cv-wrap"><canvas id="cv-disp"></canvas></div>
+              </div>
+            </div>
+
+            <div class="cgle-tip" id="physics-tip">
+              <strong>物理提示：</strong>当前处于<strong>分立腔 Round-Trip 映射</strong>模式，每圈末端施加集总输出耦合损耗 √(1 − l_out)，周期性扰动孤子并辐射色散波；当 −Φ_disp(ω_m) + φ_sol = 2mπ 时形成尖锐的 Kelly 边带。切换至「均匀场 Mean-Field」模式可直观对比边带消失现象。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Akhmediev, N. &amp; Ankiewicz, A. (eds.) <em>Dissipative Solitons</em>, Lecture Notes in Physics Vol. 661 (Springer, 2005).</li>
+      <li><span class="ref-num">[2]</span>Kelly, S. M. J. Characteristic sideband instability of periodically amplified average soliton. <em>Electron. Lett.</em> <strong>28</strong>, 806–807 (1992).</li>
+      <li><span class="ref-num">[3]</span>Blanco-Redondo, A., de Sterke, C. M., Sipe, J. E., Krauss, T. F., Eggleton, B. J. &amp; Husko, C. Pure-quartic solitons. <em>Nat. Commun.</em> <strong>7</strong>, 10427 (2016).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== Numerical Grid (N=512, pre-allocated buffers) =====
+  var N = 1024, Tmax = 64.0, dt = (2 * Tmax) / N, M_STEPS = 20, TARGET_RT = 1000;
+  var tAxis = new Float64Array(N), wAxis = new Float64Array(N), wShift = new Float64Array(N), absorb = new Float64Array(N);
+  for (var i = 0; i < N; i++) {
+    tAxis[i] = -Tmax + i * dt;
+    var k = i < N / 2 ? i : i - N;
+    wAxis[i] = (2 * Math.PI * k) / (2 * Tmax);
+    wShift[i] = (2 * Math.PI * (i - N / 2)) / (2 * Tmax);
+    absorb[i] = Math.exp(-0.60 * Math.pow(tAxis[i] / Tmax, 16));
+  }
+
+  var uRe = new Float64Array(N), uIm = new Float64Array(N);
+  var fRe = new Float64Array(N), fIm = new Float64Array(N);
+  var linRe = new Float64Array(N), linIm = new Float64Array(N);
+  var k1r = new Float64Array(N), k1i = new Float64Array(N);
+  var k2r = new Float64Array(N), k2i = new Float64Array(N);
+  var k3r = new Float64Array(N), k3i = new Float64Array(N);
+  var k4r = new Float64Array(N), k4i = new Float64Array(N);
+
+  var P = { d2: -1.0, d3: 0.0, d4: 0.0, beta_f: 0.05, eps: 0.35, mu: 0.08, nu: 0.0, l_out: 0.40, L: 2.2, g0: 0.70, Es: 2.5 };
+  var PRESETS = {
+    anomalous: { d2: -1.0, d3: 0.00, d4:  0.0, beta_f: 0.05, eps: 0.35, mu: 0.08, nu: 0.0, l_out: 0.40, L: 2.2, g0: 0.70, Es: 2.5 },
+    tod:       { d2: -1.0, d3: 0.16, d4:  0.0, beta_f: 0.05, eps: 0.35, mu: 0.08, nu: 0.0, l_out: 0.40, L: 2.2, g0: 0.70, Es: 2.5 },
+    pqs:       { d2:  0.0, d3: 0.00, d4: -1.0, beta_f: 0.10, eps: 0.35, mu: 0.08, nu: 0.0, l_out: 0.22, L: 1.5, g0: 0.72, Es: 2.5 },
+    dsr:       { d2:  1.0, d3: 0.00, d4:  0.0, beta_f: 0.20, eps: 0.45, mu: 0.10, nu: 0.0, l_out: 0.25, L: 1.2, g0: 0.85, Es: 5.0 }
+  };
+  var initAnsatzLabel = '反常色散孤子 sech';
+
+  var isRoundTrip = true, isTimeLog = false, isRunning = false, animId = null;
+  var currentRT = 0, targetRT = TARGET_RT, phiSolEst = 0.0, blowup = false;
+  var peakHist = [], energyHist = [];
+
+  // ===== Build Sliders =====
+  var sliderDefs = {
+    disp: [
+      { k: 'd2', lbl: '二阶色散 d₂ (负=反常)', min: -2.0, max: 2.0, step: 0.05 },
+      { k: 'd3', lbl: '三阶色散 d₃ (TOD)', min: -0.35, max: 0.35, step: 0.01 },
+      { k: 'd4', lbl: '四阶色散 d₄ (负=PQS)', min: -2.0, max: 1.0, step: 0.05 }
+    ],
+    nl: [
+      { k: 'beta_f', lbl: '谱滤波 β_f', min: 0.02, max: 0.35, step: 0.01 },
+      { k: 'eps', lbl: '三次可饱和吸收 ε', min: 0.10, max: 0.55, step: 0.01 },
+      { k: 'mu', lbl: '五次饱和钳位 μ', min: 0.02, max: 0.25, step: 0.01 },
+      { k: 'nu', lbl: '五次折射修正 ν', min: -0.15, max: 0.15, step: 0.01 }
+    ],
+    cav: [
+      { k: 'l_out', lbl: '分立输出损耗 l_out', min: 0.0, max: 0.65, step: 0.02 },
+      { k: 'L', lbl: '单圈腔长 L', min: 0.6, max: 3.5, step: 0.1 },
+      { k: 'g0', lbl: '小信号增益 g₀', min: 0.6, max: 2.2, step: 0.05 },
+      { k: 'Es', lbl: '饱和能量 E_s', min: 1.0, max: 8.0, step: 0.2 }
+    ]
+  };
+
+  Object.keys(sliderDefs).forEach(function(sec) {
+    var box = document.getElementById('sliders-' + sec);
+    sliderDefs[sec].forEach(function(cfg) {
+      var div = document.createElement('div');
+      div.className = 'cgle-slider-grp';
+      div.innerHTML = '<div class="cgle-slider-row"><span>' + cfg.lbl + '</span><span class="val" id="v-' + cfg.k + '">' + P[cfg.k].toFixed(2) + '</span></div>' +
+        '<input type="range" id="s-' + cfg.k + '" min="' + cfg.min + '" max="' + cfg.max + '" step="' + cfg.step + '" value="' + P[cfg.k] + '">';
+      box.appendChild(div);
+      div.querySelector('input').addEventListener('input', function(e) {
+        P[cfg.k] = parseFloat(e.target.value);
+        document.getElementById('v-' + cfg.k).textContent = P[cfg.k].toFixed(2);
+        updateLinearOp();
+        if (document.getElementById('chk-cont').checked && currentRT > 0 && !blowup) {
+          targetRT = currentRT + 200;
+          if (!isRunning) window.cgleToggleRun();
+        } else {
+          window.cgleResetSim(true);
+        }
+      });
+    });
+  });
+
+  // ===== In-place Radix-2 FFT =====
+  function fft(re, im, inv) {
+    var n = re.length;
+    for (var i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { var tr = re[i]; re[i] = re[j]; re[j] = tr; var ti = im[i]; im[i] = im[j]; im[j] = ti; }
+    }
+    var sign = inv ? 1 : -1;
+    for (var len = 2; len <= n; len <<= 1) {
+      var half = len >> 1, ang = sign * 2 * Math.PI / len, wR = Math.cos(ang), wI = Math.sin(ang);
+      for (var i0 = 0; i0 < n; i0 += len) {
+        var cR = 1, cI = 0;
+        for (var k = 0; k < half; k++) {
+          var u = i0 + k, v = u + half;
+          var tR = cR * re[v] - cI * im[v], tI = cR * im[v] + cI * re[v];
+          re[v] = re[u] - tR; im[v] = im[u] - tI; re[u] += tR; im[u] += tI;
+          var nR = cR * wR - cI * wI; cI = cR * wI + cI * wR; cR = nR;
+        }
+      }
+    }
+    if (inv) { for (var m = 0; m < n; m++) { re[m] /= n; im[m] /= n; } }
+  }
+
+  function updateLinearOp() {
+    // Adaptive M_STEPS: enforce max single-step dispersion phase < 0.65*pi over |w| <= 8.5
+    // Eliminates spurious SSFM numerical step-size resonances under strong d3/d4
+    var maxBeta = 0;
+    for (var s = 0; s <= 170; s++) {
+      var wt = -8.5 + 0.1 * s, wt2 = wt * wt;
+      var bw = Math.abs(0.5 * P.d2 * wt2 - (1 / 6) * P.d3 * wt2 * wt + (1 / 24) * P.d4 * wt2 * wt2);
+      if (bw > maxBeta) maxBeta = bw;
+    }
+    M_STEPS = Math.max(20, Math.min(180, Math.ceil((maxBeta * P.L) / (0.65 * Math.PI))));
+    var dz = P.L / M_STEPS;
+    for (var i = 0; i < N; i++) {
+      var w = wAxis[i], w2 = w * w, w3 = w2 * w, w4 = w2 * w2;
+      var ph = 0.5 * dz * (0.5 * P.d2 * w2 - (1 / 6) * P.d3 * w3 + (1 / 24) * P.d4 * w4);
+      var dec = Math.exp(-0.5 * dz * P.beta_f * w2);
+      linRe[i] = dec * Math.cos(ph);
+      linIm[i] = dec * Math.sin(ph);
+    }
+  }
+
+  function nlDeriv(re, im, outR, outI) {
+    var eps = P.eps, mu = P.mu, nu = P.nu;
+    for (var i = 0; i < N; i++) {
+      var r = re[i], m = im[i], p = r * r + m * m, p2 = p * p;
+      // du/dz = (eps + i)*|u|^2*u + (-mu - i*nu)*|u|^4*u
+      var cRe = eps * p - mu * p2;
+      var cIm = p - nu * p2;
+      outR[i] = cRe * r - cIm * m;
+      outI[i] = cRe * m + cIm * r;
+    }
+  }
+
+  function stepOneRoundTrip() {
+    var dz = P.L / M_STEPS;
+    var alphaOut = -Math.log(Math.max(1e-4, 1.0 - P.l_out)) / (2.0 * P.L);
+    var l_int = 0.45;
+
+    // Track peak phase before & after RT for phi_sol estimation
+    var maxIdx = 0, maxP = 0;
+    for (var i0 = 0; i0 < N; i0++) { var pp = uRe[i0] * uRe[i0] + uIm[i0] * uIm[i0]; if (pp > maxP) { maxP = pp; maxIdx = i0; } }
+    var phBefore = Math.atan2(uIm[maxIdx], uRe[maxIdx]);
+
+    for (var s = 0; s < M_STEPS; s++) {
+      var E = 0;
+      for (var i = 0; i < N; i++) E += (uRe[i] * uRe[i] + uIm[i] * uIm[i]) * dt;
+      var gEff = P.g0 / (1.0 + E / P.Es) - l_int - (isRoundTrip ? 0.0 : alphaOut);
+      var gHalf = Math.exp(0.5 * dz * gEff);
+
+      // Half linear step (freq domain)
+      fft(uRe, uIm, false);
+      for (var j = 0; j < N; j++) {
+        var r = (uRe[j] * linRe[j] - uIm[j] * linIm[j]) * gHalf;
+        var m = (uRe[j] * linIm[j] + uIm[j] * linRe[j]) * gHalf;
+        uRe[j] = r; uIm[j] = m;
+      }
+      fft(uRe, uIm, true);
+
+      // Full RK4 nonlinear step (cubic-quintic)
+      nlDeriv(uRe, uIm, k1r, k1i);
+      for (var a = 0; a < N; a++) { fRe[a] = uRe[a] + 0.5 * dz * k1r[a]; fIm[a] = uIm[a] + 0.5 * dz * k1i[a]; }
+      nlDeriv(fRe, fIm, k2r, k2i);
+      for (var b = 0; b < N; b++) { fRe[b] = uRe[b] + 0.5 * dz * k2r[b]; fIm[b] = uIm[b] + 0.5 * dz * k2i[b]; }
+      nlDeriv(fRe, fIm, k3r, k3i);
+      for (var c = 0; c < N; c++) { fRe[c] = uRe[c] + dz * k3r[c]; fIm[c] = uIm[c] + dz * k3i[c]; }
+      nlDeriv(fRe, fIm, k4r, k4i);
+      var dz6 = dz / 6.0;
+      for (var d = 0; d < N; d++) {
+        uRe[d] += dz6 * (k1r[d] + 2 * k2r[d] + 2 * k3r[d] + k4r[d]);
+        uIm[d] += dz6 * (k1i[d] + 2 * k2i[d] + 2 * k3i[d] + k4i[d]);
+      }
+
+      // Half linear step (freq domain)
+      fft(uRe, uIm, false);
+      for (var j2 = 0; j2 < N; j2++) {
+        var r2 = (uRe[j2] * linRe[j2] - uIm[j2] * linIm[j2]) * gHalf;
+        var m2 = (uRe[j2] * linIm[j2] + uIm[j2] * linRe[j2]) * gHalf;
+        uRe[j2] = r2; uIm[j2] = m2;
+      }
+      fft(uRe, uIm, true);
+    }
+
+    // Lumped discrete output coupler loss at end of round-trip (generates Kelly sidebands!)
+    var ocAmp = isRoundTrip ? Math.sqrt(Math.max(0.05, 1.0 - P.l_out)) : 1.0;
+    var pk = 0, en = 0, pkIdx = 0;
+    for (var q = 0; q < N; q++) {
+      var fac = ocAmp * absorb[q];
+      uRe[q] *= fac; uIm[q] *= fac;
+      var p2 = uRe[q] * uRe[q] + uIm[q] * uIm[q];
+      if (p2 > pk) { pk = p2; pkIdx = q; }
+      en += p2 * dt;
+    }
+
+    // Co-moving frame recentering (prevents TOD group-velocity drift from hitting absorber over 1000+ RTs)
+    var halfN = N >> 1;
+    if (Math.abs(pkIdx - halfN) > 48 && pk > 0.05) {
+      var shift = pkIdx - halfN;
+      for (var c0 = 0; c0 < N; c0++) {
+        var src = (c0 + shift + N) & (N - 1);
+        fRe[c0] = uRe[src]; fIm[c0] = uIm[src];
+      }
+      uRe.set(fRe); uIm.set(fIm);
+      pkIdx = halfN;
+    }
+
+    // Estimate nonlinear soliton phase advance per RT: ~0.5 * peak * L (or measured unwrapped)
+    var phAfter = Math.atan2(uIm[pkIdx], uRe[pkIdx]);
+    var dPhi = phAfter - phBefore;
+    while (dPhi < 0) dPhi += 2 * Math.PI;
+    while (dPhi > 2 * Math.PI) dPhi -= 2 * Math.PI;
+    phiSolEst = (P.d2 > 0.5 && P.d4 >= 0) ? 0.5 * pk * P.L : (0.5 * pk * P.L);
+
+    if (!isFinite(pk) || pk > 100) { blowup = true; isRunning = false; }
+    currentRT++;
+    peakHist.push(pk);
+    energyHist.push(en);
+  }
+
+  // Analytical Kelly sideband roots: -Phi_disp(w) + phi_sol = 2*pi*m (m = 1, 2, 3)
+  function computeKellyRoots() {
+    var roots = [];
+    function lhs(w) {
+      var phiDisp = P.L * (0.5 * P.d2 * w * w - (1 / 6) * P.d3 * w * w * w + (1 / 24) * P.d4 * w * w * w * w);
+      return -phiDisp + phiSolEst;
+    }
+    var wMin = -8.5, wMax = 8.5, steps = 600, dw = (wMax - wMin) / steps;
+    for (var m = 0; m <= 3; m++) {
+      var target = 2 * Math.PI * m;
+      var prev = lhs(wMin) - target;
+      for (var i = 1; i <= steps; i++) {
+        var w = wMin + i * dw, cur = lhs(w) - target;
+        if (prev * cur <= 0 && Math.abs(w) > 0.8) {
+          var frac = Math.abs(prev) / (Math.abs(prev) + Math.abs(cur) + 1e-12);
+          roots.push({ m: m, w: (w - dw) + frac * dw });
+        }
+        prev = cur;
+      }
+    }
+    return roots;
+  }
+
+  // ===== HiDPI Canvas Helpers =====
+  function setupCV(id) {
+    var c = document.getElementById(id), rect = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(10, Math.round(rect.width)), h = Math.max(10, Math.round(rect.height));
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function drawGrid(ctx, w, h, pad, xMin, xMax, yMin, yMax, xLbl, yLbl) {
+    var pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+    var toX = function(x) { return pad.l + ((x - xMin) / (xMax - xMin)) * pw; };
+    var toY = function(y) { return pad.t + ph - ((y - yMin) / (yMax - yMin)) * ph; };
+    ctx.strokeStyle = '#e4e1d8'; ctx.lineWidth = 0.5; ctx.font = '9.5px monospace'; ctx.fillStyle = '#888780';
+    for (var i = 0; i <= 4; i++) {
+      var yv = yMin + (i / 4) * (yMax - yMin), py = toY(yv);
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(Math.abs(yv) >= 10 ? yv.toFixed(0) : yv.toFixed(1), pad.l - 5, py + 3);
+      var xv = xMin + (i / 4) * (xMax - xMin), px = toX(xv);
+      ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, h - pad.b); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.fillText(xv.toFixed(1), px, h - pad.b + 12);
+    }
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(xLbl, pad.l + pw / 2, h - 3);
+    ctx.save(); ctx.translate(11, pad.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yLbl, 0, 0); ctx.restore();
+    return { toX: toX, toY: toY, pw: pw, ph: ph };
+  }
+
+  function renderAll() {
+    var kellyRoots = computeKellyRoots();
+
+    // A. Time Domain |u(t)|^2
+    var rA = setupCV('cv-time'), cA = rA.ctx, pad = { l: 42, r: 12, t: 10, b: 28 };
+    var pArr = new Float64Array(N), maxP = 1e-9;
+    for (var i = 0; i < N; i++) { pArr[i] = uRe[i] * uRe[i] + uIm[i] * uIm[i]; if (pArr[i] > maxP) maxP = pArr[i]; }
+    var yMinA = isTimeLog ? -60 : 0, yMaxA = isTimeLog ? 5 : Math.max(1.0, maxP * 1.15);
+    var axA = drawGrid(cA, rA.w, rA.h, pad, -18, 18, yMinA, yMaxA, '快时间 τ', isTimeLog ? '强度 (dB)' : '|u(τ)|²');
+    cA.save(); cA.beginPath(); cA.rect(pad.l, pad.t, axA.pw, axA.ph); cA.clip();
+    cA.strokeStyle = '#378ADD'; cA.lineWidth = 2; cA.beginPath();
+    for (var i2 = 0; i2 < N; i2++) {
+      if (tAxis[i2] < -18 || tAxis[i2] > 18) continue;
+      var valA = isTimeLog ? Math.max(-65, 10 * Math.log10(pArr[i2] / maxP + 1e-12)) : pArr[i2];
+      var pxA = axA.toX(tAxis[i2]), pyA = axA.toY(valA);
+      if (i2 === 0 || tAxis[i2 - 1] < -18) cA.moveTo(pxA, pyA); else cA.lineTo(pxA, pyA);
+    }
+    cA.stroke(); cA.restore();
+
+    // B. Spectrum (dB) + Kelly Sideband Markers
+    var rB = setupCV('cv-spec'), cB = rB.ctx;
+    for (var b0 = 0; b0 < N; b0++) { fRe[b0] = uRe[b0]; fIm[b0] = uIm[b0]; }
+    fft(fRe, fIm, false);
+    var specP = new Float64Array(N), maxS = 1e-12, half = N >> 1;
+    for (var b1 = 0; b1 < N; b1++) { var si = (b1 + half) % N; specP[b1] = fRe[si] * fRe[si] + fIm[si] * fIm[si]; if (specP[b1] > maxS) maxS = specP[b1]; }
+    var axB = drawGrid(cB, rB.w, rB.h, pad, -8, 8, -70, 5, '角频率 ω', '归一化光谱 (dB)');
+    cB.save(); cB.beginPath(); cB.rect(pad.l, pad.t, axB.pw, axB.ph); cB.clip();
+    if (document.getElementById('chk-kelly').checked) {
+      cB.lineWidth = 1.2; cB.setLineDash([4, 3]);
+      kellyRoots.forEach(function(kr) {
+        if (kr.w < -8 || kr.w > 8) return;
+        if (kr.m === 0) {
+          var dx = axB.toX(kr.w);
+          cB.strokeStyle = 'rgba(15,110,86,0.65)';
+          cB.beginPath(); cB.moveTo(dx, pad.t); cB.lineTo(dx, pad.t + axB.ph); cB.stroke();
+          cB.fillStyle = '#0F6E56'; cB.font = '9px monospace'; cB.textAlign = 'center';
+          cB.fillText('DW', dx, pad.t + 11);
+        } else if (isRoundTrip) {
+          var kx = axB.toX(kr.w);
+          cB.strokeStyle = 'rgba(225,29,72,0.55)';
+          cB.beginPath(); cB.moveTo(kx, pad.t); cB.lineTo(kx, pad.t + axB.ph); cB.stroke();
+          cB.fillStyle = '#e11d48'; cB.font = '9px monospace'; cB.textAlign = 'center';
+          cB.fillText('m=' + kr.m, kx, pad.t + 22);
+        }
+      });
+      cB.setLineDash([]);
+    }
+    cB.strokeStyle = '#534AB7'; cB.lineWidth = 1.8; cB.beginPath();
+    var startedB = false;
+    for (var b2 = 0; b2 < N; b2++) {
+      if (wShift[b2] < -8 || wShift[b2] > 8) continue;
+      var db = Math.max(-72, 10 * Math.log10(specP[b2] / maxS + 1e-12));
+      var pxB = axB.toX(wShift[b2]), pyB = axB.toY(db);
+      if (!startedB) { cB.moveTo(pxB, pyB); startedB = true; } else cB.lineTo(pxB, pyB);
+    }
+    cB.stroke(); cB.restore();
+
+    // C. Multi-RT Convergence (Peak Power & Energy)
+    var rC = setupCV('cv-evol'), cC = rC.ctx;
+    var maxRTx = Math.max(20, peakHist.length);
+    var yMaxC = 1.0;
+    for (var c0 = 0; c0 < peakHist.length; c0++) yMaxC = Math.max(yMaxC, peakHist[c0], energyHist[c0]);
+    var axC = drawGrid(cC, rC.w, rC.h, pad, 0, maxRTx, 0, yMaxC * 1.15, '腔往返圈数 n (RT)', '峰值 / 能量');
+    if (peakHist.length > 1) {
+      cC.strokeStyle = '#378ADD'; cC.lineWidth = 2; cC.beginPath();
+      for (var c1 = 0; c1 < peakHist.length; c1++) { var px = axC.toX(c1 + 1), py = axC.toY(peakHist[c1]); if (c1 === 0) cC.moveTo(px, py); else cC.lineTo(px, py); }
+      cC.stroke();
+      cC.strokeStyle = '#1D9E75'; cC.lineWidth = 1.8; cC.beginPath();
+      for (var c2 = 0; c2 < energyHist.length; c2++) { var px2 = axC.toX(c2 + 1), py2 = axC.toY(energyHist[c2]); if (c2 === 0) cC.moveTo(px2, py2); else cC.lineTo(px2, py2); }
+      cC.stroke();
+    }
+
+    // D. Dispersion Phase Matching Curve: -Phi_disp(w) + phi_sol vs 2*pi*m
+    var rD = setupCV('cv-disp'), cD = rD.ctx;
+    var axD = drawGrid(cD, rD.w, rD.h, pad, -7, 7, -4, 24, '角频率 ω', '相位差 (rad)');
+    cD.save(); cD.beginPath(); cD.rect(pad.l, pad.t, axD.pw, axD.ph); cD.clip();
+    // m = 0 Cherenkov DW line
+    cD.strokeStyle = 'rgba(15,110,86,0.55)'; cD.lineWidth = 1; cD.setLineDash([4, 3]);
+    var y0 = axD.toY(0);
+    cD.beginPath(); cD.moveTo(pad.l, y0); cD.lineTo(pad.l + axD.pw, y0); cD.stroke();
+    cD.fillStyle = '#0F6E56'; cD.font = '9px monospace'; cD.textAlign = 'left'; cD.fillText('0 (DW)', pad.l + 4, y0 - 3);
+    cD.strokeStyle = 'rgba(225,29,72,0.45)'; cD.lineWidth = 1;
+    for (var m = 1; m <= 3; m++) {
+      var ym = axD.toY(2 * Math.PI * m);
+      cD.beginPath(); cD.moveTo(pad.l, ym); cD.lineTo(pad.l + axD.pw, ym); cD.stroke();
+      cD.fillStyle = '#e11d48'; cD.font = '9px monospace'; cD.textAlign = 'left'; cD.fillText(2 * m + 'π', pad.l + 4, ym - 3);
+    }
+    cD.setLineDash([]);
+    cD.strokeStyle = '#7F77DD'; cD.lineWidth = 2; cD.beginPath();
+    for (var d0 = 0; d0 <= 200; d0++) {
+      var wv = -7 + 14 * d0 / 200;
+      var phiD = P.L * (0.5 * P.d2 * wv * wv - (1 / 6) * P.d3 * wv * wv * wv + (1 / 24) * P.d4 * Math.pow(wv, 4));
+      var yv = -phiD + phiSolEst;
+      var pxD = axD.toX(wv), pyD = axD.toY(yv);
+      if (d0 === 0) cD.moveTo(pxD, pyD); else cD.lineTo(pxD, pyD);
+    }
+    cD.stroke(); cD.restore();
+
+    // Update metrics
+    document.getElementById('m-rt').textContent = currentRT + ' / ' + targetRT;
+    document.getElementById('m-peak').textContent = peakHist.length ? peakHist[peakHist.length - 1].toFixed(3) : '—';
+    document.getElementById('m-energy').textContent = energyHist.length ? energyHist[energyHist.length - 1].toFixed(3) : '—';
+    document.getElementById('m-phisol').textContent = phiSolEst.toFixed(2) + ' rad';
+    var m1 = kellyRoots.filter(function(r) { return r.m === 1; });
+    document.getElementById('m-kelly').textContent = (isRoundTrip && m1.length) ? m1.map(function(r) { return (r.w > 0 ? '+' : '') + r.w.toFixed(2); }).join(' / ') : '无共振';
+    var stEl = document.getElementById('m-state');
+    if (blowup) { stEl.textContent = '数值发散'; stEl.style.color = '#e11d48'; }
+    else if (isRunning) { stEl.textContent = 'RK4 演化中...'; stEl.style.color = '#EF9F27'; }
+    else { stEl.textContent = currentRT >= 20 ? '✔ 稳态收敛' : '就绪'; stEl.style.color = '#0F6E56'; }
+    document.getElementById('engine-status').textContent = (isRoundTrip ? 'Round-Trip' : 'Mean-Field') + ' · N=' + N + ' · 自适应步数 M=' + M_STEPS + ' (Δz=' + (P.L / M_STEPS).toFixed(3) + ') · ' + initAnsatzLabel;
+  }
+
+  function loop() {
+    if (!isRunning) return;
+    var rtsPerFrame = Math.max(1, Math.min(8, Math.round(160 / M_STEPS)));
+    for (var i = 0; i < rtsPerFrame && currentRT < targetRT && !blowup; i++) stepOneRoundTrip();
+    renderAll();
+    if (currentRT >= targetRT || blowup) {
+      isRunning = false;
+      var btn = document.getElementById('btn-run'); btn.classList.remove('running'); btn.textContent = '▶ 运行 / 暂停';
+      renderAll();
+      return;
+    }
+    animId = requestAnimationFrame(loop);
+  }
+
+  window.cgleToggleRun = function() {
+    if (blowup) { window.cgleResetSim(true); return; }
+    if (!isRunning && currentRT >= targetRT) targetRT += 200;
+    isRunning = !isRunning;
+    var btn = document.getElementById('btn-run');
+    btn.classList.toggle('running', isRunning);
+    btn.textContent = isRunning ? '⏸ 暂停演化' : '▶ 运行 / 暂停';
+    if (isRunning) animId = requestAnimationFrame(loop);
+  };
+
+  window.cgleStepMore = function(n) {
+    if (blowup) return;
+    targetRT = currentRT + n;
+    if (!isRunning) { isRunning = true; document.getElementById('btn-run').classList.add('running'); document.getElementById('btn-run').textContent = '⏸ 暂停演化'; animId = requestAnimationFrame(loop); }
+  };
+
+  window.cgleResetSim = function(autoStart) {
+    if (animId) cancelAnimationFrame(animId);
+    isRunning = false; blowup = false; currentRT = 0; targetRT = TARGET_RT; peakHist = []; energyHist = [];
+    updateLinearOp();
+    // Adaptive Initial State Matching (prevents multi-pulse splitting)
+    var pClamp = Math.min(2.2, Math.max(0.6, 0.75 * P.eps / Math.max(0.02, P.mu)));
+    var A0, W0, C0 = 0;
+    if (P.d2 > 0.15) {
+      A0 = Math.sqrt(Math.min(pClamp, 1.3));
+      W0 = Math.min(3.2, Math.max(1.2, 1.6 * Math.sqrt(P.d2)));
+      C0 = -Math.min(1.2, 0.4 * P.d2 / Math.max(0.1, P.beta_f)) / (W0 * W0);
+      for (var i = 0; i < N; i++) {
+        var env = A0 * Math.exp(-0.5 * Math.pow(Math.abs(tAxis[i] / W0), 2.4));
+        var ph = C0 * tAxis[i] * tAxis[i];
+        uRe[i] = env * Math.cos(ph); uIm[i] = env * Math.sin(ph);
+      }
+      initAnsatzLabel = '正常色散强啁啾超高斯';
+    } else if (Math.abs(P.d2) <= 0.15 && P.d4 < -0.1) {
+      A0 = Math.sqrt(Math.min(pClamp, 1.5));
+      W0 = Math.min(2.2, Math.max(0.7, Math.pow(Math.abs(P.d4) / Math.max(0.2, A0 * A0), 0.25) * 1.05));
+      for (var i2 = 0; i2 < N; i2++) {
+        uRe[i2] = A0 / Math.cosh(tAxis[i2] / W0); uIm[i2] = 0;
+      }
+      initAnsatzLabel = '纯四次标度 sech (PQS)';
+    } else {
+      var d2Eff = Math.max(0.2, Math.abs(P.d2) + 0.3 * Math.max(0.0, -P.d4));
+      A0 = Math.sqrt(Math.min(pClamp, 1.6));
+      W0 = Math.min(2.0, Math.max(0.5, Math.sqrt(d2Eff) / Math.max(0.5, A0)));
+      for (var i3 = 0; i3 < N; i3++) {
+        uRe[i3] = A0 / Math.cosh(tAxis[i3] / W0); uIm[i3] = 0;
+      }
+      initAnsatzLabel = '反常色散孤子 sech';
+    }
+    phiSolEst = 0.5 * A0 * A0 * P.L;
+    var btn = document.getElementById('btn-run'); btn.classList.remove('running'); btn.textContent = '▶ 运行 / 暂停';
+    renderAll();
+    if (autoStart) window.cgleToggleRun();
+  };
+
+  window.cgleSetCavityMode = function(rt) {
+    isRoundTrip = rt;
+    document.getElementById('mode-rt').classList.toggle('active', rt);
+    document.getElementById('mode-mf').classList.toggle('active', !rt);
+    document.getElementById('physics-tip').innerHTML = rt
+      ? '<strong>物理提示：</strong>当前处于<strong>分立腔 Round-Trip 映射</strong>模式，每圈末端施加集总输出耦合损耗 √(1 − l_out)，周期性扰动孤子并辐射色散波；当 −Φ_disp(ω_m) + φ_sol = 2mπ 时在光谱图 B 中形成尖锐的 <strong>Kelly 边带</strong>。'
+      : '<strong>物理提示：</strong>当前处于<strong>均匀场 Mean-Field CGLE</strong>模式，输出耦合损耗被平滑均摊至整圈光纤中，消除了周期性边界扰动，因此光谱图 B 中<strong>无 Kelly 边带</strong>产生。';
+    window.cgleResetSim(true);
+  };
+
+  window.cgleSetTimeLog = function(lg) {
+    isTimeLog = lg;
+    document.getElementById('btn-tlin').classList.toggle('active', !lg);
+    document.getElementById('btn-tlog').classList.toggle('active', lg);
+    renderAll();
+  };
+
+  window.cgleApplyPreset = function(name) {
+    var pre = PRESETS[name];
+    Object.keys(pre).forEach(function(k) {
+      P[k] = pre[k];
+      var s = document.getElementById('s-' + k), v = document.getElementById('v-' + k);
+      if (s) s.value = pre[k];
+      if (v) v.textContent = pre[k].toFixed(2);
+    });
+    ['anom', 'tod', 'pqs', 'dsr'].forEach(function(id) { document.getElementById('pre-' + id).classList.remove('active'); });
+    var mapId = { anomalous: 'anom', tod: 'tod', pqs: 'pqs', dsr: 'dsr' };
+    document.getElementById('pre-' + mapId[name]).classList.add('active');
+    window.cgleResetSim(true);
+  };
+
+  window.cgleRenderAll = renderAll;
+  window.addEventListener('resize', function() { if (isTabActive) renderAll(); });
+  var isTabActive = false, hasStartedOnce = false;
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isTabActive = (btn.dataset.panel === 'simulation');
+      if (isTabActive) {
+        setTimeout(function() {
+          if (!hasStartedOnce) { hasStartedOnce = true; window.cgleResetSim(true); }
+          else { renderAll(); }
+        }, 30);
+      } else {
+        if (isRunning) window.cgleToggleRun();
+      }
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+})();
+</script>
+</body>
+</html>

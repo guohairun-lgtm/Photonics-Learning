@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>F-P 腔动力学方程 - 光子学学习</title>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">2</span>F-P 腔动力学方程</div>
+    <p class="section-desc">从离散往返模型到连续时间微分方程：LLE 与 GLE 的推导、归一化、稳态解与双稳态对比仿真</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-title">从离散干涉到连续动力学</div>
+        <span class="topic-badge badge-theory">原理</span>
+      </div>
+      <div class="topic-body">
+        <p>F-P 腔的传统描述基于<strong>离散往返</strong>的多光束干涉（Airy 函数）。当关注光场的时间演化而非稳态透射时，需要将离散的往返映射转化为连续时间的微分方程。</p>
+        <p><strong>两条推导路径</strong>，各自侧重不同的物理视角，最终得到结构一致的线性微分方程：</p>
+        <ul>
+          <li><strong>路径 A：等效谐振子模型 → LLE</strong>。将 F-P 腔类比为阻尼谐振子，在慢变包络近似下化为一阶 ODE。LLE 有外部泵浦驱动项 $S$，腔本身无增益。</li>
+          <li><strong>路径 B：Maxwell 波动方程 + 边界条件 → GLE</strong>。从 Maxwell 方程出发，将往返映射做 Taylor 展开连续化。GLE 无外部激励源，但可含增益和可饱和吸收。</li>
+        </ul>
+        <p><strong>统一形式</strong>：两条路径在纯线性极限下得到结构一致的方程 $\frac{d\psi}{dt} = (-\kappa + i\Delta)\psi + \text{(source)}$，稳态时退化为 Lorentzian 线型，与 Airy 函数在谐振峰附近一致。</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+            <defs>
+              <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1D9E75"/></marker>
+              <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#378ADD"/></marker>
+            </defs>
+            <text x="410" y="22" text-anchor="middle" font-size="14" font-weight="600" fill="#3C3489">从离散往返映射到连续动力学方程</text>
+            <rect x="310" y="160" width="200" height="50" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+            <text x="410" y="182" text-anchor="middle" font-size="13" font-weight="600" fill="#534AB7">F-P 谐振腔</text>
+            <text x="410" y="198" text-anchor="middle" font-size="11" fill="#534AB7">离散往返映射</text>
+            <rect x="60" y="55" width="200" height="45" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1"/>
+            <text x="160" y="73" text-anchor="middle" font-size="12" fill="#185FA5">A) 等效谐振子模型</text>
+            <text x="160" y="88" text-anchor="middle" font-size="10" fill="#185FA5" opacity="0.75">受驱阻尼谐振子</text>
+            <rect x="60" y="160" width="200" height="45" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1"/>
+            <text x="160" y="178" text-anchor="middle" font-size="12" fill="#185FA5">SVEA → 一阶 ODE</text>
+            <text x="160" y="193" text-anchor="middle" font-size="10" fill="#185FA5" opacity="0.75">损耗 + 失谐 + 外部泵浦</text>
+            <rect x="60" y="265" width="200" height="45" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+            <text x="160" y="285" text-anchor="middle" font-size="12" font-weight="600" fill="#185FA5">Lugiato-Lefever (LLE)</text>
+            <text x="160" y="300" text-anchor="middle" font-family="SF Mono,Consolas,monospace" font-size="10" fill="#185FA5">dA/dt = (−κ+iΔ)A + S</text>
+            <rect x="560" y="55" width="200" height="45" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1"/>
+            <text x="660" y="73" text-anchor="middle" font-size="12" fill="#0F6E56">B) Maxwell 波动方程</text>
+            <text x="660" y="88" text-anchor="middle" font-size="10" fill="#0F6E56" opacity="0.75">腔镜边界条件</text>
+            <rect x="560" y="160" width="200" height="45" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1"/>
+            <text x="660" y="178" text-anchor="middle" font-size="12" fill="#0F6E56">往返周期连续化</text>
+            <text x="660" y="193" text-anchor="middle" font-size="10" fill="#0F6E56" opacity="0.75">损耗 + 失谐 + 增益</text>
+            <rect x="560" y="265" width="200" height="45" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+            <text x="660" y="285" text-anchor="middle" font-size="12" font-weight="600" fill="#0F6E56">Ginzburg-Landau (GLE)</text>
+            <text x="660" y="300" text-anchor="middle" font-family="SF Mono,Consolas,monospace" font-size="10" fill="#0F6E56">dE/dt = (−κ+iΔ)E</text>
+            <line x1="160" y1="100" x2="160" y2="158" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrB)"/>
+            <line x1="160" y1="205" x2="160" y2="263" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrB)"/>
+            <line x1="260" y1="185" x2="308" y2="185" stroke="#378ADD" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrB)"/>
+            <line x1="660" y1="100" x2="660" y2="158" stroke="#1D9E75" stroke-width="1.5" marker-end="url(#arrA)"/>
+            <line x1="660" y1="205" x2="660" y2="263" stroke="#1D9E75" stroke-width="1.5" marker-end="url(#arrA)"/>
+            <line x1="560" y1="185" x2="512" y2="185" stroke="#1D9E75" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrA)"/>
+            <line x1="260" y1="315" x2="380" y2="350" stroke="#888780" stroke-width="0.8" stroke-dasharray="2,2"/>
+            <line x1="560" y1="315" x2="440" y2="350" stroke="#888780" stroke-width="0.8" stroke-dasharray="2,2"/>
+            <text x="410" y="368" text-anchor="middle" font-size="11" fill="#888780">统一线性极限 → Airy / Lorentzian 稳态线型</text>
+          </svg>
+          <div class="diagram-caption">图 1. 两条推导路径：A（等效谐振子 → LLE）与 B（Maxwell 方程 → GLE），收敛于统一线性方程</div>
+        </div>
+
+        <p><strong>LLE vs GLE 关键区别</strong>：</p>
+        <ul>
+          <li>LLE：被动腔，$S \neq 0$（外部驱动），无增益，色散/非线性系数为纯虚（仅相位调制）。</li>
+          <li>GLE：有源腔，$S = 0$（无外部驱动），含峰值增益 $g_{\text{pk}}$，色散/非线性系数为复数（实部=增益带宽/可饱和吸收，虚部=相位调制）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">路径 A：等效谐振子模型 → LLE</div><span class="topic-badge badge-theory">推导 A</span></div>
+      <div class="topic-body">
+        <p><strong>第一步：F-P 腔 ↔ 阻尼谐振子类比</strong> — 光场振幅 $A$ ↔ 位移，腔损耗率 $\kappa$ ↔ 阻尼，外部输入 $A_{\text{in}}$ ↔ 驱动力。</p>
+        <p><strong>第二步：慢变包络近似（SVEA）</strong> — 将 $A(t) = \tilde{A}(t) e^{-i\omega_p t}$ 代入二阶方程，忽略 $\ddot{\tilde{A}}$，得到一阶方程：</p>
+        <div class="formula-box">
+          $$\frac{dA}{dt} = (-\kappa + i\Delta)A + \sqrt{2\kappa_{\text{ex}}}\, A_{\text{in}}$$
+          <div class="formula-label">LLE 基础方程：$\Delta = \omega_0 - \omega_p$，$\kappa = \kappa_{\text{ex}} + \kappa_{\text{int}}$</div>
+        </div>
+        <p><strong>稳态解</strong>：$A_{\text{ss}} = \frac{\sqrt{2\kappa_{\text{ex}}} A_{\text{in}}}{\kappa - i\Delta}$，透射率 $T \propto \frac{1}{\kappa^2 + \Delta^2}$（Lorentzian 线型）。</p>
+        <p><strong>符号约定说明</strong>：本章取 $\Delta = \omega_0 - \omega_p$（$+i\Delta A$ 与 Kerr 项 $+i\gamma|A|^2 A$ 同号，谐振峰向 $\Delta < 0$ 侧倾斜）；第 6 章采用标准微腔光频梳约定 $-\delta_0\psi$，两者仅相差一个负号。</p>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">路径 B：Maxwell 波动方程 → GLE</div><span class="topic-badge badge-theory">推导 B</span></div>
+      <div class="topic-body">
+        <p><strong>第一步</strong>：从 Maxwell 方程得到包络传输方程 $\frac{\partial \mathcal{E}}{\partial z} + \frac{1}{v_g}\frac{\partial \mathcal{E}}{\partial t} = 0$。</p>
+        <p><strong>第二步</strong>：F-P 腔往返映射 $E(t + T_R) = \sqrt{R}\, e^{i\Phi}\, E(t)$，其中 $T_R = 2nL/c$。</p>
+        <p><strong>第三步</strong>：Taylor 展开 $E(t+T_R) \approx E + T_R \partial_t E$，代入往返映射：</p>
+        <div class="formula-box">
+          $$\frac{\partial E}{\partial t} = \frac{\sqrt{R}\, e^{i\Phi} - 1}{T_R}\, E$$
+        </div>
+        <p><strong>第四步</strong>：识别参数 $\kappa = \frac{1-\sqrt{R}}{T_R}$，$\Delta = \frac{\Phi}{T_R}$，得到 GLE 基础方程：</p>
+        <div class="formula-box">
+          $$\frac{\partial E}{\partial t} = (-\kappa + i\Delta)\, E$$
+          <div class="formula-label">GLE 基础形式：无外部源，自由衰减</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">引入色散、增益与非线性</div><span class="topic-badge badge-formula">推广</span></div>
+      <div class="topic-body">
+        <p><strong>LLE + 色散 + Kerr</strong>（被动腔，无增益）：</p>
+        <div class="formula-box">
+          $$\frac{\partial A}{\partial t} = (-\kappa + i\Delta)A + i\frac{\beta_2}{2}\frac{\partial^2 A}{\partial \tau^2} + i\gamma|A|^2 A + S$$
+          <div class="formula-label">完整 LLE：色散项和 Kerr 项均为纯虚（仅相位调制）</div>
+        </div>
+        <p><strong>GLE + 增益带宽 + 可饱和吸收 + Kerr</strong>（有源腔）：</p>
+        <div class="formula-box">
+          $$\frac{\partial E}{\partial t} = (-\kappa + g_{\text{pk}} + i\Delta)E + \left(-\frac{g_0}{2} + i\frac{\beta_2}{2}\right)\frac{\partial^2 E}{\partial \tau^2} + (-\alpha_s + i\gamma')|E|^2 E$$
+          <div class="formula-label">完整 GLE：复色散系数 $\tilde{d}_0 = -g_0/2 + i\beta_2/2$，复非线性系数 $\tilde{n}_0 = -\alpha_s + i\gamma'$</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">归一化处理</div><span class="topic-badge badge-formula">归一化</span></div>
+      <div class="topic-body">
+        <p><strong>LLE 归一化</strong>：$\psi = A\sqrt{\gamma/\kappa}$，$s = S\sqrt{\gamma/\kappa^3}$，$\tilde{t} = \kappa t$，$\delta = \Delta/\kappa$，$d_2 = \beta_2/\kappa$：</p>
+        <div class="formula-box">
+          $$\frac{\partial \psi}{\partial \tilde{t}} = (-1 + i\delta)\psi + i\frac{d_2}{2}\frac{\partial^2 \psi}{\partial \tau^2} + i|\psi|^2\psi + s$$
+          <div class="formula-label">归一化 LLE（$d_2 = \beta_2/\kappa$，保留 $\frac{1}{2}$ 因子）</div>
+        </div>
+        <p><strong>GLE 归一化</strong>：$\epsilon = E\sqrt{\alpha_s/\kappa}$，$\mu = g_{\text{pk}}/\kappa$，$\tilde{d} = (-g_0 + i\beta_2)/(2\kappa)$，$\tilde{n} = -1 + i(\gamma'/\alpha_s)$：</p>
+        <div class="formula-box">
+          $$\frac{\partial \epsilon}{\partial \tilde{t}} = (-1 + \mu + i\delta)\epsilon + \tilde{d}\,\frac{\partial^2 \epsilon}{\partial \tau^2} + \tilde{n}\,|\epsilon|^2\epsilon$$
+          <div class="formula-label">归一化 GLE：$\mu > 1$ 时增益超过损耗，可起振</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">稳态解与 Airy 函数对比</div><span class="topic-badge badge-formula">稳态</span></div>
+      <div class="topic-body">
+        <p>取 CW 稳态（$\partial/\partial\tilde{t} = 0$），无非线性极限：</p>
+        <div class="formula-box">
+          $$T_{\text{LLE}}^{(0)} = \frac{1}{1 + \delta^2}$$
+          <div class="formula-label">线性极限：标准 Lorentzian 线型</div>
+        </div>
+        <p>含 Kerr 非线性时，Kerr 效应等效于失谐量的功率依赖修正 $\delta \to \delta + |\psi_0|^2$：</p>
+        <div class="formula-box">
+          $$|s|^2 = |\psi_0|^2\left[1 + \left(\delta + |\psi_0|^2\right)^2\right]$$
+          <div class="formula-label">含非线性的稳态方程：立方方程确定 $|\psi_0|^2$，可产生双稳态</div>
+        </div>
+        <p>Airy 函数在谐振峰附近退化为同一 Lorentzian：</p>
+        <div class="formula-box">
+          $$T_{\text{Airy}} \xrightarrow{\text{near resonance}} \frac{1}{1 + \delta^2} = T_{\text{LLE}}^{(0)}$$
+        </div>
+      </div>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header"><div class="topic-title">仿真算法：Cardano 立方求根与双稳态分支判定</div><span class="topic-badge badge-sim">数值算法</span></div>
+      <div class="topic-body">
+        <p>设归一化光强 $I = |\psi_0|^2$、Kerr 强度系数 $\chi$，稳态方程化为 $\chi^2 I^3 + 2\delta\chi I^2 + (1+\delta^2)I - |s|^2 = 0$。令 $I = u - \frac{2\delta}{3\chi}$ 化为缺项三次方程 $u^3 + pu + q = 0$，判别式 $\Delta_{\text{disc}} = -4p^3 - 27q^2$：</p>
+        <ul>
+          <li>$\Delta_{\text{disc}} < 0$：单实根，用 Cardano 立方根公式求解。</li>
+          <li>$\Delta_{\text{disc}} \ge 0$：三正实根（双稳态区），用三角公式 $u_k = 2\sqrt{-p/3}\cos\left(\frac{1}{3}\arccos\frac{-q}{2\sqrt{(-p/3)^3}} + \frac{2\pi k}{3}\right)$ 求解并排序，最大/最小根为稳定上下支，中间根为不稳定中支。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container">
+      <div class="sim-layout">
+        <div class="sim-sidebar">
+          <div class="sim-control-group">
+            <div class="sim-label">Finesse ℱ <span id="cFinVal">160</span></div>
+            <input type="range" id="cFin" min="0" max="7" step="1" value="4">
+            <div style="font-size:10px;color:var(--c-text-hint);display:flex;justify-content:space-between;"><span>10</span><span>40</span><span>160</span><span>640</span><span>1280</span></div>
+          </div>
+          <div class="sim-control-group"><div class="sim-label">Kerr 非线性强度 χ <span id="cKerrVal">0.00</span></div><input type="range" id="cKerr" min="0" max="12" step="0.1" value="0"></div>
+          <div class="sim-control-group"><div class="sim-label">扫描范围 φ (±π) <span id="cRangeVal">1.0</span></div><input type="range" id="cRange" min="0.1" max="3.5" step="0.2" value="1"></div>
+        </div>
+        <div class="sim-main">
+          <div class="sim-canvas-wrap-2">
+            <div class="sim-canvas-label">LLE 稳态透射（含 Kerr 双稳态上下支与不稳定中支） vs F-P Airy 透射对比</div>
+            <canvas id="cmpCanvas" width="640" height="340"></canvas>
+          </div>
+          <div class="sim-metrics">
+            <div class="metric"><div class="val" id="cPeak">—</div><div class="lbl">峰值透射</div></div>
+            <div class="metric"><div class="val" id="cFwhm">—</div><div class="lbl">Airy FWHM</div></div>
+            <div class="metric"><div class="val" id="cShift">—</div><div class="lbl">Kerr 频移</div></div>
+            <div class="metric"><div class="val" id="cErr">—</div><div class="lbl">最大偏差</div></div>
+            <div class="metric"><div class="val" id="cBistable">—</div><div class="lbl">双稳态</div></div>
+          </div>
+          <div id="cmpStatus" style="font-size:12px;color:var(--c-text-hint);margin-top:0.4rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Lugiato, L. A. &amp; Lefever, R. Spatial dissipative structures in passive optical systems. <em>Phys. Rev. Lett.</em> <strong>58</strong>, 2209–2211 (1987).</li>
+      <li><span class="ref-num">[2]</span>Haus, H. A. Mode-locking of lasers. <em>IEEE J. Sel. Top. Quantum Electron.</em> <strong>6</strong>, 1173–1185 (2000).</li>
+      <li><span class="ref-num">[3]</span>Chembo, Y. K. &amp; Menyuk, C. R. Spatiotemporal Lugiato-Lefever formalism for Kerr-comb generation in whispering-gallery-mode resonators. <em>Phys. Rev. A</em> <strong>87</strong>, 053852 (2013).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  var canvas = document.getElementById('cmpCanvas'); if (!canvas) return;
+  var ctx = canvas.getContext('2d'), FINESSE_VALUES = [10, 20, 40, 80, 160, 320, 640, 1280];
+  function getParams() {
+    var finIdx = parseInt(document.getElementById('cFin').value, 10);
+    return { finesse: FINESSE_VALUES[finIdx] || 160, kerr: parseFloat(document.getElementById('cKerr').value), range: parseFloat(document.getElementById('cRange').value) };
+  }
+  function airyT_exact(phi, finesse) { var F = Math.pow(2 * finesse / Math.PI, 2), s = Math.sin(phi / 2); return 1 / (1 + F * s * s); }
+  function lleSolveKerr(delta, kerr) {
+    if (kerr < 1e-10) return [1 / (1 + delta * delta)];
+    var a = kerr * kerr, b = 2 * delta * kerr, c = 1 + delta * delta, d = -1;
+    var p = (3 * a * c - b * b) / (3 * a * a), q = (2 * b * b * b - 9 * a * b * c + 27 * a * a * d) / (27 * a * a * a), shift = -b / (3 * a);
+    var disc = -4 * p * p * p - 27 * q * q, roots = [];
+    if (disc >= 0) {
+      var r = Math.sqrt(Math.max(0, -p / 3)), arg = Math.max(-1, Math.min(1, -q / (2 * r * r * r)));
+      for (var k = 0; k < 3; k++) { var I = 2 * r * Math.cos(Math.acos(arg) / 3 + 2 * Math.PI * k / 3) + shift; if (I > 0) roots.push(I); }
+      roots.sort(function(x, y) { return x - y; });
+    } else {
+      var D = Math.sqrt(-disc / 108), I2 = Math.cbrt(-q / 2 + D) + Math.cbrt(-q / 2 - D) + shift;
+      if (I2 > 0) roots.push(I2);
+    }
+    return roots;
+  }
+  function computeData(p, N) {
+    var data = [], phiMin = -p.range * Math.PI, phiMax = p.range * Math.PI, phiRange = phiMax - phiMin;
+    var maxT_lle = 0, maxT_airy = 0, hasBistable = false, Fcoef = Math.pow(2 * p.finesse / Math.PI, 2);
+    var airyFwhmPhase = 2 * Math.asin(Math.min(1, 1 / Math.sqrt(Fcoef)));
+    for (var i = 0; i < N; i++) {
+      var phi = phiMin + (i / (N - 1)) * phiRange, delta = phi * p.finesse / Math.PI, T_airy = airyT_exact(phi, p.finesse);
+      if (T_airy > maxT_airy) maxT_airy = T_airy;
+      var roots = lleSolveKerr(delta, p.kerr);
+      if (roots.length === 3) hasBistable = true;
+      for (var r = 0; r < roots.length; r++) if (roots[r] > maxT_lle) maxT_lle = roots[r];
+      data.push({ phi: phi, T_airy: T_airy, roots: roots });
+    }
+    var invLle = maxT_lle > 0 ? 1 / maxT_lle : 1, invAiry = maxT_airy > 0 ? 1 / maxT_airy : 1, maxDeviation = 0;
+    for (var j = 0; j < data.length; j++) {
+      data[j].T_airy *= invAiry;
+      for (var r2 = 0; r2 < data[j].roots.length; r2++) data[j].roots[r2] *= invLle;
+      var topRoot = data[j].roots.length ? data[j].roots[data[j].roots.length - 1] : 0;
+      maxDeviation = Math.max(maxDeviation, Math.abs(topRoot - data[j].T_airy));
+    }
+    return { data: data, maxDeviation: maxDeviation, hasBistable: hasBistable, airyFwhm: airyFwhmPhase, kerrShift: p.kerr * maxT_lle };
+  }
+  function draw() {
+    var p = getParams(), result = computeData(p, 1024), data = result.data;
+    var dpr = window.devicePixelRatio || 1, cssW = canvas.clientWidth || 640, cssH = cssW < 400 ? 260 : 340;
+    canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr); canvas.style.height = cssH + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = cssW, H = cssH, padL = 50, padR = 20, padT = 30, padB = 45, plotW = W - padL - padR, plotH = H - padT - padB;
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, W, H);
+    var pMin = data[0].phi, pMax = data[data.length - 1].phi, pRange = pMax - pMin;
+    var toX = function(phi) { return padL + (phi - pMin) / pRange * plotW; }, toY = function(val) { return padT + plotH * (1 - val); };
+    ctx.strokeStyle = '#e0ddd3'; ctx.lineWidth = 0.5; ctx.font = '11px -apple-system,sans-serif'; ctx.fillStyle = '#888780';
+    for (var g = 0; g <= 4; g++) { var yVal = g * 0.25, y = toY(yVal); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(yVal.toFixed(2), padL - 6, y + 4); }
+    var piStep = pRange <= 4 * Math.PI ? Math.PI / 2 : Math.PI;
+    for (var pv = Math.ceil(pMin / piStep) * piStep; pv <= pMax + 1e-6; pv += piStep) { var x = toX(pv); ctx.strokeStyle = '#e8e5dd'; ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke(); ctx.textAlign = 'center'; ctx.fillText((Math.round(pv / Math.PI * 2) / 2) + 'π', x, H - padB + 16); }
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '12px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('往返相位 φ', W / 2, H - 6);
+    ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('归一化透射 / 腔内光强', 0, 0); ctx.restore();
+    ctx.strokeStyle = '#378ADD'; ctx.lineWidth = 1.8; ctx.setLineDash([5, 3]); ctx.beginPath();
+    for (var i = 0; i < data.length; i++) { var x = toX(data[i].phi), y = toY(data[i].T_airy); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 2.2; ctx.beginPath(); var started = false;
+    for (var i2 = 0; i2 < data.length; i2++) { var r = data[i2].roots; if (!r.length) { started = false; continue; } var x2 = toX(data[i2].phi), y2 = toY(r[r.length - 1]); if (!started) { ctx.moveTo(x2, y2); started = true; } else ctx.lineTo(x2, y2); }
+    ctx.stroke();
+    if (result.hasBistable) {
+      ctx.strokeStyle = '#0F6E56'; ctx.lineWidth = 2; ctx.beginPath(); started = false;
+      for (var i3 = 0; i3 < data.length; i3++) { if (data[i3].roots.length === 3) { var x3 = toX(data[i3].phi), y3 = toY(data[i3].roots[0]); if (!started) { ctx.moveTo(x3, y3); started = true; } else ctx.lineTo(x3, y3); } else started = false; }
+      ctx.stroke();
+      ctx.strokeStyle = '#EF9F27'; ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]); ctx.beginPath(); started = false;
+      for (var i4 = 0; i4 < data.length; i4++) { if (data[i4].roots.length === 3) { var x4 = toX(data[i4].phi), y4 = toY(data[i4].roots[1]); if (!started) { ctx.moveTo(x4, y4); started = true; } else ctx.lineTo(x4, y4); } else started = false; }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.font = '11px -apple-system,sans-serif'; var lx = W - padR - 125, ly = padT + 10;
+    ctx.fillStyle = '#1D9E75'; ctx.fillRect(lx, ly, 14, 3); ctx.fillStyle = '#2c2c2a'; ctx.textAlign = 'left'; ctx.fillText('LLE 稳定分支', lx + 18, ly + 4);
+    ctx.fillStyle = '#378ADD'; ctx.fillRect(lx, ly + 16, 14, 3); ctx.fillStyle = '#2c2c2a'; ctx.fillText('F-P Airy', lx + 18, ly + 20);
+    if (result.hasBistable) { ctx.fillStyle = '#EF9F27'; ctx.fillRect(lx, ly + 32, 14, 3); ctx.fillStyle = '#2c2c2a'; ctx.fillText('不稳定中支', lx + 18, ly + 36); }
+    document.getElementById('cPeak').textContent = '1.00'; document.getElementById('cFwhm').textContent = (result.airyFwhm / Math.PI).toFixed(3) + 'π';
+    document.getElementById('cShift').textContent = result.kerrShift.toFixed(2); document.getElementById('cErr').textContent = result.maxDeviation.toFixed(3);
+    document.getElementById('cBistable').textContent = result.hasBistable ? '✓ 是' : '否';
+    document.getElementById('cFinVal').textContent = p.finesse.toFixed(0); document.getElementById('cKerrVal').textContent = p.kerr.toFixed(2); document.getElementById('cRangeVal').textContent = p.range.toFixed(1);
+    document.getElementById('cmpStatus').textContent = p.kerr < 0.005 ? 'χ=0：LLE 退化为 Lorentzian，与 Airy 在谐振峰附近一致' : 'χ=' + p.kerr.toFixed(1) + '：LLE 谐振峰发生 Kerr 倾斜' + (result.hasBistable ? '，进入光学双稳态区' : '');
+  }
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); }); document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      if (btn.dataset.panel === 'simulation') setTimeout(draw, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+  ['cFin', 'cKerr', 'cRange'].forEach(function(id) { document.getElementById(id).addEventListener('input', draw); });
+  window.addEventListener('resize', draw); window.addEventListener('load', draw);
+})();
+</script>
+</body>
+</html>
