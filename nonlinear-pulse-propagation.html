@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>非线性时域脉冲传输 - 光子学学习</title>
+<style>
+.gnlse-sim { display: flex; flex-direction: column; gap: 0.72rem; margin-bottom: 1.35rem; overflow: hidden; }
+.gnlse-sec-banner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; padding: 0.55rem 0.75rem; border-radius: var(--radius); background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-left: 3.5px solid var(--c-teal-600); }
+.gnlse-sec-banner.chi3 { border-left-color: var(--c-purple-600); }
+.gnlse-sec-title { font-size: 13.5px; font-weight: 600; color: var(--c-teal-600); line-height: 1.45; }
+.gnlse-sec-banner.chi3 .gnlse-sec-title { color: var(--c-purple-800); }
+.gnlse-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 0.48rem; }
+.gnlse-metric { min-width: 0; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.45rem 0.58rem; }
+.gnlse-metric-lbl { font-size: 10.5px; color: var(--c-text-hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gnlse-metric-val { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 12.6px; font-weight: 600; color: var(--c-purple-600); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gnlse-layout { display: grid; grid-template-columns: 278px minmax(0, 1fr); gap: 0.78rem; align-items: start; width: 100%; }
+@media (max-width: 860px) { .gnlse-layout { grid-template-columns: minmax(0, 1fr); } }
+.gnlse-sidebar { min-width: 0; width: 100%; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.7rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.gnlse-sidebar input[type="range"] { min-width: 0; width: 100%; display: block; }
+.gnlse-main-col { min-width: 0; width: 100%; display: flex; flex-direction: column; }
+.gnlse-ctrl-sec { border-top: 0.5px solid var(--c-border); padding-top: 0.46rem; min-width: 0; }
+.gnlse-ctrl-sec:first-child { border-top: none; padding-top: 0; }
+.gnlse-ctrl-head { font-size: 11.2px; font-weight: 600; color: var(--c-text-sec); margin-bottom: 0.34rem; display: flex; justify-content: space-between; align-items: center; }
+.gnlse-preset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.gnlse-preset-btn { min-width: 0; padding: 5px 6px; font-size: 10.5px; border: 0.5px solid var(--c-border); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: left; line-height: 1.35; }
+.gnlse-preset-btn:hover { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.gnlse-preset-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-600); color: var(--c-purple-800); font-weight: 600; }
+.gnlse-preset-btn.chi2.active { background: var(--c-teal-50); border-color: var(--c-teal-600); color: var(--c-teal-600); font-weight: 600; }
+.gnlse-sw-box { background: var(--c-bg); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.45rem 0.52rem; display: flex; flex-direction: column; gap: 5px; }
+.gnlse-sw-sub { display: flex; align-items: center; gap: 6px; font-size: 10.8px; color: var(--c-text-sec); cursor: pointer; line-height: 1.35; }
+.gnlse-sw-sub input { accent-color: var(--c-purple-600); width: 13px; height: 13px; flex-shrink: 0; }
+.gnlse-sw-sub.chi2 input { accent-color: var(--c-teal-600); }
+.gnlse-grid-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 3px; }
+.gnlse-n-btn { padding: 4px 2px; font-size: 10.5px; font-family: "SF Mono", monospace; border: 0.5px solid var(--c-border-2); border-radius: 5px; background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; text-align: center; }
+.gnlse-n-btn.active { background: var(--c-purple-600); color: #fff; border-color: var(--c-purple-600); font-weight: 600; }
+.gnlse-n-btn.chi2.active { background: var(--c-teal-600); border-color: var(--c-teal-600); }
+.gnlse-z-row { display: flex; align-items: center; gap: 6px; }
+.gnlse-z-num { width: 56px; padding: 2px 5px; font-size: 11px; font-family: "SF Mono", monospace; border: 0.5px solid var(--c-border-2); border-radius: 4px; background: var(--c-bg); color: var(--c-purple-800); font-weight: 600; text-align: right; }
+.gnlse-slider-grp { display: flex; flex-direction: column; gap: 3px; margin-bottom: 5px; min-width: 0; }
+.gnlse-slider-grp:last-child { margin-bottom: 0; }
+.gnlse-slider-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 10.8px; color: var(--c-text-sec); }
+.gnlse-slider-row .val { font-family: "SF Mono", monospace; font-weight: 600; color: var(--c-purple-600); flex-shrink: 0; }
+.gnlse-btn-row { display: flex; gap: 5px; }
+.gnlse-action-btn { flex: 1; padding: 6px 8px; font-size: 11.5px; font-weight: 500; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.gnlse-action-btn.primary { background: var(--c-purple-600); color: #fff; border-color: var(--c-purple-600); }
+.gnlse-action-btn.primary.chi2 { background: var(--c-teal-600); border-color: var(--c-teal-600); }
+.gnlse-action-btn.running { background: #e11d48 !important; border-color: #e11d48 !important; color: #fff; }
+.gnlse-eq-bar { width: 100%; max-width: 100%; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-left: 3px solid var(--c-teal-400); border-radius: var(--radius); padding: 0.42rem 0.68rem; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 10.6px; color: var(--c-teal-600); margin-bottom: 0.55rem; white-space: normal; word-break: break-word; line-height: 1.5; }
+.gnlse-eq-bar.chi3 { border-left-color: var(--c-purple-400); color: var(--c-purple-800); }
+.gnlse-charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.62rem; align-items: stretch; width: 100%; }
+@media (max-width: 680px) { .gnlse-charts-grid { grid-template-columns: minmax(0, 1fr); } }
+.gnlse-chart-card { min-width: 0; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.56rem; display: flex; flex-direction: column; gap: 0.32rem; }
+.gnlse-chart-head { display: flex; flex-direction: column; gap: 3px; min-height: 39px; justify-content: space-between; }
+.gnlse-chart-title { font-size: 11.4px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 5px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gnlse-chart-sub { display: flex; justify-content: space-between; align-items: center; gap: 4px; min-height: 19px; font-size: 10px; color: var(--c-text-hint); }
+.gnlse-chart-sub .leg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gnlse-chart-sub .btns { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.gnlse-badge { font-size: 10px; font-family: "SF Mono", monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--c-purple-50); color: var(--c-purple-600); flex-shrink: 0; }
+.gnlse-mini-btn { font-size: 9.8px; padding: 1.5px 6px; border-radius: 4px; border: 0.5px solid var(--c-border-2); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; line-height: 1.35; }
+.gnlse-mini-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); font-weight: 600; }
+.gnlse-cv-wrap { width: 100%; height: 205px; margin-top: auto; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.gnlse-cv-wrap canvas { display: block; width: 100%; height: 100%; }
+.gnlse-tip { margin-top: 0.58rem; padding: 0.55rem 0.8rem; border-radius: var(--radius); background: var(--c-blue-50); border: 0.5px solid var(--c-blue-100); color: var(--c-blue-600); font-size: 11.8px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">11</span>非线性时域脉冲传输（GNLSE、$d_{33}$ 二阶过程、各向同性三阶与双边色散波）</div>
+    <p class="section-desc">麦克斯韦方程组与特征尺度体系 → 单极化 $d_{33}$ 二阶统一公式（倍频 / 级联二阶 / 自差频红外辐射）→ 各向同性三阶非线性（SPM 四阶色散双边色散波 / 拉曼自频移 / 同步三倍频 THG）→ Manley-Rowe 光子守恒与类 K-K 损耗 → 双板块独立 RK4IP 验证仿真</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>单脉冲在色散与多阶非线性介质中的全谱传输</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">广义非线性薛定谔方程（GNLSE）与多波协同演化图景</div><span class="topic-badge badge-theory">物理图像</span></div>
+        <div class="topic-body">
+          <p>当飞秒至皮秒级超快单脉冲在集成非线性光波导（如周期极化薄膜铌酸锂 PPLN、氮化硅 $\text{Si}_3\text{N}_4$）或特种光纤中传输时，极高的峰值光强与宽光谱带宽会同时激发<strong>全阶线性色散（含高达四阶色散 $\beta_4$）</strong>、<strong>二阶非线性（SHG、级联 $\chi^{(2)}$ 与自差频 IDFG）</strong>以及<strong>三阶非线性（SPM、孤子裂变、双边色散波超连续谱 SCG 与三倍频 THG）</strong>。</p>
+          <div class="diagram-box">
+            <svg viewBox="0 0 820 268" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+              <defs>
+                <marker id="arrG-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#534AB7"/></marker>
+                <linearGradient id="wgGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#EEEDFE"/>
+                  <stop offset="50%" stop-color="#E6F1FB"/>
+                  <stop offset="100%" stop-color="#E1F5EE"/>
+                </linearGradient>
+              </defs>
+              <text x="410" y="20" text-anchor="middle" font-size="13.5" font-weight="600" fill="#3C3489">单脉冲传输中的二阶（仅 d₃₃）与各向同性三阶非线性作用图谱</text>
+              <rect x="18" y="68" width="108" height="76" rx="6" fill="#ffffff" stroke="#7F77DD" stroke-width="1.4"/>
+              <path d="M 30 130 Q 58 130 72 84 Q 86 130 114 130" fill="none" stroke="#534AB7" stroke-width="2.2"/>
+              <text x="72" y="158" text-anchor="middle" font-size="10.5" font-weight="600" fill="#534AB7">基频输入 A₁(0,T)</text>
+              <line x1="126" y1="106" x2="170" y2="106" stroke="#534AB7" stroke-width="2" marker-end="url(#arrG-p)"/>
+              <rect x="174" y="46" width="436" height="122" rx="8" fill="url(#wgGrad)" stroke="#378ADD" stroke-width="1.6"/>
+              <text x="392" y="67" text-anchor="middle" font-size="11.5" font-weight="600" fill="#185FA5">周期极化（QPM 周期 Λ）+ 全阶色散 + 非线性传输波导</text>
+              <rect x="190" y="74" width="404" height="9" rx="2" fill="#ffffff" stroke="#B5D4F4" stroke-width="0.6"/>
+              <rect x="194" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="230" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="266" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="302" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="338" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="374" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="410" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="446" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="482" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="518" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="554" y="75" width="18" height="7" fill="#7F77DD" opacity="0.55"/>
+              <rect x="190" y="90" width="136" height="68" rx="5" fill="#ffffff" stroke="#9FE1CB"/>
+              <text x="258" y="106" text-anchor="middle" font-size="10" font-weight="600" fill="#0F6E56">二阶效应 (仅 d₃₃)</text>
+              <text x="258" y="120" text-anchor="middle" font-size="8.8" fill="#5f5e5a">① 倍频 SHG (2ω₀)</text>
+              <text x="258" y="133" text-anchor="middle" font-size="8.8" fill="#5f5e5a">② 级联二阶 γ_casc</text>
+              <text x="258" y="146" text-anchor="middle" font-size="8.8" fill="#854F0B">③ 自差频 IDFG (红外)</text>
+              <rect x="334" y="90" width="132" height="68" rx="5" fill="#ffffff" stroke="#CECBF6"/>
+              <text x="400" y="106" text-anchor="middle" font-size="10" font-weight="600" fill="#534AB7">各向同性三阶 χ⁽³⁾</text>
+              <text x="400" y="121" text-anchor="middle" font-size="8.8" fill="#5f5e5a">① SPM / 双边色散波</text>
+              <text x="400" y="135" text-anchor="middle" font-size="8.8" fill="#e11d48">② 三倍频 THG (3ω₀)</text>
+              <text x="400" y="148" text-anchor="middle" font-size="8.8" fill="#5f5e5a">χ⁽³⁾_xxxx = 3χ⁽³⁾_xxyy</text>
+              <rect x="474" y="90" width="120" height="68" rx="5" fill="#ffffff" stroke="#FAC775"/>
+              <text x="534" y="106" text-anchor="middle" font-size="10" font-weight="600" fill="#854F0B">高达四阶色散与损耗</text>
+              <text x="534" y="121" text-anchor="middle" font-size="8.8" fill="#5f5e5a">β₂ · β₃ · β₄ 双零色散</text>
+              <text x="534" y="135" text-anchor="middle" font-size="8.8" fill="#5f5e5a">自陡峭 γ(ω) ∝ ω</text>
+              <text x="534" y="148" text-anchor="middle" font-size="8.8" fill="#5f5e5a">拉曼 SRS · 类 K-K TPA</text>
+              <line x1="610" y1="106" x2="652" y2="106" stroke="#534AB7" stroke-width="2" marker-end="url(#arrG-p)"/>
+              <rect x="656" y="62" width="148" height="88" rx="6" fill="#ffffff" stroke="#1D9E75" stroke-width="1.4"/>
+              <path d="M 666 138 Q 674 138 680 112 Q 686 138 696 138" fill="none" stroke="#EF9F27" stroke-width="1.7"/>
+              <path d="M 692 138 Q 706 138 715 80 Q 724 138 742 138" fill="none" stroke="#534AB7" stroke-width="2"/>
+              <path d="M 734 138 Q 744 138 751 96 Q 758 138 770 138" fill="none" stroke="#1D9E75" stroke-width="1.7"/>
+              <path d="M 766 138 Q 775 138 781 108 Q 787 138 798 138" fill="none" stroke="#e11d48" stroke-width="1.5"/>
+              <text x="730" y="164" text-anchor="middle" font-size="9.5" font-weight="600" fill="#0F6E56">IR(Ω) + DW±/SCG(ω₀) + SHG + THG</text>
+              <rect x="24" y="186" width="772" height="64" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <text x="410" y="206" text-anchor="middle" font-size="11" font-weight="600" fill="#3C3489">特征尺度竞争：L_D = T₀²/|β₂| · L_D4 = T₀⁴/|β₄| · L_NL = 1/(γP₀) · L_c = π/|Δk_eff|</text>
+              <text x="205" y="229" text-anchor="middle" font-size="10" fill="#0F6E56">板块一：二阶 (d₃₃) 倍频 + 级联二阶 + 自差频</text>
+              <text x="615" y="229" text-anchor="middle" font-size="10" fill="#534AB7">板块二：各向同性三阶 SPM 四阶色散双边色散波 + THG</text>
+            </svg>
+            <div class="diagram-caption">图 1. 广义非线性薛定谔方程（GNLSE）中的二阶（仅 $d_{33}$）与各向同性三阶非线性作用分解</div>
+          </div>
+
+          <p><strong>特征长度尺度与无量纲判据体系</strong>：单脉冲非线性演化的主导机制由各物理过程的<strong>特征作用长度</strong>相对大小决定：</p>
+          <table class="data-table">
+            <thead><tr><th>特征物理量</th><th>定义表达式</th><th>物理意义与临界判据</th></tr></thead>
+            <tbody>
+              <tr><td><strong>二阶色散长度 $L_D$</strong></td><td>$L_D = \dfrac{T_0^2}{|\beta_2|}$</td><td>脉冲因群速度色散（GVD）展宽 $\sqrt{2}$ 倍的特征传输距离</td></tr>
+              <tr><td><strong>三阶/四阶色散长度</strong></td><td>$L_{D3} = \dfrac{T_0^3}{|\beta_3|},\;\; L_{D4} = \dfrac{T_0^4}{|\beta_4|}$</td><td>决定色散波的对称性及双零色散点（ZDW1, ZDW2）双边辐射</td></tr>
+              <tr><td><strong>Kerr 非线性长度 $L_{\text{NL}}$</strong></td><td>$L_{\text{NL}} = \dfrac{1}{\gamma P_0}$</td><td>脉冲峰值处积累 $1\,\text{rad}$ 非线性自相位调制（SPM）相移的特征距离</td></tr>
+              <tr><td><strong>孤子阶数与裂变长度</strong></td><td>$N = \sqrt{\dfrac{L_D}{L_{\text{NL}}}},\;\; L_{\text{fiss}} \approx \dfrac{L_D}{N}$</td><td>$N=1$ 为保形基孤子；$N \ge 2$ 高阶孤子在 $z \approx L_{\text{fiss}}$ 处发生剧烈压缩与裂变</td></tr>
+              <tr><td><strong>QPM 相干长度 $L_c$</strong></td><td>$L_c = \dfrac{\pi}{|\Delta k_{\text{eff}}|}$</td><td>二阶倍频能量正向转换的最大有效距离；$L \gg L_c$ 时进入级联 $\chi^{(2)}$ 区</td></tr>
+              <tr><td><strong>群速度走离长度 $L_W$</strong></td><td>$L_W = \dfrac{T_0}{|\beta_1(j\omega_0) - \beta_1(\omega_0)|}$</td><td>基频与谐波/红外脉冲因群速度失配在时域完全错开的特征距离</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>二阶三类过程、各向同性三阶与四阶色散双边色散波</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">一、单脉冲二阶效应（仅 $d_{33}$ 主轴极化）的三重物理内涵</div><span class="topic-badge badge-theory">二阶 $d_{33}$</span></div>
+        <div class="topic-body">
+          <p>当单脉冲沿单轴/双轴铁电晶体光轴偏振（如周期极化薄膜铌酸锂 PPLN 中的 $e + e \to e$ 准相位匹配，利用最大非线性系数 $d_{33} \approx 27\,\text{pm/V}$）传输时，二阶非线性极化张量退化为单一对角分量 $\chi^{(2)}_{333} = 2d_{33}$，可用<strong>单一标量极化公式</strong>统一描述以下三类物理过程：</p>
+          <ol style="padding-left:1.4rem; font-size:13.5px; line-height:1.85; margin-bottom:0.5rem;">
+            <li><strong>倍频过程（SHG, $\omega_0 + \omega_0 \to 2\omega_0$）</strong>：当周期极化光栅波矢 $K_m = 2\pi m/\Lambda$ 补偿色散波矢失配，使 $\Delta k_{\text{eff}} = \beta(2\omega_0) - 2\beta(\omega_0) - K_m \approx 0$ 时，基频能量在相干长度 $L_c \to \infty$ 内持续单向转换为二次谐波 $A_2$（由开关 $\sigma_{\text{SHG}}$ 控制）。</li>
+            <li><strong>可调级联二阶等效三阶过程（Cascaded $\chi^{(2)}$）</strong>：当系统处于大相位失配区（$|\Delta k_{\text{eff}}| L \gg 1$）时，基频光在每个相干长度 $L_c$ 内反复经历“上转换 $\omega_0 + \omega_0 \to 2\omega_0$”与“下转换 $2\omega_0 - \omega_0 \to \omega_0$”的循环，回流能量附加正比于 $|A_1|^2$ 的非线性相移，等效于人为设计的 Kerr 非线性系数 $\gamma_{\text{casc}} = -\frac{\kappa_2^2}{\Delta k_{\text{eff}}}$：
+              <ul>
+                <li><strong>正失配区（$\Delta k_{\text{eff}} > 0$）</strong>：产生<strong>负等效 Kerr 非线性（$\gamma_{\text{casc}} < 0$，自散焦）</strong>，可抵消介质本征正 Kerr 效应，甚至可在正常色散区（$\beta_2 > 0$）支持亮孤子自压缩。</li>
+                <li><strong>负失配区（$\Delta k_{\text{eff}} < 0$）</strong>：产生<strong>正等效 Kerr 非线性（$\gamma_{\text{casc}} > 0$，自聚焦）</strong>，即便关闭介质本征三阶非线性（$\chi^{(3)} = 0$），仅靠纯级联二阶效应即可驱动孤子自压缩与频谱展宽。</li>
+              </ul>
+            </li>
+            <li><strong>脉冲内自差频（IDFG / Optical Rectification, $\omega_1 - \omega_2 \to \Omega_{\text{IR}}$）</strong>：宽带超短单脉冲内部的高频光谱成分 $\omega_1$ 与低频光谱成分 $\omega_2$ 通过 $d_{33}$ 的 $|\mathcal{E}|^2$ 项发生差频混频，无需外部种子光即可直接辐射出中红外（MIR）或太赫兹（THz）脉冲 $A_{\text{IR}}$。当基频脉冲经历孤子自压缩或脉宽变窄时，光强包络 $|A_1|^2$ 频谱显著拓宽，自差频红外转换效率急剧提升。</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">二、各向同性三阶效应（$\chi^{(3)}$）：四阶色散双边色散波与三倍频 THG</div><span class="topic-badge badge-theory">各向同性 $\chi^{(3)}$</span></div>
+        <div class="topic-body">
+          <p>在各向同性介质（如石英光子晶体光纤、非晶 $\text{Si}_3\text{N}_4$ 集成波导）中，空间反演对称性使 $\chi^{(2)} \equiv 0$，三阶极化率张量仅有唯一独立分量 $\chi^{(3)}_{xxxx} = 3\chi^{(3)}_{xxyy}$。单偏振脉冲在该标量 $\chi^{(3)}_{xxxx}$ 作用下同步发生两类非线性过程：</p>
+          <ul>
+            <li><strong>SPM 孤子裂变与四阶色散双边色散波（Bilateral Dispersive Waves, $\beta_2 < 0, \beta_4 > 0$）</strong>：当波导色散工程在泵浦频率附近呈现反常色散（$\beta_2 < 0$）且具有正四阶色散（$\beta_4 > 0$）时，局域群速度色散 $\beta_2^{\text{eff}}(\Omega) = \beta_2 + \beta_3\Omega + \frac{\beta_4}{2}\Omega^2$ 在泵浦两侧分别穿过零点，形成<strong>双零色散频率（$\Omega_{\text{ZDW},-} < 0$ 与 $\Omega_{\text{ZDW},+} > 0$）</strong>。高阶孤子（$N \ge 2$）在 $L_{\text{fiss}} \approx L_D/N$ 裂变时，积分色散 $\beta_{\text{int}}(\Omega)$ 在高频（蓝移）与低频（红移）两侧同时上翘并与孤子非线性波数 $k_{\text{sol}} = \frac{1}{2}\gamma P_s$ 相交，从而在频谱两端同步辐射出<strong>双边切伦科夫色散波（$\Omega_{\text{DW},-}$ 与 $\Omega_{\text{DW},+}$）</strong>，大幅拓宽倍频程超连续谱。</li>
+            <li><strong>同步三倍频（THG, $3\omega_0$）</strong>：三阶极化中的 $\mathcal{E}^3$ 项直接将三个基频光子合成为三倍频光子（$A_3 \propto \int A_1^3 e^{-i\Delta k_{\text{THG}} z}\mathrm{d}z$），在高阶孤子发生剧烈时域自压缩、峰值功率骤增数倍的瞬间集中爆发。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">三、频域非线性色散（自陡峭）、光子数守恒与类 Kramers-Kronig 损耗</div><span class="topic-badge badge-theory">深度剖析</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>自陡峭的频域本质 = 非线性色散 $\gamma(\omega)$</strong>：时域自陡峭算子 $\left(1 + \frac{i}{\omega_0}\frac{\partial}{\partial T}\right)$ 在频域严格对应乘以频率因子 $\left(1 + \frac{\Omega}{\omega_0}\right) = \frac{\omega}{\omega_0}$，使非线性系数成为频率的函数 $\gamma(\omega) = \frac{n_2(\omega)\omega}{c A_{\text{eff}}(\omega)}$。</li>
+            <li><strong>能量不守恒 vs 总光子数守恒（Manley-Rowe 定律）</strong>：在无线性与双光子损耗时，非线性参量混频过程严格保持<strong>总光子数</strong> $N_{\text{ph}} = \sum_j \int \frac{|\tilde{A}_j(\omega)|^2}{\hbar\omega}\,\mathrm{d}\omega$ 守恒；当自陡峭导致频谱重心漂移时，总能量 $E_{\text{tot}}(z)$ 随之改变。</li>
+            <li><strong>非线性 Kramers-Kronig（K-K）关系与非线性吸收损耗</strong>：非线性折射率色散 $n_2(\omega)$ 与双光子吸收系数 $\beta_{\text{TPA}}(\omega)$ 构成希尔伯特变换对，宽带非线性色散必然伴随虚部非线性吸收损耗 $\tilde{\gamma}(\omega) = \gamma(\omega) + i\frac{\beta_{\text{TPA}}(\omega)}{2A_{\text{eff}}(\omega)}$。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>麦克斯韦波动方程与二阶极化（仅 $d_{33}$）统一公式</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">单偏振 $d_{33}$ 标量极化与三类二阶效应开关分解</div><span class="topic-badge badge-formula">统一公式 ($d_{33}$)</span></div>
+        <div class="topic-body">
+          <p>从无源非磁性介质中的麦克斯韦波动方程出发：</p>
+          <div class="formula-box">
+            $$\nabla^2 \mathbf{E} - \frac{1}{c^2}\frac{\partial^2 \mathbf{E}}{\partial t^2} = \mu_0 \frac{\partial^2 \mathbf{P}_L}{\partial t^2} + \mu_0 \frac{\partial^2 \mathbf{P}_{\text{NL}}}{\partial t^2}, \qquad \mathbf{P}_{\text{NL}} = \mathbf{P}^{(2)} + \mathbf{P}^{(3)}$$
+          </div>
+          <p>设单脉冲沿非线性晶体光轴偏振（如 PPLN 中的 $e$ 偏振，$z$ 轴主轴方向），仅保留对角非线性分量 $d_{33}$（$\chi^{(2)}_{333} = 2d_{33}$）。令实电场为 $E(z,t) = \frac{1}{2}\big[\mathcal{E}(z,t) + \mathcal{E}^*(z,t)\big]$，二阶非线性极化限定于如下<strong>单一标量公式</strong>：</p>
+          <div class="formula-box">
+            $$P^{(2)}(z, t) = \varepsilon_0 \chi^{(2)}_{333}(z)\,E^2(z,t) = \frac{\varepsilon_0 d_{33}(z)}{2}\Big[\underbrace{\sigma_{\text{SHG/casc}}\,\mathcal{E}^2(z,t)}_{\text{倍频 SHG 与级联二阶 } (2\omega_0)} + \underbrace{2\,\sigma_{\text{IDFG}}\,|\mathcal{E}(z,t)|^2}_{\text{脉冲内自差频 IDFG } (\Omega_{\text{IR}} = \omega_1 - \omega_2)} + \text{c.c.}\Big]$$
+            $$\tilde{P}^{(2)}(z, \omega) = \frac{\varepsilon_0 d_{33}(z)}{\pi}\int_{-\infty}^{+\infty} \tilde{E}(z, \omega')\,\tilde{E}(z, \omega - \omega')\,\mathrm{d}\omega'$$
+            <div class="formula-label">仅考虑 $d_{33}$ 时的二阶极化统一公式，二进制开关 $\sigma_j \in \{0, 1\}$ 分别控制倍频/级联与自差频红外产生</div>
+          </div>
+          <p><strong>1. 周期极化（QPM）耦合系数与三波演化算子</strong>（$d_Q = \frac{2}{\pi}d_{33}$，$K_m = \frac{2\pi m}{\Lambda}$）：</p>
+          <div class="formula-box">
+            $$\left.\frac{\partial A_1}{\partial z}\right|_{\chi^{(2)}} = i\sigma_{\text{casc}}\left[\sigma_{\text{SHG}}\,\kappa_2 A_1^* A_2 e^{i\Delta k_{\text{eff}} z} + (1 - \sigma_{\text{SHG}})\,\gamma_{\text{casc}}|A_1|^2 A_1\right], \qquad \kappa_2 = \frac{\sqrt{2}\,\omega_0 d_Q}{\sqrt{\varepsilon_0 c^3 n_0^2 n_{2\omega} A_{\text{eff}}^{(2)}}}$$
+            $$\frac{\partial A_2}{\partial z} = -\delta_{21}\frac{\partial A_2}{\partial T} + \hat{D}_2 A_2 + i\,\sigma_{\text{SHG}}\,\kappa_2 A_1^2 e^{-i\Delta k_{\text{eff}} z}$$
+            $$\frac{\partial A_{\text{IR}}}{\partial z} = -\delta_{\text{IR},1}\frac{\partial A_{\text{IR}}}{\partial T} + \hat{D}_{\text{IR}} A_{\text{IR}} + i\,\sigma_{\text{IDFG}}\,\kappa_{\text{IDFG}}\,\mathcal{F}^{-1}\!\left\{\left(1 + \frac{\Omega}{\Omega_{\text{IR}}}\right)\mathcal{F}\!\Big[|A_1|^2 e^{-i\Omega_{\text{IR}} T}\Big]\right\}e^{-i\Delta k_{\text{IDFG}} z}$$
+          </div>
+          <p><strong>2. 大失配极限下的可调级联二阶等效三阶系数与自差频辐射定标律</strong>：</p>
+          <div class="formula-box">
+            $$\gamma_{\text{casc}} = -\frac{\kappa_2^2}{\Delta k_{\text{eff}}} = -\frac{2\omega_0^2 d_Q^2}{\varepsilon_0 c^3 n_0^2 n_{2\omega} A_{\text{eff}}^{(2)} \Delta k_{\text{eff}}}, \qquad S_{\text{IR}}(z, \Omega_{\text{IR}}) \propto \Omega_{\text{IR}}^2\, z^2 \left|\mathcal{F}\!\left\{|A_1(T)|^2\right\}(\Omega_{\text{IR}})\right|^2$$
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>各向同性三阶非线性与四阶色散双边色散波公式</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">各向同性 $\chi^{(3)}$ 耦合方程组与双边色散波解析相位匹配</div><span class="topic-badge badge-formula">四阶色散双边 DW</span></div>
+        <div class="topic-body">
+          <p>在各向同性介质中，$\chi^{(3)}_{xxxx} = 3\chi^{(3)}_{xxyy}$，单偏振三阶极化与延迟拉曼响应函数 $R(t) = (1 - f_R)\delta(t) + f_R h_R(t)$ 为：</p>
+          <div class="formula-box">
+            $$P^{(3)}(t) = \frac{\varepsilon_0 \chi^{(3)}_{xxxx}}{8}\Big[\underbrace{\sigma_{\text{THG}}\,\mathcal{E}^3(t)}_{\text{三倍频 THG } (3\omega_0)} + \underbrace{3\,\sigma_{\text{SPM}}\,|\mathcal{E}(t)|^2\mathcal{E}(t)}_{\text{各向同性 SPM / SCG / 拉曼}} + \text{c.c.}\Big], \qquad h_R(t) = \frac{\tau_1^2 + \tau_2^2}{\tau_1 \tau_2^2}\,e^{-t/\tau_2}\sin\!\left(\frac{t}{\tau_1}\right)\Theta(t)$$
+          </div>
+          <p>包含高达四阶色散（$\beta_2, \beta_3, \beta_4$）的基频 $A_1$ 与三倍频 $A_3$ 耦合传输方程为：</p>
+          <div class="formula-box">
+            $$\frac{\partial A_1}{\partial z} = \underbrace{\left(-i\frac{\beta_2}{2}\frac{\partial^2}{\partial T^2} + \frac{\beta_3}{6}\frac{\partial^3}{\partial T^3} + i\frac{\beta_4}{24}\frac{\partial^4}{\partial T^4} - \frac{\alpha_1}{2}\right)}_{\hat{D}_1 \text{（高达四阶色散）}}A_1 + i\,\sigma_{\text{SPM}}\,\tilde{\gamma}_1\!\left(1 + \frac{i}{\omega_0}\frac{\partial}{\partial T}\right)\!\left[A_1\!\int R(T')|A_1(T-T')|^2\mathrm{d}T'\right] + i\,\sigma_{\text{THG}}\,\kappa_3(A_1^*)^2 A_3 e^{i\Delta k_{\text{THG}} z}$$
+            $$\frac{\partial A_3}{\partial z} = -\delta_{31}\frac{\partial A_3}{\partial T} + \hat{D}_3 A_3 + i\,\sigma_{\text{THG}}\,\kappa_3 A_1^3 e^{-i\Delta k_{\text{THG}} z} + 2i\,\sigma_{\text{SPM}}\gamma_{31}|A_1|^2 A_3$$
+          </div>
+          <p><strong>高达四阶色散的双边切伦科夫色散波（Bilateral DW）相位匹配公式</strong>：高阶孤子在 $L_{\text{fiss}} \approx L_D/N$ 裂变后，压缩主孤子（峰值功率 $P_s$，脉宽 $T_s$）与线性色散波满足动量守恒 $\beta_{\text{int}}(\Omega) = \frac{1}{2}\gamma P_s$：</p>
+          <div class="formula-box">
+            $$\beta_{\text{int}}(\Omega) = \frac{\beta_2}{2}\Omega^2 + \frac{\beta_3}{6}\Omega^3 + \frac{\beta_4}{24}\Omega^4 = \frac{1}{2}\gamma P_s, \qquad \beta_2^{\text{eff}}(\Omega) = \beta_2 + \beta_3\Omega + \frac{\beta_4}{2}\Omega^2$$
+            $$\text{当 } \beta_2 < 0,\;\beta_4 > 0,\;\beta_3 = 0 \text{ 时（双零色散点 } \Omega_{\text{ZDW},\pm} = \pm\sqrt{2|\beta_2|/\beta_4}\text{），双边色散波共振频移为：}$$
+            $$\Omega_{\text{DW},\pm} = \pm\sqrt{\frac{6|\beta_2| + 6\sqrt{\beta_2^2 + \frac{2}{3}\beta_4 \gamma P_s}}{\beta_4}}, \qquad \frac{\mathrm{d}\Omega_s}{\mathrm{d}z} = -\frac{8\,|\beta_2|\,T_R}{15\,T_s^4}$$
+            <div class="formula-label">$\beta_4 > 0$ 使积分色散在高频（$\Omega_{\text{DW},+} > 0$）与低频（$\Omega_{\text{DW},-} < 0$）两侧同时上翘，产生双边色散波</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>光子数守恒、类 K-K 损耗与 RK4IP + LEM 数值算法</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">Manley-Rowe 定律、非线性 Kramers-Kronig 关系与 RK4IP</div><span class="topic-badge badge-sim">守恒律 &amp; RK4IP</span></div>
+        <div class="topic-body">
+          <div class="formula-box">
+            $$\frac{\mathrm{d}N_{\text{ph}}}{\mathrm{d}z} = \frac{\mathrm{d}}{\mathrm{d}z}\left(\sum_{j} \int_{-\infty}^{+\infty} \frac{|\tilde{A}_j(z,\Omega)|^2}{\hbar(\omega_j + \Omega)}\,\mathrm{d}\Omega\right) = 0, \qquad n_2(\omega) = \frac{c}{\pi}\,\mathcal{P}\int_{0}^{+\infty} \frac{\beta_{\text{TPA}}(\omega')}{\omega'^2 - \omega^2}\,\mathrm{d}\omega'$$
+          </div>
+          <div class="formula-box">
+            $$\mathbf{k}_1 = e^{\frac{h}{2}\hat{\mathbf{D}}}\hat{\mathbf{N}}[\mathbf{A}(z), z], \quad \mathbf{k}_2 = \hat{\mathbf{N}}\!\left[\mathbf{A}_I + \frac{h}{2}\mathbf{k}_1,\, z+\frac{h}{2}\right], \quad \mathbf{k}_3 = \hat{\mathbf{N}}\!\left[\mathbf{A}_I + \frac{h}{2}\mathbf{k}_2,\, z+\frac{h}{2}\right], \quad \mathbf{k}_4 = \hat{\mathbf{N}}\!\left[e^{\frac{h}{2}\hat{\mathbf{D}}}(\mathbf{A}_I + h\mathbf{k}_3),\, z+h\right]$$
+            $$\mathbf{A}(z+h) = e^{\frac{h}{2}\hat{\mathbf{D}}}\!\left(\mathbf{A}_I + \frac{h}{6}\mathbf{k}_1 + \frac{h}{3}\mathbf{k}_2 + \frac{h}{3}\mathbf{k}_3\right) + \frac{h}{6}\mathbf{k}_4, \qquad \mathbf{A}_{\text{next}} = \frac{16}{15}\mathbf{A}_f - \frac{1}{15}\mathbf{A}_c$$
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel: TWO DEDICATED SECTIONS ===== -->
+  <div class="tab-panel" id="panel-simulation">
+
+    <!-- =================================================================== -->
+    <!-- SECTION 1: SECOND-ORDER NONLINEARITY VERIFICATION (chi^(2), d_33)   -->
+    <!-- =================================================================== -->
+    <div class="sim-container gnlse-sim" id="sec-chi2">
+      <div class="gnlse-sec-banner">
+        <div class="gnlse-sec-title">板块一：二阶非线性效应验证（仅 d₃₃ 主轴极化：倍频 SHG / 级联二阶 / 脉冲内自差频 IDFG）</div>
+        <div style="font-size:11px; font-family:'SF Mono',monospace; color:var(--c-text-hint);" id="c2-status">网格 N=512 · 就绪</div>
+      </div>
+
+      <div class="gnlse-metrics">
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">传输距离 z / Z_max</div><div class="gnlse-metric-val" id="c2m-z" style="color:var(--c-teal-600);">0.00 / 2.00</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">相干长度 L_c / L_D</div><div class="gnlse-metric-val" id="c2m-lc" style="color:#185FA5;">∞</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">级联等效 γ_casc</div><div class="gnlse-metric-val" id="c2m-gcasc" style="color:var(--c-purple-600);">0.00</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">倍频效率 η_SHG</div><div class="gnlse-metric-val" id="c2m-shg" style="color:var(--c-teal-600);">0.0%</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">自差频效率 η_IDFG</div><div class="gnlse-metric-val" id="c2m-idfg" style="color:var(--c-amber-600);">0.00%</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">基频峰值 |A₁|²_max</div><div class="gnlse-metric-val" id="c2m-pk">1.00</div></div>
+      </div>
+
+      <div class="gnlse-layout">
+        <aside class="gnlse-sidebar">
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">二阶效应 (d₃₃) 独立分项开关</div>
+            <div class="gnlse-sw-box">
+              <label class="gnlse-sw-sub chi2"><input type="checkbox" id="c2sw-shg" checked>倍频 SHG (2ω₀)</label>
+              <label class="gnlse-sw-sub chi2"><input type="checkbox" id="c2sw-casc" checked>级联二阶 γ_casc (能量回流相位)</label>
+              <label class="gnlse-sw-sub chi2"><input type="checkbox" id="c2sw-idfg" checked>脉冲内自差频 IDFG (红外辐射)</label>
+              <label class="gnlse-sw-sub"><input type="checkbox" id="c2sw-spm">叠加参考 Kerr SPM (用于抵消验证)</label>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">二阶非线性验证预设场景</div>
+            <div class="gnlse-preset-grid">
+              <button class="gnlse-preset-btn chi2 active" id="c2pre-qpm" onclick="c2Preset('qpm')">① 准相位匹配倍频<br><span style="font-size:9.5px;opacity:0.75;">Δk=0 高效 SHG + GVM</span></button>
+              <button class="gnlse-preset-btn chi2" id="c2pre-cascn" onclick="c2Preset('cascn')">② 级联负 Kerr 自散焦<br><span style="font-size:9.5px;opacity:0.75;">Δk&gt;0 抵消本征 SPM</span></button>
+              <button class="gnlse-preset-btn chi2" id="c2pre-cascp" onclick="c2Preset('cascp')">③ 纯级联二阶孤子<br><span style="font-size:9.5px;opacity:0.75;">无 χ⁽³⁾ 下的纯 d₃₃ 压缩</span></button>
+              <button class="gnlse-preset-btn chi2" id="c2pre-idfg" onclick="c2Preset('idfg')">④ 自差频红外辐射<br><span style="font-size:9.5px;opacity:0.75;">短脉冲包络差频产生 IR</span></button>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">传输长度 Z_max 与网格点数 N</div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>传输长度 Z_max / L_D</span><div class="gnlse-z-row"><input type="number" id="c2n-zmax" class="gnlse-z-num" min="0.2" max="15.0" step="0.1" value="2.0"></div></div>
+              <input type="range" id="c2s-zmax" min="0.2" max="10.0" step="0.1" value="2.0">
+            </div>
+            <div class="gnlse-slider-row" style="margin-top:3px;"><span>采样点数 N (FFT 网格)</span><span class="val" id="c2v-Ngrid" style="color:var(--c-teal-600);">512</span></div>
+            <div class="gnlse-grid-opts" id="c2-nopts">
+              <button class="gnlse-n-btn chi2" data-n="256" onclick="c2SetGridN(256)">256</button>
+              <button class="gnlse-n-btn chi2 active" data-n="512" onclick="c2SetGridN(512)">512</button>
+              <button class="gnlse-n-btn chi2" data-n="1024" onclick="c2SetGridN(1024)">1024</button>
+              <button class="gnlse-n-btn chi2" data-n="2048" onclick="c2SetGridN(2048)">2048</button>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-btn-row">
+              <button class="gnlse-action-btn primary chi2" id="c2btn-run" onclick="c2ToggleRun()">▶ 运行 / 暂停</button>
+              <button class="gnlse-action-btn" onclick="c2Reset(true)">重置</button>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">二阶 (d₃₃) 耦合与相位失配参数</div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>二阶 d₃₃ 耦合 κ₂</span><span class="val" id="c2v-k2" style="color:var(--c-teal-600);">1.20</span></div>
+              <input type="range" id="c2s-k2" min="0.00" max="2.80" step="0.05" value="1.20">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>QPM 失配 Δk_eff·L_D</span><span class="val" id="c2v-dk2" style="color:var(--c-teal-600);">0.0</span></div>
+              <input type="range" id="c2s-dk2" min="-20.0" max="20.0" step="0.5" value="0.0">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>倍频群速度走离 δ₂₁</span><span class="val" id="c2v-gvm" style="color:var(--c-teal-600);">0.25</span></div>
+              <input type="range" id="c2s-gvm" min="-0.60" max="0.60" step="0.02" value="0.25">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>自差频 IDFG 耦合 κ_IR</span><span class="val" id="c2v-kir" style="color:var(--c-amber-600);">0.30</span></div>
+              <input type="range" id="c2s-kir" min="0.00" max="0.80" step="0.02" value="0.30">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>输入脉冲振幅 A₀</span><span class="val" id="c2v-a0">1.4</span></div>
+              <input type="range" id="c2s-a0" min="0.5" max="3.0" step="0.1" value="1.4">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>基频二阶色散 β₂</span><span class="val" id="c2v-b2">-0.4</span></div>
+              <input type="range" id="c2s-b2" min="-1.5" max="1.5" step="0.1" value="-0.4">
+            </div>
+          </div>
+        </aside>
+
+        <div class="gnlse-main-col">
+          <div class="gnlse-eq-bar" id="c2-eq-bar">二阶活跃项：∂A₁/∂z = D̂₁A₁ + iκ₂A₁*A₂ (倍频+级联) + iκ_IR|A₁|²→A_IR (自差频)</div>
+          <div class="gnlse-charts-grid">
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">2A</span>时域脉冲包络 |A_j(T)|²</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">蓝：基频 · 绿：SHG · 橙：IR</span>
+                  <span class="btns"><button class="gnlse-mini-btn active" id="c2btn-lin" onclick="c2SetLog(false)">线性</button><button class="gnlse-mini-btn" id="c2btn-log" onclick="c2SetLog(true)">dB</button></span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c2cv-time"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">2B</span>多波段归一化光谱 (dB)</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">紫：基频 · 绿：SHG · 橙：IR</span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c2cv-spec"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">2C</span>基频传输演化 2D 瀑布图</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">沿传输距离 z 演化</span>
+                  <span class="btns"><button class="gnlse-mini-btn active" id="c2btn-wt" onclick="c2SetMapMode('time')">时域 T</button><button class="gnlse-mini-btn" id="c2btn-wf" onclick="c2SetMapMode('freq')">频域 Ω</button></span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c2cv-map"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">2D</span>二阶能量转换演化曲线</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">紫：E₁/E₀ · 绿：η_SHG · 橙：η_IDFG</span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c2cv-cons"></canvas></div>
+            </div>
+          </div>
+          <div class="gnlse-tip" id="c2-tip">
+            <strong>二阶验证提示：</strong>切换左侧四个预设可分别验证：① <code>Δk=0</code> 准相位匹配倍频与群速度走离展宽；② <code>Δk&gt;0</code> 级联负 Kerr 抵消本征 SPM；③ 无 χ⁽³⁾ 下的纯级联二阶孤子自压缩；④ 脉冲内自差频（IDFG）中红外辐射。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- SECTION 2: THIRD-ORDER NONLINEARITY (SPM + 4TH-ORDER DISPERSION     -->
+    <!--            BILATERAL DISPERSIVE WAVES + SYNCHRONOUS THG)            -->
+    <!-- =================================================================== -->
+    <div class="sim-container gnlse-sim" id="sec-chi3" style="margin-bottom:0;">
+      <div class="gnlse-sec-banner chi3">
+        <div class="gnlse-sec-title">板块二：各向同性三阶非线性效应验证（SPM 四阶色散双边色散波 + 拉曼自频移 + 同步三倍频 THG）</div>
+        <div style="font-size:11px; font-family:'SF Mono',monospace; color:var(--c-text-hint);" id="c3-status">网格 N=512 · 就绪</div>
+      </div>
+
+      <div class="gnlse-metrics">
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">传输距离 z / Z_max</div><div class="gnlse-metric-val" id="c3m-z">0.00 / 1.20</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">零色散点 Ω_ZDW±</div><div class="gnlse-metric-val" id="c3m-zdw" style="color:#185FA5;">±3.54</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">红移色散波 Ω_DW−</div><div class="gnlse-metric-val" id="c3m-dwl" style="color:var(--c-teal-600);">-9.3</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">蓝移色散波 Ω_DW+</div><div class="gnlse-metric-val" id="c3m-dwr" style="color:var(--c-teal-600);">+9.3</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">三倍频效率 η_THG</div><div class="gnlse-metric-val" id="c3m-thg" style="color:#e11d48;">0.00%</div></div>
+        <div class="gnlse-metric"><div class="gnlse-metric-lbl">自适应步长 Δz</div><div class="gnlse-metric-val" id="c3m-dz" style="color:var(--c-amber-600);">—</div></div>
+      </div>
+
+      <div class="gnlse-layout">
+        <aside class="gnlse-sidebar">
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">三阶效应 (χ⁽³⁾) 与色散分项开关</div>
+            <div class="gnlse-sw-box">
+              <label class="gnlse-sw-sub"><input type="checkbox" id="c3sw-spm" checked>三阶 SPM / 高阶孤子裂变</label>
+              <label class="gnlse-sw-sub"><input type="checkbox" id="c3sw-fod" checked>四阶色散 FOD (β₄ 双边色散波)</label>
+              <label class="gnlse-sw-sub"><input type="checkbox" id="c3sw-ss" checked>自陡峭 s 与拉曼自频移 SRS</label>
+              <label class="gnlse-sw-sub"><input type="checkbox" id="c3sw-thg" checked>同步三倍频 THG (3ω₀)</label>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">三阶 SPM 与双边色散波验证预设</div>
+            <div class="gnlse-preset-grid">
+              <button class="gnlse-preset-btn active" id="c3pre-bidw" onclick="c3Preset('bidw')">① 对称双边色散波<br><span style="font-size:9.5px;opacity:0.75;">β₂&lt;0, β₄&gt;0 双 ZDW</span></button>
+              <button class="gnlse-preset-btn" id="c3pre-asym" onclick="c3Preset('asym')">② 非对称 DW + THG<br><span style="font-size:9.5px;opacity:0.75;">β₂+β₃+β₄ 三倍频爆发</span></button>
+              <button class="gnlse-preset-btn" id="c3pre-pureb4" onclick="c3Preset('pureb4')">③ 强四阶主导双边波<br><span style="font-size:9.5px;opacity:0.75;">弱 β₂、强正 β₄ 辐射</span></button>
+              <button class="gnlse-preset-btn" id="c3pre-single" onclick="c3Preset('single')">④ 传统单边 DW+拉曼<br><span style="font-size:9.5px;opacity:0.75;">β₄=0 对比单侧辐射</span></button>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">传输长度 Z_max 与网格点数 N</div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>传输长度 Z_max / L_D</span><div class="gnlse-z-row"><input type="number" id="c3n-zmax" class="gnlse-z-num" min="0.2" max="15.0" step="0.1" value="1.2"></div></div>
+              <input type="range" id="c3s-zmax" min="0.2" max="10.0" step="0.1" value="1.2">
+            </div>
+            <div class="gnlse-slider-row" style="margin-top:3px;"><span>采样点数 N (FFT 网格)</span><span class="val" id="c3v-Ngrid">512</span></div>
+            <div class="gnlse-grid-opts" id="c3-nopts">
+              <button class="gnlse-n-btn" data-n="256" onclick="c3SetGridN(256)">256</button>
+              <button class="gnlse-n-btn active" data-n="512" onclick="c3SetGridN(512)">512</button>
+              <button class="gnlse-n-btn" data-n="1024" onclick="c3SetGridN(1024)">1024</button>
+              <button class="gnlse-n-btn" data-n="2048" onclick="c3SetGridN(2048)">2048</button>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-btn-row">
+              <button class="gnlse-action-btn primary" id="c3btn-run" onclick="c3ToggleRun()">▶ 运行 / 暂停</button>
+              <button class="gnlse-action-btn" onclick="c3Reset(true)">重置</button>
+            </div>
+          </div>
+
+          <div class="gnlse-ctrl-sec">
+            <div class="gnlse-ctrl-head">高达四阶色散与三阶非线性参数</div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>输入孤子阶数 N_sol</span><span class="val" id="c3v-N">3.0</span></div>
+              <input type="range" id="c3s-N" min="0.8" max="4.0" step="0.1" value="3.0">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>二阶色散 β₂ (负=反常)</span><span class="val" id="c3v-b2">-1.00</span></div>
+              <input type="range" id="c3s-b2" min="-2.00" max="1.00" step="0.05" value="-1.00">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>三阶色散 β₃ (非对称项)</span><span class="val" id="c3v-b3">0.00</span></div>
+              <input type="range" id="c3s-b3" min="-0.25" max="0.25" step="0.01" value="0.00">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>四阶色散 β₄ (正=双边 DW)</span><span class="val" id="c3v-b4" style="color:var(--c-teal-600);">+0.16</span></div>
+              <input type="range" id="c3s-b4" min="-0.10" max="0.45" step="0.01" value="0.16">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>三倍频 THG 耦合 κ₃</span><span class="val" id="c3v-k3" style="color:#e11d48;">0.06</span></div>
+              <input type="range" id="c3s-k3" min="0.00" max="0.20" step="0.01" value="0.06">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>自陡峭系数 s (非线性色散)</span><span class="val" id="c3v-ss">0.02</span></div>
+              <input type="range" id="c3s-ss" min="0.00" max="0.08" step="0.01" value="0.02">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>拉曼一阶时间矩 τ_R</span><span class="val" id="c3v-tr">0.010</span></div>
+              <input type="range" id="c3s-tr" min="0.00" max="0.05" step="0.005" value="0.01">
+            </div>
+            <div class="gnlse-slider-grp">
+              <div class="gnlse-slider-row"><span>类 K-K 非线性损耗 TPA</span><span class="val" id="c3v-tpa">0.00</span></div>
+              <input type="range" id="c3s-tpa" min="0.00" max="0.10" step="0.01" value="0.00">
+            </div>
+          </div>
+        </aside>
+
+        <div class="gnlse-main-col">
+          <div class="gnlse-eq-bar chi3" id="c3-eq-bar">三阶活跃项：∂A₁/∂z = (−iβ₂/2·∂² + iβ₄/24·∂⁴)A₁ + iγ(1 + s·i∂_T)(|A₁|² − τ_R∂_T|A₁|²)A₁ + iκ₃(A₁*)²A₃</div>
+          <div class="gnlse-charts-grid">
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge">3A</span>时域脉冲演化 |A_j(T)|²</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">蓝：基频孤子 · 红：三倍频 THG</span>
+                  <span class="btns"><button class="gnlse-mini-btn active" id="c3btn-lin" onclick="c3SetLog(false)">线性</button><button class="gnlse-mini-btn" id="c3btn-log" onclick="c3SetLog(true)">dB</button></span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c3cv-time"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:#fef2f2;color:#e11d48;">3B</span>超连续谱与双边色散波 (dB)</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">紫：SCG · 青线：DW± · 红：THG</span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c3cv-spec"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-blue-50);color:var(--c-blue-600);">3C</span>四阶色散与双边相位匹配</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">蓝：β_int · 橙虚：β₂_eff · 红点：DW±</span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c3cv-disp"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">3D</span>基频传输演化 2D 瀑布图</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">观察双边色散波分叉辐射</span>
+                  <span class="btns"><button class="gnlse-mini-btn" id="c3btn-wt" onclick="c3SetMapMode('time')">时域 T</button><button class="gnlse-mini-btn active" id="c3btn-wf" onclick="c3SetMapMode('freq')">频域 Ω</button></span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c3cv-map"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:var(--c-amber-50);color:var(--c-amber-600);">3E</span>自适应步长与峰值压缩</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">橙：步长 Δz(z) · 蓝：基频峰值</span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c3cv-dz"></canvas></div>
+            </div>
+
+            <div class="gnlse-chart-card">
+              <div class="gnlse-chart-head">
+                <div class="gnlse-chart-title"><span class="gnlse-badge" style="background:#fef2f2;color:#e11d48;">3F</span>总能量与三倍频转换效率</div>
+                <div class="gnlse-chart-sub">
+                  <span class="leg">紫：E_tot/E₀ · 红虚：η_THG</span>
+                </div>
+              </div>
+              <div class="gnlse-cv-wrap"><canvas id="c3cv-cons"></canvas></div>
+            </div>
+          </div>
+          <div class="gnlse-tip" id="c3-tip">
+            <strong>三阶双边色散波验证提示：</strong>当 <code>β₂ &lt; 0</code> 且 <code>β₄ &gt; 0</code> 时，局域色散 <code>β₂_eff(Ω)</code> 在泵浦两侧形成双零色散点 <code>Ω_ZDW±</code>，积分色散 <code>β_int(Ω)</code> 在高低频两侧同时上翘并与孤子波数线相交（图 3C 红点），从而在光谱图 3B 中同时激发出红移与蓝移<strong>双边切伦科夫色散波（DW− 与 DW+）</strong>！调节 <code>β₃</code> 可观察双边色散波由对称变为非对称。
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Agrawal, G. P. <em>Nonlinear Fiber Optics</em>, 6th ed., Ch. 2 &amp; Ch. 13 (Academic Press, 2019).</li>
+      <li><span class="ref-num">[2]</span>Roy, S., Bhadra, S. K. &amp; Agrawal, G. P. Dispersive waves emitted by solitons perturbed by third-order and fourth-order dispersions. <em>Phys. Rev. A</em> <strong>79</strong>, 023824 (2009).</li>
+      <li><span class="ref-num">[3]</span>Boyd, R. W. <em>Nonlinear Optics</em>, 4th ed., Ch. 2: Wave-Equation Description of Nonlinear Optical Interactions &amp; Quasi-Phase-Matching (Academic Press, 2020).</li>
+      <li><span class="ref-num">[4]</span>DeSalvo, R., Hagan, D. J., Sheik-Bahae, M., Stegeman, G. &amp; Van Stryland, E. W. Self-focusing and self-defocusing by cascaded second-order effects in KTP. <em>Opt. Lett.</em> <strong>17</strong>, 28–30 (1992).</li>
+      <li><span class="ref-num">[5]</span>Hult, J. A fourth-order Runge-Kutta in the interaction picture method for simulating supercontinuum generation in optical fibers. <em>J. Lightwave Technol.</em> <strong>25</strong>, 3770–3775 (2007).</li>
+      <li><span class="ref-num">[6]</span>Dudley, J. M., Genty, G. &amp; Coen, S. Supercontinuum generation in photonic crystal fiber. <em>Rev. Mod. Phys.</em> <strong>78</strong>, 1135–1184 (2006).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== Shared Radix-2 FFT & Canvas Utilities =====
+  function fft(re, im, inv) {
+    var n = re.length;
+    for (var i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { var tr = re[i]; re[i] = re[j]; re[j] = tr; var ti = im[i]; im[i] = im[j]; im[j] = ti; }
+    }
+    var sign = inv ? 1 : -1;
+    for (var len = 2; len <= n; len <<= 1) {
+      var half = len >> 1, ang = sign * 2 * Math.PI / len, wR = Math.cos(ang), wI = Math.sin(ang);
+      for (var i0 = 0; i0 < n; i0 += len) {
+        var cR = 1, cI = 0;
+        for (var k = 0; k < half; k++) {
+          var u = i0 + k, v = u + half;
+          var tR = cR * re[v] - cI * im[v], tI = cR * im[v] + cI * re[v];
+          re[v] = re[u] - tR; im[v] = im[u] - tI; re[u] += tR; im[u] += tI;
+          var nR = cR * wR - cI * wI; cI = cR * wI + cI * wR; cR = nR;
+        }
+      }
+    }
+    if (inv) { for (var m = 0; m < n; m++) { re[m] /= n; im[m] /= n; } }
+  }
+
+  function setupCV(id) {
+    var c = document.getElementById(id), rect = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(10, Math.round(rect.width)), h = Math.max(10, Math.round(rect.height));
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function drawGrid(ctx, w, h, pad, xMin, xMax, yMin, yMax, xLbl, yLbl) {
+    var pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+    var toX = function(x) { return pad.l + ((x - xMin) / (xMax - xMin)) * pw; };
+    var toY = function(y) { return pad.t + ph - ((y - yMin) / (yMax - yMin)) * ph; };
+    ctx.strokeStyle = '#e4e1d8'; ctx.lineWidth = 0.5; ctx.font = '9.5px monospace'; ctx.fillStyle = '#888780';
+    for (var i = 0; i <= 4; i++) {
+      var yv = yMin + (i / 4) * (yMax - yMin), py = toY(yv);
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(Math.abs(yv) >= 10 ? yv.toFixed(0) : yv.toFixed(2), pad.l - 5, py + 3);
+      var xv = xMin + (i / 4) * (xMax - xMin), px = toX(xv);
+      ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, h - pad.b); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.fillText(Math.abs(xv) >= 10 ? xv.toFixed(0) : xv.toFixed(1), px, h - pad.b + 12);
+    }
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(xLbl, pad.l + pw / 2, h - 3);
+    ctx.save(); ctx.translate(11, pad.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yLbl, 0, 0); ctx.restore();
+    return { toX: toX, toY: toY, pw: pw, ph: ph };
+  }
+
+  function colormap(v) {
+    v = Math.max(0, Math.min(1, v));
+    var s = [[0, 15, 12, 41], [0.25, 65, 25, 128], [0.55, 180, 48, 125], [0.8, 240, 130, 50], [1, 254, 248, 195]];
+    for (var i = 0; i < s.length - 1; i++) {
+      if (v <= s[i + 1][0]) {
+        var f = (v - s[i][0]) / (s[i + 1][0] - s[i][0]);
+        return [Math.round(s[i][1] + f * (s[i + 1][1] - s[i][1])), Math.round(s[i][2] + f * (s[i + 1][2] - s[i][2])), Math.round(s[i][3] + f * (s[i + 1][3] - s[i][3]))];
+      }
+    }
+    return [254, 248, 195];
+  }
+
+  var isTabActive = false;
+
+  // =========================================================================
+  // SECTION 1 ENGINE: SECOND-ORDER NONLINEARITY (d_33: SHG + Cascaded + IDFG)
+  // =========================================================================
+  (function() {
+    var N = 512, Tmax = 18.0, dt = (2 * Tmax) / N, ZMAX = 2.0;
+    var tAxis, wAxis, wShift;
+    var Scur, Sc, Sm, Sf, SI, SK1, SK2, SK3, SK4, ST, tmpR, tmpI;
+
+    function makeSt(n) {
+      return { r1: new Float64Array(n), i1: new Float64Array(n), r2: new Float64Array(n), i2: new Float64Array(n), rir: new Float64Array(n), iir: new Float64Array(n) };
+    }
+    function copySt(s, d) {
+      d.r1.set(s.r1); d.i1.set(s.i1); d.r2.set(s.r2); d.i2.set(s.i2); d.rir.set(s.rir); d.iir.set(s.iir);
+    }
+    function alloc(newN) {
+      N = newN; dt = (2 * Tmax) / N;
+      tAxis = new Float64Array(N); wAxis = new Float64Array(N); wShift = new Float64Array(N);
+      for (var i = 0; i < N; i++) {
+        tAxis[i] = -Tmax + i * dt;
+        var k = i < N / 2 ? i : i - N;
+        wAxis[i] = (2 * Math.PI * k) / (2 * Tmax);
+        wShift[i] = (2 * Math.PI * (i - N / 2)) / (2 * Tmax);
+      }
+      Scur = makeSt(N); Sc = makeSt(N); Sm = makeSt(N); Sf = makeSt(N);
+      SI = makeSt(N); SK1 = makeSt(N); SK2 = makeSt(N); SK3 = makeSt(N); SK4 = makeSt(N); ST = makeSt(N);
+      tmpR = new Float64Array(N); tmpI = new Float64Array(N);
+    }
+    alloc(512);
+
+    var SW = { shg: true, casc: true, idfg: true, spm: false };
+    var P = { k2: 1.20, dk2: 0.0, gvm: 0.25, kir: 0.30, a0: 1.4, b2: -0.4 };
+    var PRESETS = {
+      qpm:   { sw: { shg: true,  casc: true,  idfg: true,  spm: false }, p: { k2: 1.20, dk2:  0.0, gvm: 0.25, kir: 0.30, a0: 1.4, b2: -0.4 }, zmax: 2.0 },
+      cascn: { sw: { shg: true,  casc: true,  idfg: false, spm: true  }, p: { k2: 2.40, dk2: +8.0, gvm: 0.05, kir: 0.00, a0: 1.8, b2: -1.0 }, zmax: 2.5 },
+      cascp: { sw: { shg: true,  casc: true,  idfg: false, spm: false }, p: { k2: 2.40, dk2: -6.0, gvm: 0.05, kir: 0.00, a0: 1.8, b2: -1.0 }, zmax: 2.2 },
+      idfg:  { sw: { shg: false, casc: true,  idfg: true,  spm: false }, p: { k2: 2.20, dk2: -5.0, gvm: 0.05, kir: 0.55, a0: 2.1, b2: -1.0 }, zmax: 1.8 }
+    };
+
+    var zCurr = 0, dzCurr = 0.015, E0 = 1.0, isRun = false, hasInit = false, animId = null;
+    var isLog = false, mapMode = 'time';
+    var zHist = [], e1Hist = [], shgHist = [], idfgHist = [], tSlices = [], fSlices = [];
+
+    function syncUI() {
+      document.getElementById('c2sw-shg').checked = SW.shg;
+      document.getElementById('c2sw-casc').checked = SW.casc;
+      document.getElementById('c2sw-idfg').checked = SW.idfg;
+      document.getElementById('c2sw-spm').checked = SW.spm;
+      var terms = ['D̂₁A₁'];
+      if (SW.spm) terms.push('iγ_SPM|A₁|²A₁');
+      if (SW.shg && SW.casc) terms.push('iκ₂A₁*A₂ (倍频+级联)');
+      else if (SW.shg) terms.push('iκ₂A₁²→A₂ (纯倍频)');
+      else if (SW.casc) terms.push('iγ_casc|A₁|²A₁ (纯级联)');
+      if (SW.idfg) terms.push('iκ_IR|A₁|²→A_IR (自差频)');
+      document.getElementById('c2-eq-bar').textContent = '二阶活跃项：∂A₁/∂z = ' + terms.join(' + ');
+    }
+
+    function linHalf(src, dst, h2) {
+      copySt(src, dst);
+      fft(dst.r1, dst.i1, false);
+      for (var i = 0; i < N; i++) {
+        var w = wAxis[i], ph = h2 * (0.5 * P.b2 * w * w);
+        var c = Math.cos(ph), s = Math.sin(ph);
+        var r = dst.r1[i] * c - dst.i1[i] * s, m = dst.r1[i] * s + dst.i1[i] * c;
+        dst.r1[i] = r; dst.i1[i] = m;
+      }
+      fft(dst.r1, dst.i1, true);
+
+      if (SW.shg && P.k2 > 1e-4) {
+        fft(dst.r2, dst.i2, false);
+        for (var i2 = 0; i2 < N; i2++) {
+          var w = wAxis[i2], ph2 = h2 * (P.gvm * w + 0.35 * P.b2 * w * w);
+          var c2 = Math.cos(ph2), s2 = Math.sin(ph2);
+          var r2 = dst.r2[i2] * c2 - dst.i2[i2] * s2, m2 = dst.r2[i2] * s2 + dst.i2[i2] * c2;
+          dst.r2[i2] = r2; dst.i2[i2] = m2;
+        }
+        fft(dst.r2, dst.i2, true);
+      }
+      if (SW.idfg && P.kir > 1e-4) {
+        fft(dst.rir, dst.iir, false);
+        for (var ir = 0; ir < N; ir++) {
+          var w = wAxis[ir], phIr = h2 * (-0.28 * w - 0.25 * P.b2 * w * w);
+          var cir = Math.cos(phIr), sir = Math.sin(phIr);
+          var rir = dst.rir[ir] * cir - dst.iir[ir] * sir, mir = dst.rir[ir] * sir + dst.iir[ir] * cir;
+          dst.rir[ir] = rir; dst.iir[ir] = mir;
+        }
+        fft(dst.rir, dst.iir, true);
+      }
+    }
+
+    function nlEval(src, dst, zVal) {
+      var c2 = Math.cos(P.dk2 * zVal), s2 = Math.sin(P.dk2 * zVal);
+      var dkSafe = Math.abs(P.dk2) < 1.0 ? (P.dk2 >= 0 ? 1.0 : -1.0) : P.dk2;
+      var gCasc = -(P.k2 * P.k2) / dkSafe;
+
+      for (var j = 0; j < N; j++) {
+        var r1 = src.r1[j], i1 = src.i1[j], p1 = r1 * r1 + i1 * i1;
+        var r2 = src.r2[j], i2 = src.i2[j];
+        var a1sqR = r1 * r1 - i1 * i1, a1sqI = 2 * r1 * i1;
+
+        dst.r1[j] = SW.spm ? (-i1 * p1) : 0;
+        dst.i1[j] = SW.spm ? ( r1 * p1) : 0;
+
+        if (SW.shg && P.k2 > 1e-4) {
+          var rot2R = a1sqR * c2 + a1sqI * s2, rot2I = a1sqI * c2 - a1sqR * s2;
+          dst.r2[j] = -P.k2 * rot2I;
+          dst.i2[j] =  P.k2 * rot2R;
+          if (SW.casc) {
+            var prodR = r1 * r2 + i1 * i2, prodI = r1 * i2 - i1 * r2;
+            var rotR = prodR * c2 - prodI * s2, rotI = prodR * s2 + prodI * c2;
+            dst.r1[j] += -P.k2 * rotI; dst.i1[j] += P.k2 * rotR;
+          }
+        } else {
+          dst.r2[j] = 0; dst.i2[j] = 0;
+          if (SW.casc && P.k2 > 1e-4) {
+            dst.r1[j] += -gCasc * i1 * p1;
+            dst.i1[j] +=  gCasc * r1 * p1;
+          }
+        }
+      }
+
+      if (SW.idfg && P.kir > 1e-4) {
+        var wIR0 = 2.6, dkIR = 0.6;
+        var cIrZ = Math.cos(dkIR * zVal), sIrZ = Math.sin(dkIR * zVal);
+        for (var m = 0; m < N; m++) {
+          var p1 = src.r1[m] * src.r1[m] + src.i1[m] * src.i1[m];
+          var ph = -wIR0 * tAxis[m];
+          tmpR[m] = p1 * Math.cos(ph); tmpI[m] = p1 * Math.sin(ph);
+        }
+        fft(tmpR, tmpI, false);
+        for (var k = 0; k < N; k++) {
+          var rad = Math.max(0.0, 1.0 + wAxis[k] / wIR0);
+          tmpR[k] *= rad; tmpI[k] *= rad;
+        }
+        fft(tmpR, tmpI, true);
+        for (var m2 = 0; m2 < N; m2++) {
+          var rotR = tmpR[m2] * cIrZ + tmpI[m2] * sIrZ;
+          var rotI = tmpI[m2] * cIrZ - tmpR[m2] * sIrZ;
+          dst.rir[m2] = -P.kir * rotI;
+          dst.iir[m2] =  P.kir * rotR;
+        }
+      } else {
+        dst.rir.fill(0); dst.iir.fill(0);
+      }
+    }
+
+    function addSc(b, k, sc, o) {
+      for (var i = 0; i < N; i++) {
+        o.r1[i] = b.r1[i] + sc * k.r1[i]; o.i1[i] = b.i1[i] + sc * k.i1[i];
+        o.r2[i] = b.r2[i] + sc * k.r2[i]; o.i2[i] = b.i2[i] + sc * k.i2[i];
+        o.rir[i] = b.rir[i] + sc * k.rir[i]; o.iir[i] = b.iir[i] + sc * k.iir[i];
+      }
+    }
+
+    function rk4ip(src, dst, z0, h) {
+      var h2 = 0.5 * h;
+      linHalf(src, SI, h2); nlEval(src, ST, z0); linHalf(ST, SK1, h2);
+      addSc(SI, SK1, h2, ST); nlEval(ST, SK2, z0 + h2);
+      addSc(SI, SK2, h2, ST); nlEval(ST, SK3, z0 + h2);
+      addSc(SI, SK3, h, ST); linHalf(ST, dst, h2); nlEval(dst, SK4, z0 + h);
+      var h6 = h / 6;
+      for (var i = 0; i < N; i++) {
+        ST.r1[i] = SI.r1[i] + h6 * (SK1.r1[i] + 2 * SK2.r1[i] + 2 * SK3.r1[i]);
+        ST.i1[i] = SI.i1[i] + h6 * (SK1.i1[i] + 2 * SK2.i1[i] + 2 * SK3.i1[i]);
+        ST.r2[i] = SI.r2[i] + h6 * (SK1.r2[i] + 2 * SK2.r2[i] + 2 * SK3.r2[i]);
+        ST.i2[i] = SI.i2[i] + h6 * (SK1.i2[i] + 2 * SK2.i2[i] + 2 * SK3.i2[i]);
+        ST.rir[i] = SI.rir[i] + h6 * (SK1.rir[i] + 2 * SK2.rir[i] + 2 * SK3.rir[i]);
+        ST.iir[i] = SI.iir[i] + h6 * (SK1.iir[i] + 2 * SK2.iir[i] + 2 * SK3.iir[i]);
+      }
+      linHalf(ST, dst, h2);
+      for (var j = 0; j < N; j++) {
+        dst.r1[j] += h6 * SK4.r1[j]; dst.i1[j] += h6 * SK4.i1[j];
+        dst.r2[j] += h6 * SK4.r2[j]; dst.i2[j] += h6 * SK4.i2[j];
+        dst.rir[j] += h6 * SK4.rir[j]; dst.iir[j] += h6 * SK4.iir[j];
+      }
+    }
+
+    function stepAdapt() {
+      var tol = 3e-4;
+      for (var t = 0; t < 5; t++) {
+        var h = Math.min(dzCurr, ZMAX - zCurr);
+        if (h <= 1e-6) { zCurr = ZMAX; return; }
+        rk4ip(Scur, Sc, zCurr, h);
+        rk4ip(Scur, Sm, zCurr, 0.5 * h);
+        rk4ip(Sm, Sf, zCurr + 0.5 * h, 0.5 * h);
+        var dSq = 0, nSq = 1e-18;
+        for (var i = 0; i < N; i++) {
+          var d1r = Sf.r1[i] - Sc.r1[i], d1i = Sf.i1[i] - Sc.i1[i], d2r = Sf.r2[i] - Sc.r2[i], d2i = Sf.i2[i] - Sc.i2[i];
+          dSq += d1r * d1r + d1i * d1i + d2r * d2r + d2i * d2i;
+          nSq += Sf.r1[i] * Sf.r1[i] + Sf.i1[i] * Sf.i1[i] + Sf.r2[i] * Sf.r2[i] + Sf.i2[i] * Sf.i2[i];
+        }
+        var err = Math.sqrt(dSq / nSq);
+        if (err <= 2.0 * tol || h <= 0.001) {
+          var e1 = 0, e2 = 0, eir = 0;
+          for (var j = 0; j < N; j++) {
+            Scur.r1[j] = (16 / 15) * Sf.r1[j] - (1 / 15) * Sc.r1[j]; Scur.i1[j] = (16 / 15) * Sf.i1[j] - (1 / 15) * Sc.i1[j];
+            Scur.r2[j] = (16 / 15) * Sf.r2[j] - (1 / 15) * Sc.r2[j]; Scur.i2[j] = (16 / 15) * Sf.i2[j] - (1 / 15) * Sc.i2[j];
+            Scur.rir[j] = (16 / 15) * Sf.rir[j] - (1 / 15) * Sc.rir[j]; Scur.iir[j] = (16 / 15) * Sf.iir[j] - (1 / 15) * Sc.iir[j];
+            e1 += (Scur.r1[j] * Scur.r1[j] + Scur.i1[j] * Scur.i1[j]) * dt;
+            e2 += (Scur.r2[j] * Scur.r2[j] + Scur.i2[j] * Scur.i2[j]) * dt;
+            eir += (Scur.rir[j] * Scur.rir[j] + Scur.iir[j] * Scur.iir[j]) * dt;
+          }
+          zCurr += h;
+          zHist.push(zCurr); e1Hist.push(e1 / E0); shgHist.push(e2 / E0); idfgHist.push(eir / E0);
+          recSlice();
+          var fac = err > 1e-12 ? Math.min(1.5, Math.max(0.5, 0.9 * Math.pow(tol / err, 0.2))) : 1.4;
+          dzCurr = Math.min(0.06, Math.max(0.001, h * fac));
+          return;
+        } else {
+          dzCurr = Math.max(0.001, 0.7 * h * Math.pow(tol / Math.max(err, 1e-12), 0.25));
+        }
+      }
+    }
+
+    function recSlice() {
+      var tSl = new Float32Array(N), fSl = new Float32Array(N), pk = 1e-12;
+      for (var i = 0; i < N; i++) { var p = Scur.r1[i] * Scur.r1[i] + Scur.i1[i] * Scur.i1[i]; tSl[i] = p; if (p > pk) pk = p; }
+      for (var i2 = 0; i2 < N; i2++) tSl[i2] /= pk;
+      tmpR.set(Scur.r1); tmpI.set(Scur.i1); fft(tmpR, tmpI, false);
+      var half = N >> 1, maxS = 1e-12;
+      for (var k = 0; k < N; k++) { var si = (k + half) & (N - 1); var sp = tmpR[si] * tmpR[si] + tmpI[si] * tmpI[si]; fSl[k] = sp; if (sp > maxS) maxS = sp; }
+      for (var k2 = 0; k2 < N; k2++) fSl[k2] = Math.max(0, (10 * Math.log10(fSl[k2] / maxS + 1e-8) + 45) / 45);
+      tSlices.push(tSl); fSlices.push(fSl);
+    }
+
+    function render() {
+      var pad = { l: 44, r: 12, t: 10, b: 28 };
+      // 2A. Time
+      var rA = setupCV('c2cv-time'), cA = rA.ctx;
+      var p1 = new Float64Array(N), p2 = new Float64Array(N), pir = new Float64Array(N), maxP = 1e-9;
+      for (var i = 0; i < N; i++) {
+        p1[i] = Scur.r1[i] * Scur.r1[i] + Scur.i1[i] * Scur.i1[i];
+        p2[i] = Scur.r2[i] * Scur.r2[i] + Scur.i2[i] * Scur.i2[i];
+        pir[i] = Scur.rir[i] * Scur.rir[i] + Scur.iir[i] * Scur.iir[i];
+        if (p1[i] > maxP) maxP = p1[i];
+        if (p2[i] > maxP) maxP = p2[i];
+      }
+      var yMinA = isLog ? -45 : 0, yMaxA = isLog ? 3 : Math.max(1.2, maxP * 1.12);
+      var axA = drawGrid(cA, rA.w, rA.h, pad, -10, 10, yMinA, yMaxA, '随动时间 T / T₀', isLog ? '强度 (dB)' : '强度 |A_j|²');
+      cA.save(); cA.beginPath(); cA.rect(pad.l, pad.t, axA.pw, axA.ph); cA.clip();
+      function stT(arr, col, lw) {
+        cA.strokeStyle = col; cA.lineWidth = lw; cA.beginPath(); var st = false;
+        for (var ii = 0; ii < N; ii++) {
+          if (tAxis[ii] < -10 || tAxis[ii] > 10) continue;
+          var v = isLog ? Math.max(-50, 10 * Math.log10(arr[ii] / maxP + 1e-10)) : arr[ii];
+          if (!st) { cA.moveTo(axA.toX(tAxis[ii]), axA.toY(v)); st = true; } else cA.lineTo(axA.toX(tAxis[ii]), axA.toY(v));
+        }
+        cA.stroke();
+      }
+      stT(p1, '#378ADD', 2.0);
+      if (SW.shg && P.k2 > 1e-4) stT(p2, '#1D9E75', 1.8);
+      if (SW.idfg && P.kir > 1e-4) stT(pir, '#EF9F27', 1.7);
+      cA.restore();
+
+      // 2B. Spectrum
+      var rB = setupCV('c2cv-spec'), cB = rB.ctx, half = N >> 1;
+      function getSp(re, im) {
+        tmpR.set(re); tmpI.set(im); fft(tmpR, tmpI, false);
+        var out = new Float64Array(N), mx = 1e-14;
+        for (var k = 0; k < N; k++) { var si = (k + half) & (N - 1); out[k] = tmpR[si] * tmpR[si] + tmpI[si] * tmpI[si]; if (out[k] > mx) mx = out[k]; }
+        return { arr: out, max: mx };
+      }
+      var sp1 = getSp(Scur.r1, Scur.i1), sp2 = getSp(Scur.r2, Scur.i2), spir = getSp(Scur.rir, Scur.iir);
+      var refM = Math.max(sp1.max, sp2.max, 1e-12), wView = Math.min(30, Math.max(18, (Math.PI / dt) * 0.8));
+      var axB = drawGrid(cB, rB.w, rB.h, pad, -wView, wView, -55, 5, '相对频偏 Ω·T₀', '光谱 (dB)');
+      cB.save(); cB.beginPath(); cB.rect(pad.l, pad.t, axB.pw, axB.ph); cB.clip();
+      function stS(arr, col, lw) {
+        cB.strokeStyle = col; cB.lineWidth = lw; cB.beginPath(); var st = false;
+        for (var k = 0; k < N; k++) {
+          if (wShift[k] < -wView || wShift[k] > wView) continue;
+          var db = Math.max(-60, 10 * Math.log10(arr[k] / refM + 1e-10));
+          if (!st) { cB.moveTo(axB.toX(wShift[k]), axB.toY(db)); st = true; } else cB.lineTo(axB.toX(wShift[k]), axB.toY(db));
+        }
+        cB.stroke();
+      }
+      stS(sp1.arr, '#534AB7', 1.9);
+      if (SW.shg && P.k2 > 1e-4) stS(sp2.arr, '#1D9E75', 1.7);
+      if (SW.idfg && P.kir > 1e-4) stS(spir.arr, '#EF9F27', 1.6);
+      cB.restore();
+
+      // 2C. Waterfall
+      var rC = setupCV('c2cv-map'), cC = rC.ctx;
+      var pwC = rC.w - pad.l - pad.r, phC = rC.h - pad.t - pad.b;
+      var slices = mapMode === 'time' ? tSlices : fSlices, xSpan = mapMode === 'time' ? 10.0 : wView;
+      if (slices.length >= 2) {
+        var Wimg = 128, Himg = Math.min(128, slices.length);
+        var off = document.createElement('canvas'); off.width = Wimg; off.height = Himg;
+        var octx = off.getContext('2d'), img = octx.createImageData(Wimg, Himg), d = img.data;
+        for (var py = 0; py < Himg; py++) {
+          var sIdx = Math.min(slices.length - 1, Math.floor(((Himg - 1 - py) / Math.max(1, Himg - 1)) * (slices.length - 1)));
+          var row = slices[sIdx];
+          for (var px = 0; px < Wimg; px++) {
+            var xv = -xSpan + (px / (Wimg - 1)) * (2 * xSpan);
+            var idxG = mapMode === 'time' ? Math.round((xv + Tmax) / dt) : Math.round(xv / (wShift[1] - wShift[0]) + N / 2);
+            var val = (idxG >= 0 && idxG < N) ? row[idxG] : 0;
+            var rgb = colormap(mapMode === 'time' ? Math.pow(val, 0.5) : val);
+            var pIdx = (py * Wimg + px) * 4;
+            d[pIdx] = rgb[0]; d[pIdx + 1] = rgb[1]; d[pIdx + 2] = rgb[2]; d[pIdx + 3] = 255;
+          }
+        }
+        octx.putImageData(img, 0, 0);
+        cC.drawImage(off, pad.l, pad.t, pwC, phC);
+      }
+      drawGrid(cC, rC.w, rC.h, pad, -xSpan, xSpan, 0, Math.max(0.2, zCurr), mapMode === 'time' ? '随动时间 T / T₀' : '角频率 Ω·T₀', '距离 z / L_D');
+
+      // 2D. Energy Conversion
+      var rF = setupCV('c2cv-cons'), cF = rF.ctx;
+      var axF = drawGrid(cF, rF.w, rF.h, pad, 0, ZMAX, 0, 1.12, '传输距离 z / L_D', '能量占比');
+      cF.save(); cF.beginPath(); cF.rect(pad.l, pad.t, axF.pw, axF.ph); cF.clip();
+      if (zHist.length > 1) {
+        function plH(arr, col, lw) {
+          cF.strokeStyle = col; cF.lineWidth = lw; cF.beginPath();
+          for (var f1 = 0; f1 < zHist.length; f1++) { var px = axF.toX(zHist[f1]), py = axF.toY(Math.min(1.12, arr[f1])); if (f1 === 0) cF.moveTo(px, py); else cF.lineTo(px, py); }
+          cF.stroke();
+        }
+        plH(e1Hist, '#534AB7', 2.0);
+        if (SW.shg) plH(shgHist, '#1D9E75', 1.9);
+        if (SW.idfg) plH(idfgHist, '#EF9F27', 1.8);
+      }
+      cF.restore();
+
+      // Metrics
+      var pk1 = 0; for (var m = 0; m < N; m++) if (p1[m] > pk1) pk1 = p1[m];
+      var lc = Math.abs(P.dk2) < 0.05 ? '∞ (QPM)' : (Math.PI / Math.abs(P.dk2)).toFixed(2);
+      var gCasc = (SW.casc && Math.abs(P.dk2) >= 1.5) ? (-(P.k2 * P.k2) / P.dk2).toFixed(2) : (SW.casc ? '谐振转换' : 'OFF');
+      var curSHG = shgHist.length ? shgHist[shgHist.length - 1] * 100 : 0;
+      var curIDFG = idfgHist.length ? idfgHist[idfgHist.length - 1] * 100 : 0;
+      document.getElementById('c2m-z').textContent = zCurr.toFixed(2) + ' / ' + ZMAX.toFixed(2);
+      document.getElementById('c2m-lc').textContent = lc;
+      document.getElementById('c2m-gcasc').textContent = gCasc;
+      document.getElementById('c2m-shg').textContent = SW.shg ? (curSHG.toFixed(1) + '%') : 'OFF';
+      document.getElementById('c2m-idfg').textContent = SW.idfg ? (curIDFG.toFixed(2) + '%') : 'OFF';
+      document.getElementById('c2m-pk').textContent = pk1.toFixed(2);
+      document.getElementById('c2-status').textContent = '网格 N=' + N + ' · ' + (isRun ? 'RK4IP 求解中...' : (zCurr >= ZMAX - 1e-4 ? '✔ 二阶验证完成' : '就绪'));
+    }
+
+    function loop() {
+      if (!isRun) return;
+      var spf = N >= 1024 ? 1 : 2;
+      for (var s = 0; s < spf && zCurr < ZMAX - 1e-5; s++) stepAdapt();
+      render();
+      if (zCurr >= ZMAX - 1e-5) {
+        isRun = false; var b = document.getElementById('c2btn-run'); b.classList.remove('running'); b.textContent = '▶ 运行 / 暂停'; render(); return;
+      }
+      animId = requestAnimationFrame(loop);
+    }
+
+    window.c2ToggleRun = function() {
+      if (zCurr >= ZMAX - 1e-5) { window.c2Reset(true); return; }
+      isRun = !isRun;
+      var b = document.getElementById('c2btn-run'); b.classList.toggle('running', isRun); b.textContent = isRun ? '⏸ 暂停传输' : '▶ 运行 / 暂停';
+      if (isRun) animId = requestAnimationFrame(loop);
+    };
+    window.c2Reset = function(auto) {
+      if (animId) cancelAnimationFrame(animId);
+      isRun = false; zCurr = 0; dzCurr = 0.015;
+      zHist = [0]; e1Hist = [1.0]; shgHist = [0]; idfgHist = [0]; tSlices = []; fSlices = []; E0 = 0;
+      for (var i = 0; i < N; i++) {
+        var v = Math.abs(tAxis[i]) > 25 ? 0 : P.a0 / Math.cosh(tAxis[i]);
+        Scur.r1[i] = v; Scur.i1[i] = 0; Scur.r2[i] = 0; Scur.i2[i] = 0; Scur.rir[i] = 0; Scur.iir[i] = 0;
+        E0 += v * v * dt;
+      }
+      recSlice(); syncUI();
+      var b = document.getElementById('c2btn-run'); b.classList.remove('running'); b.textContent = '▶ 运行 / 暂停';
+      render();
+      if (auto) window.c2ToggleRun();
+    };
+    window.c2SetGridN = function(newN) {
+      alloc(newN);
+      document.getElementById('c2v-Ngrid').textContent = String(newN);
+      document.querySelectorAll('#c2-nopts .gnlse-n-btn').forEach(function(b) { b.classList.toggle('active', Number(b.dataset.n) === newN); });
+      window.c2Reset(true);
+    };
+    window.c2SetLog = function(lg) { isLog = lg; document.getElementById('c2btn-lin').classList.toggle('active', !lg); document.getElementById('c2btn-log').classList.toggle('active', lg); render(); };
+    window.c2SetMapMode = function(m) { mapMode = m; document.getElementById('c2btn-wt').classList.toggle('active', m === 'time'); document.getElementById('c2btn-wf').classList.toggle('active', m === 'freq'); render(); };
+    window.c2Preset = function(name) {
+      var c = PRESETS[name]; Object.assign(SW, c.sw); Object.assign(P, c.p); ZMAX = c.zmax;
+      document.getElementById('c2s-zmax').value = ZMAX; document.getElementById('c2n-zmax').value = ZMAX.toFixed(1);
+      document.getElementById('c2s-k2').value = P.k2; document.getElementById('c2v-k2').textContent = P.k2.toFixed(2);
+      document.getElementById('c2s-dk2').value = P.dk2; document.getElementById('c2v-dk2').textContent = (P.dk2 > 0 ? '+' : '') + P.dk2.toFixed(1);
+      document.getElementById('c2s-gvm').value = P.gvm; document.getElementById('c2v-gvm').textContent = P.gvm.toFixed(2);
+      document.getElementById('c2s-kir').value = P.kir; document.getElementById('c2v-kir').textContent = P.kir.toFixed(2);
+      document.getElementById('c2s-a0').value = P.a0; document.getElementById('c2s-b2').value = P.b2;
+      document.getElementById('c2v-a0').textContent = P.a0.toFixed(1); document.getElementById('c2v-b2').textContent = P.b2.toFixed(1);
+      ['qpm', 'cascn', 'cascp', 'idfg'].forEach(function(id) { document.getElementById('c2pre-' + id).classList.toggle('active', id === name); });
+      window.c2Reset(true);
+    };
+
+    ['shg', 'casc', 'idfg', 'spm'].forEach(function(k) {
+      document.getElementById('c2sw-' + k).addEventListener('change', function(e) { SW[k] = e.target.checked; window.c2Reset(true); });
+    });
+    var zs = document.getElementById('c2s-zmax'), zn = document.getElementById('c2n-zmax');
+    zs.addEventListener('input', function() { ZMAX = Math.max(0.2, parseFloat(zs.value)); zn.value = ZMAX.toFixed(1); window.c2Reset(true); });
+    zn.addEventListener('change', function() { var v = parseFloat(zn.value); if (!isFinite(v) || v < 0.2) v = 0.2; if (v > 15) v = 15; ZMAX = v; zn.value = v.toFixed(1); if (v <= 10) zs.value = v; window.c2Reset(true); });
+    function bind2(id, key, fmt, lid) {
+      document.getElementById('c2s-' + id).addEventListener('input', function(e) { P[key] = parseFloat(e.target.value); document.getElementById(lid || ('c2v-' + id)).textContent = fmt(); window.c2Reset(true); });
+    }
+    bind2('k2', 'k2', function() { return P.k2.toFixed(2); });
+    bind2('dk2', 'dk2', function() { return (P.dk2 > 0 ? '+' : '') + P.dk2.toFixed(1); });
+    bind2('gvm', 'gvm', function() { return P.gvm.toFixed(2); });
+    bind2('kir', 'kir', function() { return P.kir.toFixed(2); });
+    bind2('a0', 'a0', function() { return P.a0.toFixed(1); });
+    bind2('b2', 'b2', function() { return P.b2.toFixed(1); });
+
+    window._c2OnTab = function(act) {
+      if (act) { if (!hasInit) { hasInit = true; window.c2Reset(true); } else render(); }
+      else if (isRun) window.c2ToggleRun();
+    };
+    window._c2Resize = render;
+  })();
+
+  // =========================================================================
+  // SECTION 2 ENGINE: THIRD-ORDER NONLINEARITY (SPM + 4TH-ORDER DISPERSION
+  //                   BILATERAL DISPERSIVE WAVES + RAMAN + SYNCHRONOUS THG)
+  // =========================================================================
+  (function() {
+    var N = 512, Tmax = 24.0, dt = (2 * Tmax) / N, ZMAX = 1.2;
+    var tAxis, wAxis, wShift;
+    var Scur, Sc, Sm, Sf, SI, SK1, SK2, SK3, SK4, ST, tmpR, tmpI, p1GradR, p1GradI;
+
+    function makeSt(n) {
+      return { r1: new Float64Array(n), i1: new Float64Array(n), r3: new Float64Array(n), i3: new Float64Array(n) };
+    }
+    function copySt(s, d) {
+      d.r1.set(s.r1); d.i1.set(s.i1); d.r3.set(s.r3); d.i3.set(s.i3);
+    }
+    function alloc(newN) {
+      N = newN; dt = (2 * Tmax) / N;
+      tAxis = new Float64Array(N); wAxis = new Float64Array(N); wShift = new Float64Array(N);
+      for (var i = 0; i < N; i++) {
+        tAxis[i] = -Tmax + i * dt;
+        var k = i < N / 2 ? i : i - N;
+        wAxis[i] = (2 * Math.PI * k) / (2 * Tmax);
+        wShift[i] = (2 * Math.PI * (i - N / 2)) / (2 * Tmax);
+      }
+      Scur = makeSt(N); Sc = makeSt(N); Sm = makeSt(N); Sf = makeSt(N);
+      SI = makeSt(N); SK1 = makeSt(N); SK2 = makeSt(N); SK3 = makeSt(N); SK4 = makeSt(N); ST = makeSt(N);
+      tmpR = new Float64Array(N); tmpI = new Float64Array(N); p1GradR = new Float64Array(N); p1GradI = new Float64Array(N);
+    }
+    alloc(512);
+
+    var SW = { spm: true, fod: true, ss: true, thg: true };
+    var P = { Nsol: 3.0, b2: -1.00, b3: 0.00, b4: 0.16, k3: 0.06, dk3: 0.6, ss: 0.02, tr: 0.01, tpa: 0.00 };
+    var PRESETS = {
+      bidw:   { sw: { spm: true, fod: true,  ss: true, thg: true }, p: { Nsol: 3.0, b2: -1.00, b3: 0.00, b4: 0.16, k3: 0.06, dk3: 0.6, ss: 0.02, tr: 0.010, tpa: 0.00 }, zmax: 1.2 },
+      asym:   { sw: { spm: true, fod: true,  ss: true, thg: true }, p: { Nsol: 3.0, b2: -1.00, b3: 0.06, b4: 0.16, k3: 0.09, dk3: 0.4, ss: 0.03, tr: 0.015, tpa: 0.00 }, zmax: 1.2 },
+      pureb4: { sw: { spm: true, fod: true,  ss: true, thg: true }, p: { Nsol: 2.8, b2: -0.25, b3: 0.00, b4: 0.24, k3: 0.06, dk3: 0.6, ss: 0.02, tr: 0.010, tpa: 0.00 }, zmax: 1.4 },
+      single: { sw: { spm: true, fod: false, ss: true, thg: true }, p: { Nsol: 2.8, b2: -1.00, b3: 0.12, b4: 0.00, k3: 0.06, dk3: 0.6, ss: 0.03, tr: 0.020, tpa: 0.00 }, zmax: 1.4 }
+    };
+
+    var zCurr = 0, dzCurr = 0.008, E0 = 1.0, peakSolMax = 9.0, isRun = false, hasInit = false, animId = null;
+    var isLog = false, mapMode = 'freq'; // Default waterfall to freq in Section 2 to show bilateral DW branching!
+    var zHist = [], dzHist = [], pkHist = [], enHist = [], thgHist = [], tSlices = [], fSlices = [];
+
+    function syncUI() {
+      document.getElementById('c3sw-spm').checked = SW.spm;
+      document.getElementById('c3sw-fod').checked = SW.fod;
+      document.getElementById('c3sw-ss').checked = SW.ss;
+      document.getElementById('c3sw-thg').checked = SW.thg;
+      document.getElementById('c3btn-wt').classList.toggle('active', mapMode === 'time');
+      document.getElementById('c3btn-wf').classList.toggle('active', mapMode === 'freq');
+      var b4Eff = SW.fod ? P.b4 : 0.0;
+      var dispStr = '(−iβ₂/2·∂²' + (Math.abs(P.b3) > 1e-4 ? ' + β₃/6·∂³' : '') + (Math.abs(b4Eff) > 1e-4 ? ' + iβ₄/24·∂⁴' : '') + ')A₁';
+      var terms = [dispStr];
+      if (SW.spm) terms.push(SW.ss ? 'iγ(1 + s·i∂_T)(|A₁|² − τ_R∂_T|A₁|²)A₁' : 'iγ|A₁|²A₁');
+      if (SW.thg) terms.push('iκ₃(A₁*)²A₃ (三倍频 THG)');
+      document.getElementById('c3-eq-bar').textContent = '三阶活跃项：∂A₁/∂z = ' + terms.join(' + ');
+    }
+
+    // Solve beta_int(w) = 0.5*b2*w^2 + (1/6)*b3*w^3 + (1/24)*b4*w^4 = k_sol for bilateral DW roots
+    function findBilateralDWRoots(kSol) {
+      var b4Eff = SW.fod ? P.b4 : 0.0;
+      var roots = [];
+      function fn(w) { return 0.5 * P.b2 * w * w + (1 / 6) * P.b3 * w * w * w + (1 / 24) * b4Eff * Math.pow(w, 4) - kSol; }
+      var wMin = -22.0, wMax = 22.0, steps = 800, dw = (wMax - wMin) / steps;
+      var prev = fn(wMin);
+      for (var i = 1; i <= steps; i++) {
+        var w = wMin + i * dw, cur = fn(w);
+        if (prev * cur <= 0 && Math.abs(w) > 1.5) {
+          var frac = Math.abs(prev) / (Math.abs(prev) + Math.abs(cur) + 1e-12);
+          roots.push((w - dw) + frac * dw);
+        }
+        prev = cur;
+      }
+      return roots;
+    }
+
+    function linHalf(src, dst, h2) {
+      copySt(src, dst);
+      var b4Eff = SW.fod ? P.b4 : 0.0;
+      fft(dst.r1, dst.i1, false);
+      for (var i = 0; i < N; i++) {
+        var w = wAxis[i], w2 = w * w, w3 = w2 * w, w4 = w2 * w2;
+        var ph = h2 * (0.5 * P.b2 * w2 + (1 / 6) * P.b3 * w3 + (1 / 24) * b4Eff * w4);
+        var c = Math.cos(ph), s = Math.sin(ph);
+        var r = dst.r1[i] * c - dst.i1[i] * s, m = dst.r1[i] * s + dst.i1[i] * c;
+        dst.r1[i] = r; dst.i1[i] = m;
+      }
+      fft(dst.r1, dst.i1, true);
+
+      if (SW.thg && P.k3 > 1e-4) {
+        fft(dst.r3, dst.i3, false);
+        for (var i3 = 0; i3 < N; i3++) {
+          var w = wAxis[i3], ph3 = h2 * (0.35 * w + 0.25 * P.b2 * w * w);
+          var c3 = Math.cos(ph3), s3 = Math.sin(ph3);
+          var r3 = dst.r3[i3] * c3 - dst.i3[i3] * s3, m3 = dst.r3[i3] * s3 + dst.i3[i3] * c3;
+          dst.r3[i3] = r3; dst.i3[i3] = m3;
+        }
+        fft(dst.r3, dst.i3, true);
+      }
+    }
+
+    function nlEval(src, dst, zVal) {
+      var ss = SW.ss ? P.ss : 0.0;
+      var tr = SW.ss ? P.tr : 0.0;
+      var tpa = P.tpa;
+      var doSPM = SW.spm;
+      var doTHG = SW.thg && P.k3 > 1e-4;
+
+      if (doSPM) {
+        if (tr > 1e-5) {
+          // Compute d(|A1|^2)/dT via FFT: F^{-1}{ -i*w * F{|A1|^2} }
+          for (var g = 0; g < N; g++) { p1GradR[g] = src.r1[g] * src.r1[g] + src.i1[g] * src.i1[g]; p1GradI[g] = 0; }
+          fft(p1GradR, p1GradI, false);
+          for (var g2 = 0; g2 < N; g2++) {
+            var w = wAxis[g2];
+            var nr = w * p1GradI[g2], ni = -w * p1GradR[g2];
+            p1GradR[g2] = nr; p1GradI[g2] = ni;
+          }
+          fft(p1GradR, p1GradI, true);
+        } else {
+          p1GradR.fill(0);
+        }
+
+        for (var i = 0; i < N; i++) {
+          var r1 = src.r1[i], i1 = src.i1[i], p1 = r1 * r1 + i1 * i1;
+          var effP = p1 - tr * p1GradR[i];
+          dst.r1[i] = r1 * effP;
+          dst.i1[i] = i1 * effP;
+        }
+        if (ss > 1e-4) {
+          fft(dst.r1, dst.i1, false);
+          for (var q = 0; q < N; q++) {
+            var fac = Math.max(0.0, 1.0 + ss * wAxis[q]);
+            var nr = fac * (-tpa * dst.r1[q] - dst.i1[q]);
+            var ni = fac * (dst.r1[q] - tpa * dst.i1[q]);
+            dst.r1[q] = nr; dst.i1[q] = ni;
+          }
+          fft(dst.r1, dst.i1, true);
+        } else {
+          for (var q2 = 0; q2 < N; q2++) {
+            var nr2 = -tpa * dst.r1[q2] - dst.i1[q2];
+            var ni2 = dst.r1[q2] - tpa * dst.i1[q2];
+            dst.r1[q2] = nr2; dst.i1[q2] = ni2;
+          }
+        }
+      } else {
+        dst.r1.fill(0); dst.i1.fill(0);
+      }
+
+      if (doTHG) {
+        var c3 = Math.cos(P.dk3 * zVal), s3 = Math.sin(P.dk3 * zVal);
+        for (var j = 0; j < N; j++) {
+          var r1 = src.r1[j], i1 = src.i1[j], p1 = r1 * r1 + i1 * i1;
+          var r3 = src.r3[j], i3 = src.i3[j];
+          var a1sqR = r1 * r1 - i1 * i1, a1sqI = 2 * r1 * i1;
+          var a1cbR = a1sqR * r1 - a1sqI * i1, a1cbI = a1sqR * i1 + a1sqI * r1;
+          var rt3bR = a1cbR * c3 + a1cbI * s3, rt3bI = a1cbI * c3 - a1cbR * s3;
+          dst.r3[j] = -P.k3 * rt3bI - (doSPM ? 1.2 * p1 * i3 : 0);
+          dst.i3[j] =  P.k3 * rt3bR + (doSPM ? 1.2 * p1 * r3 : 0);
+          if (doSPM) {
+            var p3R = a1sqR * r3 + a1sqI * i3, p3I = a1sqR * i3 - a1sqI * r3;
+            var rt3R = p3R * c3 - p3I * s3, rt3I = p3R * s3 + p3I * c3;
+            dst.r1[j] += -P.k3 * rt3I; dst.i1[j] += P.k3 * rt3R;
+          }
+        }
+      } else {
+        dst.r3.fill(0); dst.i3.fill(0);
+      }
+    }
+
+    function addSc(b, k, sc, o) {
+      for (var i = 0; i < N; i++) {
+        o.r1[i] = b.r1[i] + sc * k.r1[i]; o.i1[i] = b.i1[i] + sc * k.i1[i];
+        o.r3[i] = b.r3[i] + sc * k.r3[i]; o.i3[i] = b.i3[i] + sc * k.i3[i];
+      }
+    }
+
+    function rk4ip(src, dst, z0, h) {
+      var h2 = 0.5 * h;
+      linHalf(src, SI, h2); nlEval(src, ST, z0); linHalf(ST, SK1, h2);
+      addSc(SI, SK1, h2, ST); nlEval(ST, SK2, z0 + h2);
+      addSc(SI, SK2, h2, ST); nlEval(ST, SK3, z0 + h2);
+      addSc(SI, SK3, h, ST); linHalf(ST, dst, h2); nlEval(dst, SK4, z0 + h);
+      var h6 = h / 6;
+      for (var i = 0; i < N; i++) {
+        ST.r1[i] = SI.r1[i] + h6 * (SK1.r1[i] + 2 * SK2.r1[i] + 2 * SK3.r1[i]);
+        ST.i1[i] = SI.i1[i] + h6 * (SK1.i1[i] + 2 * SK2.i1[i] + 2 * SK3.i1[i]);
+        ST.r3[i] = SI.r3[i] + h6 * (SK1.r3[i] + 2 * SK2.r3[i] + 2 * SK3.r3[i]);
+        ST.i3[i] = SI.i3[i] + h6 * (SK1.i3[i] + 2 * SK2.i3[i] + 2 * SK3.i3[i]);
+      }
+      linHalf(ST, dst, h2);
+      for (var j = 0; j < N; j++) {
+        dst.r1[j] += h6 * SK4.r1[j]; dst.i1[j] += h6 * SK4.i1[j];
+        dst.r3[j] += h6 * SK4.r3[j]; dst.i3[j] += h6 * SK4.i3[j];
+      }
+    }
+
+    function stepAdapt() {
+      var tol = 3e-4;
+      for (var t = 0; t < 6; t++) {
+        var h = Math.min(dzCurr, ZMAX - zCurr);
+        if (h <= 1e-6) { zCurr = ZMAX; return; }
+        rk4ip(Scur, Sc, zCurr, h);
+        rk4ip(Scur, Sm, zCurr, 0.5 * h);
+        rk4ip(Sm, Sf, zCurr + 0.5 * h, 0.5 * h);
+        var dSq = 0, nSq = 1e-18;
+        for (var i = 0; i < N; i++) {
+          var d1r = Sf.r1[i] - Sc.r1[i], d1i = Sf.i1[i] - Sc.i1[i], d3r = Sf.r3[i] - Sc.r3[i], d3i = Sf.i3[i] - Sc.i3[i];
+          dSq += d1r * d1r + d1i * d1i + d3r * d3r + d3i * d3i;
+          nSq += Sf.r1[i] * Sf.r1[i] + Sf.i1[i] * Sf.i1[i] + Sf.r3[i] * Sf.r3[i] + Sf.i3[i] * Sf.i3[i];
+        }
+        var err = Math.sqrt(dSq / nSq);
+        if (err <= 2.0 * tol || h <= 0.0005) {
+          var pk = 0, e1 = 0, e3 = 0;
+          for (var j = 0; j < N; j++) {
+            Scur.r1[j] = (16 / 15) * Sf.r1[j] - (1 / 15) * Sc.r1[j]; Scur.i1[j] = (16 / 15) * Sf.i1[j] - (1 / 15) * Sc.i1[j];
+            Scur.r3[j] = (16 / 15) * Sf.r3[j] - (1 / 15) * Sc.r3[j]; Scur.i3[j] = (16 / 15) * Sf.i3[j] - (1 / 15) * Sc.i3[j];
+            var p1 = Scur.r1[j] * Scur.r1[j] + Scur.i1[j] * Scur.i1[j];
+            var p3 = Scur.r3[j] * Scur.r3[j] + Scur.i3[j] * Scur.i3[j];
+            if (p1 > pk) pk = p1;
+            e1 += p1 * dt; e3 += p3 * dt;
+          }
+          if (pk > peakSolMax) peakSolMax = pk;
+          zCurr += h;
+          zHist.push(zCurr); dzHist.push(h); pkHist.push(pk); enHist.push((e1 + e3) / E0); thgHist.push(e3 / E0);
+          recSlice();
+          var fac = err > 1e-12 ? Math.min(1.5, Math.max(0.5, 0.9 * Math.pow(tol / err, 0.2))) : 1.4;
+          dzCurr = Math.min(0.04, Math.max(0.0005, h * fac));
+          return;
+        } else {
+          dzCurr = Math.max(0.0005, 0.7 * h * Math.pow(tol / Math.max(err, 1e-12), 0.25));
+        }
+      }
+    }
+
+    function recSlice() {
+      var tSl = new Float32Array(N), fSl = new Float32Array(N), pk = 1e-12;
+      for (var i = 0; i < N; i++) { var p = Scur.r1[i] * Scur.r1[i] + Scur.i1[i] * Scur.i1[i]; tSl[i] = p; if (p > pk) pk = p; }
+      for (var i2 = 0; i2 < N; i2++) tSl[i2] /= pk;
+      tmpR.set(Scur.r1); tmpI.set(Scur.i1); fft(tmpR, tmpI, false);
+      var half = N >> 1, maxS = 1e-12;
+      for (var k = 0; k < N; k++) { var si = (k + half) & (N - 1); var sp = tmpR[si] * tmpR[si] + tmpI[si] * tmpI[si]; fSl[k] = sp; if (sp > maxS) maxS = sp; }
+      for (var k2 = 0; k2 < N; k2++) fSl[k2] = Math.max(0, (10 * Math.log10(fSl[k2] / maxS + 1e-8) + 45) / 45);
+      tSlices.push(tSl); fSlices.push(fSl);
+    }
+
+    function render() {
+      var pad = { l: 44, r: 12, t: 10, b: 28 };
+      var kSol = 0.5 * Math.max(P.Nsol * P.Nsol, peakSolMax * 0.72);
+      var dwRoots = findBilateralDWRoots(kSol);
+      var leftRoots = dwRoots.filter(function(w) { return w < 0; });
+      var rightRoots = dwRoots.filter(function(w) { return w > 0; });
+      var wDWL = leftRoots.length ? leftRoots[leftRoots.length - 1] : null;
+      var wDWR = rightRoots.length ? rightRoots[0] : null;
+
+      // 3A. Time Domain
+      var rA = setupCV('c3cv-time'), cA = rA.ctx;
+      var p1 = new Float64Array(N), p3 = new Float64Array(N), maxP = 1e-9;
+      for (var i = 0; i < N; i++) {
+        p1[i] = Scur.r1[i] * Scur.r1[i] + Scur.i1[i] * Scur.i1[i];
+        p3[i] = Scur.r3[i] * Scur.r3[i] + Scur.i3[i] * Scur.i3[i];
+        if (p1[i] > maxP) maxP = p1[i];
+      }
+      var yMinA = isLog ? -45 : 0, yMaxA = isLog ? 3 : Math.max(1.2, maxP * 1.12);
+      var axA = drawGrid(cA, rA.w, rA.h, pad, -12, 12, yMinA, yMaxA, '随动时间 T / T₀', isLog ? '强度 (dB)' : '强度 |A_j|²');
+      cA.save(); cA.beginPath(); cA.rect(pad.l, pad.t, axA.pw, axA.ph); cA.clip();
+      function stT(arr, col, lw) {
+        cA.strokeStyle = col; cA.lineWidth = lw; cA.beginPath(); var st = false;
+        for (var ii = 0; ii < N; ii++) {
+          if (tAxis[ii] < -12 || tAxis[ii] > 12) continue;
+          var v = isLog ? Math.max(-50, 10 * Math.log10(arr[ii] / maxP + 1e-10)) : arr[ii];
+          if (!st) { cA.moveTo(axA.toX(tAxis[ii]), axA.toY(v)); st = true; } else cA.lineTo(axA.toX(tAxis[ii]), axA.toY(v));
+        }
+        cA.stroke();
+      }
+      stT(p1, '#378ADD', 2.0);
+      if (SW.thg && P.k3 > 1e-4) stT(p3, '#e11d48', 1.7);
+      cA.restore();
+
+      // 3B. Spectrum (dB) + Bilateral DW Markers
+      var rB = setupCV('c3cv-spec'), cB = rB.ctx, half = N >> 1;
+      function getSp(re, im) {
+        tmpR.set(re); tmpI.set(im); fft(tmpR, tmpI, false);
+        var out = new Float64Array(N), mx = 1e-14;
+        for (var k = 0; k < N; k++) { var si = (k + half) & (N - 1); out[k] = tmpR[si] * tmpR[si] + tmpI[si] * tmpI[si]; if (out[k] > mx) mx = out[k]; }
+        return { arr: out, max: mx };
+      }
+      var sp1 = getSp(Scur.r1, Scur.i1), sp3 = getSp(Scur.r3, Scur.i3);
+      var refM = Math.max(sp1.max, 1e-12), wView = 22.0;
+      var axB = drawGrid(cB, rB.w, rB.h, pad, -wView, wView, -55, 5, '相对频偏 Ω·T₀', '光谱 (dB)');
+      cB.save(); cB.beginPath(); cB.rect(pad.l, pad.t, axB.pw, axB.ph); cB.clip();
+      // Draw DW- and DW+ phase-matching guide lines
+      cB.strokeStyle = 'rgba(15,110,86,0.75)'; cB.lineWidth = 1.3; cB.setLineDash([4, 3]);
+      cB.fillStyle = '#0F6E56'; cB.font = 'bold 9.5px monospace'; cB.textAlign = 'center';
+      if (wDWL !== null && wDWL >= -wView) {
+        var xL = axB.toX(wDWL);
+        cB.beginPath(); cB.moveTo(xL, pad.t); cB.lineTo(xL, pad.t + axB.ph); cB.stroke();
+        cB.fillText('DW−', xL, pad.t + 11);
+      }
+      if (wDWR !== null && wDWR <= wView) {
+        var xR = axB.toX(wDWR);
+        cB.beginPath(); cB.moveTo(xR, pad.t); cB.lineTo(xR, pad.t + axB.ph); cB.stroke();
+        cB.fillText('DW+', xR, pad.t + 11);
+      }
+      cB.setLineDash([]);
+      function stS(arr, col, lw) {
+        cB.strokeStyle = col; cB.lineWidth = lw; cB.beginPath(); var st = false;
+        for (var k = 0; k < N; k++) {
+          if (wShift[k] < -wView || wShift[k] > wView) continue;
+          var db = Math.max(-60, 10 * Math.log10(arr[k] / refM + 1e-10));
+          if (!st) { cB.moveTo(axB.toX(wShift[k]), axB.toY(db)); st = true; } else cB.lineTo(axB.toX(wShift[k]), axB.toY(db));
+        }
+        cB.stroke();
+      }
+      stS(sp1.arr, '#534AB7', 1.9);
+      if (SW.thg && P.k3 > 1e-4) stS(sp3.arr, '#e11d48', 1.5);
+      cB.restore();
+
+      // 3C. 4th-Order Dispersion Curve + Phase-Matching Intersections
+      var rC0 = setupCV('c3cv-disp'), cC0 = rC0.ctx, b4Eff = SW.fod ? P.b4 : 0.0;
+      var wSpanD = 18.0, yLimD = 45.0;
+      var axC0 = drawGrid(cC0, rC0.w, rC0.h, pad, -wSpanD, wSpanD, -25, yLimD, '角频率偏移 Ω·T₀', 'β_int(Ω)');
+      cC0.save(); cC0.beginPath(); cC0.rect(pad.l, pad.t, axC0.pw, axC0.ph); cC0.clip();
+      // Zero line
+      cC0.strokeStyle = '#94a3b8'; cC0.lineWidth = 0.9; cC0.setLineDash([3, 3]);
+      cC0.beginPath(); cC0.moveTo(pad.l, axC0.toY(0)); cC0.lineTo(rC0.w - pad.r, axC0.toY(0)); cC0.stroke();
+      // Soliton wavenumber line k_sol = 0.5*gamma*P_s
+      cC0.strokeStyle = 'rgba(225,29,72,0.7)'; cC0.lineWidth = 1.2;
+      cC0.beginPath(); cC0.moveTo(pad.l, axC0.toY(kSol)); cC0.lineTo(rC0.w - pad.r, axC0.toY(kSol)); cC0.stroke();
+      cC0.setLineDash([]);
+      cC0.fillStyle = '#e11d48'; cC0.font = '9px monospace'; cC0.textAlign = 'left';
+      cC0.fillText('k_sol = ½γP_s', pad.l + 4, axC0.toY(kSol) - 3);
+      // Local GVD beta_2_eff(w)
+      cC0.strokeStyle = '#EF9F27'; cC0.lineWidth = 1.5; cC0.setLineDash([5, 3]); cC0.beginPath();
+      for (var j2 = 0; j2 <= 180; j2++) {
+        var wv2 = -wSpanD + (j2 / 180) * (2 * wSpanD);
+        var b2e = P.b2 + P.b3 * wv2 + 0.5 * b4Eff * wv2 * wv2;
+        var px2 = axC0.toX(wv2), py2 = axC0.toY(b2e * 2.0);
+        if (j2 === 0) cC0.moveTo(px2, py2); else cC0.lineTo(px2, py2);
+      }
+      cC0.stroke(); cC0.setLineDash([]);
+      // Integrated dispersion beta_int(w)
+      cC0.strokeStyle = '#185FA5'; cC0.lineWidth = 2.1; cC0.beginPath();
+      for (var j1 = 0; j1 <= 180; j1++) {
+        var wv1 = -wSpanD + (j1 / 180) * (2 * wSpanD);
+        var bi = 0.5 * P.b2 * wv1 * wv1 + (1 / 6) * P.b3 * Math.pow(wv1, 3) + (1 / 24) * b4Eff * Math.pow(wv1, 4);
+        var px1 = axC0.toX(wv1), py1 = axC0.toY(bi);
+        if (j1 === 0) cC0.moveTo(px1, py1); else cC0.lineTo(px1, py1);
+      }
+      cC0.stroke();
+      // Mark DW- and DW+ intersection dots
+      [wDWL, wDWR].forEach(function(wr) {
+        if (wr !== null && Math.abs(wr) <= wSpanD) {
+          cC0.fillStyle = '#e11d48'; cC0.beginPath(); cC0.arc(axC0.toX(wr), axC0.toY(kSol), 4.2, 0, Math.PI * 2); cC0.fill();
+        }
+      });
+      cC0.restore();
+
+      // 3D. 2D Evolution Waterfall
+      var rC = setupCV('c3cv-map'), cC = rC.ctx;
+      var pwC = rC.w - pad.l - pad.r, phC = rC.h - pad.t - pad.b;
+      var slices = mapMode === 'time' ? tSlices : fSlices, xSpan = mapMode === 'time' ? 12.0 : wView;
+      if (slices.length >= 2) {
+        var Wimg = 128, Himg = Math.min(128, slices.length);
+        var off = document.createElement('canvas'); off.width = Wimg; off.height = Himg;
+        var octx = off.getContext('2d'), img = octx.createImageData(Wimg, Himg), d = img.data;
+        for (var py = 0; py < Himg; py++) {
+          var sIdx = Math.min(slices.length - 1, Math.floor(((Himg - 1 - py) / Math.max(1, Himg - 1)) * (slices.length - 1)));
+          var row = slices[sIdx];
+          for (var px = 0; px < Wimg; px++) {
+            var xv = -xSpan + (px / (Wimg - 1)) * (2 * xSpan);
+            var idxG = mapMode === 'time' ? Math.round((xv + Tmax) / dt) : Math.round(xv / (wShift[1] - wShift[0]) + N / 2);
+            var val = (idxG >= 0 && idxG < N) ? row[idxG] : 0;
+            var rgb = colormap(mapMode === 'time' ? Math.pow(val, 0.5) : val);
+            var pIdx = (py * Wimg + px) * 4;
+            d[pIdx] = rgb[0]; d[pIdx + 1] = rgb[1]; d[pIdx + 2] = rgb[2]; d[pIdx + 3] = 255;
+          }
+        }
+        octx.putImageData(img, 0, 0);
+        cC.drawImage(off, pad.l, pad.t, pwC, phC);
+      }
+      drawGrid(cC, rC.w, rC.h, pad, -xSpan, xSpan, 0, Math.max(0.2, zCurr), mapMode === 'time' ? '随动时间 T / T₀' : '角频率 Ω·T₀', '距离 z / L_D');
+
+      // 3E. Adaptive Step Size & Peak Compression
+      var rD = setupCV('c3cv-dz'), cD = rD.ctx;
+      var maxDz = 0.015, maxPkH = 1.0;
+      for (var m = 0; m < dzHist.length; m++) { if (dzHist[m] > maxDz) maxDz = dzHist[m]; if (pkHist[m] > maxPkH) maxPkH = pkHist[m]; }
+      var axD = drawGrid(cD, rD.w, rD.h, pad, 0, ZMAX, 0, maxDz * 1.15, '传输距离 z / L_D', '步长 Δz');
+      if (zHist.length > 1) {
+        cD.strokeStyle = 'rgba(55,138,221,0.75)'; cD.lineWidth = 1.6; cD.beginPath();
+        for (var d1 = 0; d1 < zHist.length; d1++) { var px1 = axD.toX(zHist[d1]), py1 = axD.toY((pkHist[d1] / maxPkH) * maxDz); if (d1 === 0) cD.moveTo(px1, py1); else cD.lineTo(px1, py1); }
+        cD.stroke();
+        cD.strokeStyle = '#EF9F27'; cD.lineWidth = 2.0; cD.beginPath();
+        for (var d2 = 0; d2 < zHist.length; d2++) { var px2 = axD.toX(zHist[d2]), py2 = axD.toY(dzHist[d2]); if (d2 === 0) cD.moveTo(px2, py2); else cD.lineTo(px2, py2); }
+        cD.stroke();
+      }
+
+      // 3F. Energy Conservation & THG Conversion Efficiency
+      var rF = setupCV('c3cv-cons'), cF = rF.ctx;
+      var axF = drawGrid(cF, rF.w, rF.h, pad, 0, ZMAX, 0, 1.12, '传输距离 z / L_D', '能量占比');
+      cF.save(); cF.beginPath(); cF.rect(pad.l, pad.t, axF.pw, axF.ph); cF.clip();
+      if (zHist.length > 1) {
+        function plH3(arr, col, lw, dash) {
+          cF.strokeStyle = col; cF.lineWidth = lw; cF.setLineDash(dash || []); cF.beginPath();
+          for (var f1 = 0; f1 < zHist.length; f1++) { var px = axF.toX(zHist[f1]), py = axF.toY(Math.min(1.12, arr[f1])); if (f1 === 0) cF.moveTo(px, py); else cF.lineTo(px, py); }
+          cF.stroke(); cF.setLineDash([]);
+        }
+        plH3(enHist, '#534AB7', 2.0);
+        if (SW.thg) plH3(thgHist, '#e11d48', 1.7, [4, 2]);
+      }
+      cF.restore();
+
+      // Metrics
+      var zdwStr = '无双 ZDW';
+      if (b4Eff > 1e-4 && P.b2 < -1e-4 && Math.abs(P.b3) < 1e-4) {
+        zdwStr = '±' + Math.sqrt(2 * Math.abs(P.b2) / b4Eff).toFixed(2);
+      } else if (b4Eff > 1e-4 && P.b2 < -1e-4) {
+        var disc = P.b3 * P.b3 - 2 * P.b2 * b4Eff;
+        if (disc >= 0) zdwStr = ((-P.b3 - Math.sqrt(disc)) / b4Eff).toFixed(1) + ' / +' + ((-P.b3 + Math.sqrt(disc)) / b4Eff).toFixed(1);
+      }
+      var curTHG = thgHist.length ? thgHist[thgHist.length - 1] * 100 : 0;
+      document.getElementById('c3m-z').textContent = zCurr.toFixed(2) + ' / ' + ZMAX.toFixed(2);
+      document.getElementById('c3m-zdw').textContent = zdwStr;
+      document.getElementById('c3m-dwl').textContent = wDWL !== null ? wDWL.toFixed(1) : '无';
+      document.getElementById('c3m-dwr').textContent = wDWR !== null ? ('+' + wDWR.toFixed(1)) : '无';
+      document.getElementById('c3m-thg').textContent = SW.thg ? (curTHG.toFixed(2) + '%') : 'OFF';
+      document.getElementById('c3m-dz').textContent = dzCurr.toFixed(4);
+      document.getElementById('c3-status').textContent = '网格 N=' + N + ' · ' + (isRun ? 'RK4IP 求解中...' : (zCurr >= ZMAX - 1e-4 ? '✔ 三阶验证完成' : '就绪'));
+    }
+
+    function loop() {
+      if (!isRun) return;
+      var spf = N >= 1024 ? 1 : 2;
+      for (var s = 0; s < spf && zCurr < ZMAX - 1e-5; s++) stepAdapt();
+      render();
+      if (zCurr >= ZMAX - 1e-5) {
+        isRun = false; var b = document.getElementById('c3btn-run'); b.classList.remove('running'); b.textContent = '▶ 运行 / 暂停'; render(); return;
+      }
+      animId = requestAnimationFrame(loop);
+    }
+
+    window.c3ToggleRun = function() {
+      if (zCurr >= ZMAX - 1e-5) { window.c3Reset(true); return; }
+      isRun = !isRun;
+      var b = document.getElementById('c3btn-run'); b.classList.toggle('running', isRun); b.textContent = isRun ? '⏸ 暂停传输' : '▶ 运行 / 暂停';
+      if (isRun) animId = requestAnimationFrame(loop);
+    };
+    window.c3Reset = function(auto) {
+      if (animId) cancelAnimationFrame(animId);
+      isRun = false; zCurr = 0; dzCurr = 0.008; peakSolMax = P.Nsol * P.Nsol;
+      zHist = [0]; dzHist = [0.008]; pkHist = [peakSolMax]; enHist = [1.0]; thgHist = [0]; tSlices = []; fSlices = []; E0 = 0;
+      for (var i = 0; i < N; i++) {
+        var v = Math.abs(tAxis[i]) > 25 ? 0 : P.Nsol / Math.cosh(tAxis[i]);
+        Scur.r1[i] = v; Scur.i1[i] = 0; Scur.r3[i] = 0; Scur.i3[i] = 0;
+        E0 += v * v * dt;
+      }
+      recSlice(); syncUI();
+      var b = document.getElementById('c3btn-run'); b.classList.remove('running'); b.textContent = '▶ 运行 / 暂停';
+      render();
+      if (auto) window.c3ToggleRun();
+    };
+    window.c3SetGridN = function(newN) {
+      alloc(newN);
+      document.getElementById('c3v-Ngrid').textContent = String(newN);
+      document.querySelectorAll('#c3-nopts .gnlse-n-btn').forEach(function(b) { b.classList.toggle('active', Number(b.dataset.n) === newN); });
+      window.c3Reset(true);
+    };
+    window.c3SetLog = function(lg) { isLog = lg; document.getElementById('c3btn-lin').classList.toggle('active', !lg); document.getElementById('c3btn-log').classList.toggle('active', lg); render(); };
+    window.c3SetMapMode = function(m) { mapMode = m; document.getElementById('c3btn-wt').classList.toggle('active', m === 'time'); document.getElementById('c3btn-wf').classList.toggle('active', m === 'freq'); render(); };
+    window.c3Preset = function(name) {
+      var c = PRESETS[name]; Object.assign(SW, c.sw); Object.assign(P, c.p); ZMAX = c.zmax;
+      document.getElementById('c3s-zmax').value = ZMAX; document.getElementById('c3n-zmax').value = ZMAX.toFixed(1);
+      document.getElementById('c3s-N').value = P.Nsol; document.getElementById('c3v-N').textContent = P.Nsol.toFixed(1);
+      document.getElementById('c3s-b2').value = P.b2; document.getElementById('c3v-b2').textContent = P.b2.toFixed(2);
+      document.getElementById('c3s-b3').value = P.b3; document.getElementById('c3v-b3').textContent = P.b3.toFixed(2);
+      document.getElementById('c3s-b4').value = P.b4; document.getElementById('c3v-b4').textContent = (P.b4 > 0 ? '+' : '') + P.b4.toFixed(2);
+      document.getElementById('c3s-k3').value = P.k3; document.getElementById('c3v-k3').textContent = P.k3.toFixed(2);
+      document.getElementById('c3s-ss').value = P.ss; document.getElementById('c3s-tr').value = P.tr; document.getElementById('c3s-tpa').value = P.tpa;
+      document.getElementById('c3v-ss').textContent = P.ss.toFixed(2); document.getElementById('c3v-tr').textContent = P.tr.toFixed(3); document.getElementById('c3v-tpa').textContent = P.tpa.toFixed(2);
+      ['bidw', 'asym', 'pureb4', 'single'].forEach(function(id) { document.getElementById('c3pre-' + id).classList.toggle('active', id === name); });
+      window.c3Reset(true);
+    };
+
+    ['spm', 'fod', 'ss', 'thg'].forEach(function(k) {
+      document.getElementById('c3sw-' + k).addEventListener('change', function(e) { SW[k] = e.target.checked; window.c3Reset(true); });
+    });
+    var zs = document.getElementById('c3s-zmax'), zn = document.getElementById('c3n-zmax');
+    zs.addEventListener('input', function() { ZMAX = Math.max(0.2, parseFloat(zs.value)); zn.value = ZMAX.toFixed(1); window.c3Reset(true); });
+    zn.addEventListener('change', function() { var v = parseFloat(zn.value); if (!isFinite(v) || v < 0.2) v = 0.2; if (v > 15) v = 15; ZMAX = v; zn.value = v.toFixed(1); if (v <= 10) zs.value = v; window.c3Reset(true); });
+    function bind3(id, key, fmt, lid) {
+      document.getElementById('c3s-' + id).addEventListener('input', function(e) { P[key] = parseFloat(e.target.value); document.getElementById(lid || ('c3v-' + id)).textContent = fmt(); window.c3Reset(true); });
+    }
+    bind3('N', 'Nsol', function() { return P.Nsol.toFixed(1); });
+    bind3('b2', 'b2', function() { return P.b2.toFixed(2); });
+    bind3('b3', 'b3', function() { return P.b3.toFixed(2); });
+    bind3('b4', 'b4', function() { return (P.b4 > 0 ? '+' : '') + P.b4.toFixed(2); });
+    bind3('k3', 'k3', function() { return P.k3.toFixed(2); });
+    bind3('ss', 'ss', function() { return P.ss.toFixed(2); });
+    bind3('tr', 'tr', function() { return P.tr.toFixed(3); });
+    bind3('tpa', 'tpa', function() { return P.tpa.toFixed(2); });
+
+    window._c3OnTab = function(act) {
+      if (act) { if (!hasInit) { hasInit = true; window.c3Reset(true); } else render(); }
+      else if (isRun) window.c3ToggleRun();
+    };
+    window._c3Resize = render;
+  })();
+
+  // ===== Tab Switching =====
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isTabActive = (btn.dataset.panel === 'simulation');
+      setTimeout(function() {
+        if (window._c2OnTab) window._c2OnTab(isTabActive);
+        if (window._c3OnTab) window._c3OnTab(isTabActive);
+      }, 30);
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+
+  window.addEventListener('resize', function() {
+    if (!isTabActive) return;
+    if (window._c2Resize) window._c2Resize();
+    if (window._c3Resize) window._c3Resize();
+  });
+})();
+</script>
+</body>
+</html>
