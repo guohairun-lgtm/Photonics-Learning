@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>双光梳光谱技术与多外差探测 - 光子学学习</title>
+<style>
+.dcs-sim { display: flex; flex-direction: column; gap: 0.72rem; overflow: hidden; }
+.dcs-sec-banner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; padding: 0.55rem 0.75rem; border-radius: var(--radius); background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-left: 3.5px solid var(--c-purple-600); }
+.dcs-sec-title { font-size: 13.5px; font-weight: 600; color: var(--c-purple-800); line-height: 1.45; }
+.dcs-status-pill { font-size: 11px; font-family: "SF Mono", "Fira Code", Consolas, monospace; padding: 2px 9px; border-radius: 999px; background: var(--c-teal-50); color: var(--c-teal-600); border: 0.5px solid var(--c-teal-100); font-weight: 600; }
+.dcs-status-pill.upper { background: var(--c-purple-50); color: var(--c-purple-800); border-color: var(--c-purple-200); }
+.dcs-status-pill.warn { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.dcs-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 0.48rem; }
+.dcs-metric { min-width: 0; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.45rem 0.58rem; }
+.dcs-metric-lbl { font-size: 10.5px; color: var(--c-text-hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dcs-metric-val { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 12.2px; font-weight: 600; color: var(--c-purple-600); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dcs-layout { display: grid; grid-template-columns: 282px minmax(0, 1fr); gap: 0.78rem; align-items: start; width: 100%; }
+@media (max-width: 860px) { .dcs-layout { grid-template-columns: minmax(0, 1fr); } }
+.dcs-sidebar { min-width: 0; width: 100%; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.7rem; display: flex; flex-direction: column; gap: 0.48rem; }
+.dcs-sidebar input[type="range"] { min-width: 0; width: 100%; display: block; }
+.dcs-main-col { min-width: 0; width: 100%; display: flex; flex-direction: column; gap: 0.58rem; }
+.dcs-ctrl-sec { border-top: 0.5px solid var(--c-border); padding-top: 0.44rem; min-width: 0; }
+.dcs-ctrl-sec:first-child { border-top: none; padding-top: 0; }
+.dcs-ctrl-head { font-size: 11px; font-weight: 600; color: var(--c-text-sec); margin-bottom: 0.32rem; display: flex; justify-content: space-between; align-items: center; }
+.dcs-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.dcs-gas-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.dcs-mode-btn { min-width: 0; padding: 5px 5px; font-size: 10.4px; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: center; line-height: 1.32; }
+.dcs-mode-btn.active { background: var(--c-teal-50); border-color: var(--c-teal-600); color: var(--c-teal-600); font-weight: 600; }
+.dcs-mode-btn.gas.active { background: var(--c-blue-50); border-color: var(--c-blue-600); color: var(--c-blue-600); font-weight: 600; }
+.dcs-preset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.dcs-preset-btn { min-width: 0; padding: 4.5px 6px; font-size: 10.2px; border: 0.5px solid var(--c-border); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: left; line-height: 1.32; }
+.dcs-preset-btn:hover { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.dcs-preset-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-600); color: var(--c-purple-800); font-weight: 600; }
+.dcs-slider-grp { display: flex; flex-direction: column; gap: 2.5px; margin-bottom: 4.5px; min-width: 0; }
+.dcs-slider-grp:last-child { margin-bottom: 0; }
+.dcs-slider-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 10.6px; color: var(--c-text-sec); }
+.dcs-slider-row .val { font-family: "SF Mono", monospace; font-weight: 600; color: var(--c-purple-600); flex-shrink: 0; }
+.dcs-btn-row { display: flex; gap: 5px; }
+.dcs-action-btn { flex: 1; padding: 5.5px 8px; font-size: 11.2px; font-weight: 500; border: 0.5px solid var(--c-border-2); border-radius: var(--radius); background: var(--c-bg); color: var(--c-text); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.dcs-action-btn.primary { background: var(--c-purple-600); color: #fff; border-color: var(--c-purple-600); }
+.dcs-action-btn.running { background: #e11d48 !important; border-color: #e11d48 !important; color: #fff; }
+.dcs-eq-bar { width: 100%; max-width: 100%; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-left: 3px solid var(--c-teal-400); border-radius: var(--radius); padding: 0.42rem 0.68rem; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 10.4px; color: var(--c-teal-600); white-space: normal; word-break: break-word; line-height: 1.5; }
+.dcs-eq-bar.upper { border-left-color: var(--c-purple-400); color: var(--c-purple-800); }
+.dcs-eq-bar.warn { border-left-color: #e11d48; color: #be123c; background: #fef2f2; }
+.dcs-charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.58rem; align-items: stretch; width: 100%; }
+@media (max-width: 680px) { .dcs-charts-grid { grid-template-columns: minmax(0, 1fr); } }
+.dcs-chart-card { min-width: 0; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.54rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.dcs-chart-head { display: flex; flex-direction: column; gap: 2.5px; min-height: 36px; justify-content: space-between; }
+.dcs-chart-title { font-size: 11.4px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 5px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dcs-chart-sub { display: flex; justify-content: space-between; align-items: center; gap: 4px; min-height: 18px; font-size: 9.8px; color: var(--c-text-hint); }
+.dcs-chart-sub .leg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dcs-chart-sub .btns { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.dcs-badge { font-size: 10px; font-family: "SF Mono", monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--c-purple-50); color: var(--c-purple-600); flex-shrink: 0; }
+.dcs-mini-btn { font-size: 9.6px; padding: 1.5px 6px; border-radius: 4px; border: 0.5px solid var(--c-border-2); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; line-height: 1.35; }
+.dcs-mini-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); font-weight: 600; }
+.dcs-cv-wrap { width: 100%; height: 205px; margin-top: auto; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.dcs-cv-wrap.wide { height: 222px; }
+.dcs-cv-wrap canvas { display: block; width: 100%; height: 100%; }
+.dcs-tip { padding: 0.54rem 0.78rem; border-radius: var(--radius); background: var(--c-blue-50); border: 0.5px solid var(--c-blue-100); color: var(--c-blue-600); font-size: 11.6px; line-height: 1.6; }
+.dcs-tip.warn { background: #fef2f2; border-color: #fecaca; color: #be123c; }
+.dcs-hitran-box { background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-radius: var(--radius); padding: 0.48rem 0.65rem; font-size: 11px; }
+.dcs-hitran-box summary { cursor: pointer; font-weight: 600; color: var(--c-purple-800); user-select: none; }
+.dcs-hitran-pre { margin-top: 0.45rem; padding: 0.5rem 0.6rem; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: 6px; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 9.6px; line-height: 1.48; color: var(--c-text-sec); overflow-x: auto; max-height: 155px; overflow-y: auto; white-space: pre; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">12</span>双光梳光谱技术（Dual-Comb Spectroscopy）与多外差探测</div>
+    <p class="section-desc">异步光学采样（ASOPS）游标机制 → 射频-光频映射图（$0 \sim f_r$，$f_r/2$ 中分界与上下双无重叠工作区）→ HITRAN 标准分子吸收数据库与复 Voigt 线型 → 色散式探测（吸收+相位）vs 强度式探测（纯吸收）→ 相干平均与噪声仿真</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===== Principle Panel ===== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>从机械扫描 FTIR 到射频-光频一对一映射</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">双光梳的异步采样与射频-光频映射表征</div><span class="topic-badge badge-theory">物理图像</span></div>
+        <div class="topic-body">
+          <p>在第 8 章（FTIR 光谱仪）中，迈克尔逊干涉仪依赖<strong>机械动镜平移</strong>扫描两臂相对延时 $\tau$；而第 10 章揭示了锁模脉冲序列本质上是等间距光学频率梳。<strong>双光梳光谱技术（Dual-Comb Spectroscopy, DCS）</strong>将两把重复频率存在微小差异（$f_{r,1} = f_r$、$f_{r,2} = f_r + \Delta f_r$，$\Delta f_r \ll f_r$）且载波包络偏移频率差为 $\Delta f_{\text{ceo}} = f_{\text{ceo},2} - f_{\text{ceo},1}$ 的相干光梳合束至单点高速光电探测器，在彻底去除机械运动部件的同时，实现微秒至毫秒级高分辨宽带分子光谱测量。</p>
+          <ul>
+            <li><strong>时域视角 — 异步光学采样（ASOPS）</strong>：两列脉冲序列构成光学“游标卡尺”。每经过一个脉冲周期 $T_r = 1/f_r$，两脉冲相对延时自动递增 $\Delta\tau = \Delta f_r / f_r^2$，并在 $T_{\text{update}} = 1/\Delta f_r$ 周期内完成一次全扫描，时间轴被线性拉伸 $M = f_r / \Delta f_r \sim 10^4\text{--}10^6$ 倍。</li>
+            <li><strong>频域视角 — 射频-光频映射图（$0 \sim f_r$，$f_r/2$ 为中分界）</strong>：将梳齿捉对拍频产生的射频频率（纵轴 $0 \sim f_r$）对光频 $\nu$ 或梳齿序数 $N$（横轴）作图，即可完整表征双光梳的工作状态。每对相邻梳齿同时给出正向主分支 $f_+(N)$ 与关于<strong>中分界线 $f_r/2$ 对称</strong>的镜像分支 $f_-(N) = f_r - f_+(N)$。调节<strong>光谱带宽 $\Delta\nu_{\text{opt}}$</strong>、<strong>重频差 $\Delta f_r$</strong>、<strong>重复频率 $f_r$</strong> 以及<strong>载波包络偏移差 $\Delta f_{\text{ceo}}$</strong>，会分别改变有效光谱段在映射图上的横向跨度、直线斜率、纵轴高度与垂直截距。<strong>只要有效光谱对应的射频范围完全落在中分界线下方 $(0, f_r/2)$ 或完全落在中分界线上方 $(f_r/2, f_r)$（不跨越 $0$、$f_r/2$、$f_r$ 任何一条边界）</strong>，正负分支互不交叉重叠，即为<strong>无混叠有效双光梳系统</strong>。</li>
+          </ul>
+
+          <div class="diagram-box">
+            <svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+              <defs>
+                <marker id="arrD-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#534AB7"/></marker>
+                <marker id="arrD-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0F6E56"/></marker>
+                <marker id="arrD-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#854F0B"/></marker>
+              </defs>
+              <text x="410" y="19" text-anchor="middle" font-size="13.5" font-weight="600" fill="#3C3489">双光梳光谱系统：探测光路（色散式/强度式）与射频-光频映射图（0 ~ f_r，中分界 f_r/2）</text>
+
+              <!-- Upper Box: Optical Setup -->
+              <rect x="14" y="29" width="792" height="118" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <text x="26" y="45" font-size="10.5" font-weight="600" fill="#5f5e5a">① 探测构型：色散式探测（非对称：仅 Comb 1 过气室）vs 强度式探测（对称：合束后共过气室）</text>
+
+              <rect x="26" y="55" width="110" height="34" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.4"/>
+              <text x="81" y="70" text-anchor="middle" font-size="10" font-weight="600" fill="#3C3489">信号梳 Comb 1</text>
+              <text x="81" y="83" text-anchor="middle" font-size="9" fill="#534AB7">f_r, f_ceo,1</text>
+              <line x1="136" y1="72" x2="180" y2="72" stroke="#534AB7" stroke-width="2" marker-end="url(#arrD-p)"/>
+
+              <rect x="184" y="52" width="124" height="40" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1.5"/>
+              <text x="246" y="69" text-anchor="middle" font-size="10" font-weight="600" fill="#854F0B">HITRAN 标准气室</text>
+              <text x="246" y="83" text-anchor="middle" font-size="8.8" fill="#854F0B">C₂H₂ / CO₂ / CH₄ · H(ν̃)</text>
+              <line x1="308" y1="72" x2="352" y2="72" stroke="#534AB7" stroke-width="2" marker-end="url(#arrD-p)"/>
+
+              <rect x="26" y="100" width="110" height="34" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.4"/>
+              <text x="81" y="115" text-anchor="middle" font-size="10" font-weight="600" fill="#0F6E56">本振梳 Comb 2</text>
+              <text x="81" y="128" text-anchor="middle" font-size="9" fill="#0F6E56">f_r+Δf_r, f_ceo,2</text>
+              <line x1="136" y1="117" x2="372" y2="117" stroke="#0F6E56" stroke-width="2"/>
+              <line x1="372" y1="117" x2="372" y2="90" stroke="#0F6E56" stroke-width="2" marker-end="url(#arrD-t)"/>
+
+              <rect x="356" y="56" width="32" height="32" rx="4" fill="#f7f6f3" stroke="#5f5e5a" stroke-width="1.3"/>
+              <line x1="360" y1="84" x2="384" y2="60" stroke="#5f5e5a" stroke-width="2"/>
+              <line x1="388" y1="72" x2="438" y2="72" stroke="#854F0B" stroke-width="2.2" marker-end="url(#arrD-a)"/>
+              <text x="412" y="101" text-anchor="middle" font-size="8.6" fill="#888780">(对称式气室置此)</text>
+
+              <rect x="442" y="53" width="96" height="38" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+              <text x="490" y="69" text-anchor="middle" font-size="10" font-weight="600" fill="#185FA5">高速探测器 PD</text>
+              <text x="490" y="83" text-anchor="middle" font-size="8.8" fill="#185FA5">+ LPF (&lt; f_r/2)</text>
+              <line x1="538" y1="72" x2="574" y2="72" stroke="#854F0B" stroke-width="2" marker-end="url(#arrD-a)"/>
+
+              <rect x="578" y="47" width="214" height="90" rx="6" fill="#faf9f7" stroke="#d3d1c7" stroke-width="1"/>
+              <line x1="588" y1="93" x2="782" y2="93" stroke="#d3d1c7" stroke-width="0.8"/>
+              <path d="M 590 93 L 626 93 L 633 89 L 638 98 L 642 78 L 646 112 L 650 58 L 654 126 L 658 64 L 662 117 L 666 80 L 671 104 L 677 84 L 683 102 L 690 86 L 698 100 L 707 88 L 718 98 L 732 90 L 750 96 L 774 93" fill="none" stroke="#534AB7" stroke-width="1.5"/>
+              <text x="652" y="56" text-anchor="middle" font-size="8.8" font-weight="600" fill="#e11d48">中心爆峰</text>
+              <text x="730" y="76" text-anchor="middle" font-size="8.8" fill="#0F6E56">分子 FID 因果尾</text>
+              <text x="685" y="131" text-anchor="middle" font-size="8.8" fill="#5f5e5a">刷新 T = 1/Δf_r · Δτ = Δf_r/f_r²</text>
+
+              <!-- Lower Box: RF-to-Optical Mapping Diagram (0 ~ f_r, midline f_r/2) -->
+              <rect x="14" y="156" width="792" height="174" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <text x="26" y="173" font-size="10.5" font-weight="600" fill="#5f5e5a">② 射频-光频映射图（纵轴 0 ~ f_r，以 f_r/2 为中分界）：有效光谱完全落在中分界下方或上方即无混叠</text>
+
+              <!-- Background zones -->
+              <rect x="86" y="186" width="464" height="54" fill="#EEEDFE" opacity="0.45"/>
+              <rect x="86" y="240" width="464" height="54" fill="#E1F5EE" opacity="0.45"/>
+              <!-- Effective optical bandwidth highlight band -->
+              <rect x="180" y="186" width="150" height="108" fill="#EF9F27" opacity="0.16" stroke="#EF9F27" stroke-width="1" stroke-dasharray="4,2"/>
+              <text x="255" y="198" text-anchor="middle" font-size="9" font-weight="600" fill="#854F0B">有效光带宽 Δν_opt (ΔN)</text>
+
+              <!-- Axes -->
+              <line x1="86" y1="294" x2="562" y2="294" stroke="#5f5e5a" stroke-width="1.3"/>
+              <line x1="86" y1="184" x2="86" y2="294" stroke="#5f5e5a" stroke-width="1.3"/>
+              <line x1="86" y1="186" x2="550" y2="186" stroke="#d3d1c7" stroke-width="1"/>
+              <!-- Midline f_r / 2 -->
+              <line x1="86" y1="240" x2="550" y2="240" stroke="#e11d48" stroke-width="1.6" stroke-dasharray="6,3"/>
+              <text x="79" y="190" text-anchor="end" font-size="9.5" font-weight="600" fill="#3C3489">f_r</text>
+              <text x="79" y="244" text-anchor="end" font-size="9.5" font-weight="700" fill="#e11d48">f_r / 2</text>
+              <text x="79" y="297" text-anchor="end" font-size="9.5" fill="#5f5e5a">0</text>
+              <text x="34" y="244" text-anchor="middle" font-size="9.5" fill="#5f5e5a" transform="rotate(-90 34 244)">射频 f_RF</text>
+              <text x="320" y="314" text-anchor="middle" font-size="9.5" fill="#5f5e5a">光频 ν / 波数 ν̃ 或 梳齿序数 N</text>
+
+              <!-- Full mapping lines: main branch f_+ (purple rising) and mirror branch f_- (teal falling) -->
+              <line x1="120" y1="294" x2="520" y2="186" stroke="#7F77DD" stroke-width="1.5" opacity="0.55"/>
+              <line x1="120" y1="186" x2="520" y2="294" stroke="#1D9E75" stroke-width="1.4" stroke-dasharray="5,3" opacity="0.55"/>
+              <!-- Active segment inside optical bandwidth (cleanly in lower zone [0, f_r/2]!) -->
+              <line x1="180" y1="278" x2="330" y2="237" stroke="#e11d48" stroke-width="0"/>
+              <line x1="180" y1="280" x2="330" y2="244" stroke="#0F6E56" stroke-width="3.2"/>
+              <circle cx="180" cy="280" r="3.5" fill="#0F6E56"/>
+              <circle cx="330" cy="244" r="3.5" fill="#0F6E56"/>
+              <text x="448" y="203" font-size="9" font-weight="600" fill="#3C3489">上半区 (f_r/2 ~ f_r) 镜像无重叠区</text>
+              <text x="448" y="286" font-size="9" font-weight="600" fill="#0F6E56">下半区 (0 ~ f_r/2) 正向无重叠区</text>
+              <text x="255" y="274" text-anchor="middle" font-size="9" font-weight="600" fill="#0F6E56">有效映射段（未跨 f_r/2）</text>
+
+              <!-- Right Legend / Parameter Control Box -->
+              <rect x="572" y="186" width="220" height="126" rx="6" fill="#faf9f7" stroke="#d3d1c7" stroke-width="1"/>
+              <text x="682" y="204" text-anchor="middle" font-size="10" font-weight="600" fill="#3C3489">四大参数对映射段的几何调控</text>
+              <text x="582" y="223" font-size="9.2" fill="#5f5e5a">• 光谱带宽 Δν_opt → 横向窗口宽度</text>
+              <text x="582" y="241" font-size="9.2" fill="#5f5e5a">• 重频差 Δf_r → 映射直线斜率 (Δf_r/f_r)</text>
+              <text x="582" y="259" font-size="9.2" fill="#5f5e5a">• 重复频率 f_r → 纵轴边界与中分界高度</text>
+              <text x="582" y="277" font-size="9.2" fill="#5f5e5a">• 偏移差 Δf_ceo → 映射段整体上下平移</text>
+              <text x="682" y="300" text-anchor="middle" font-size="9.3" font-weight="600" fill="#0F6E56">✔ 整段落在中分界同侧 ⇒ 有效系统</text>
+            </svg>
+            <div class="diagram-caption">图 1. 双光梳光谱系统光路与射频-光频映射图（纵轴 $0 \sim f_r$，中分界 $f_r/2$，横轴为光频/梳齿序数 $N$）</div>
+          </div>
+
+          <p><strong>双光梳光谱技术（DCS）与传统光谱仪的核心指标对比</strong>：</p>
+          <table class="data-table">
+            <thead><tr><th>对比维度</th><th>色散型光栅光谱仪</th><th>传统机械扫描 FTIR（第 8 章）</th><th>双光梳光谱仪 DCS（本章）</th></tr></thead>
+            <tbody>
+              <tr><td><strong>分光 / 采样机制</strong></td><td>光栅空间色散 + 线阵探测器</td><td>迈克尔逊动镜机械扫描延时 $\tau$</td><td>两把频率梳异步光学采样 + 单点高速 PD</td></tr>
+              <tr><td><strong>机械运动部件</strong></td><td>旋转光栅（慢）</td><td>高精度直线动镜（易受振动影响）</td><td><strong>完全无机械运动部件</strong></td></tr>
+              <tr><td><strong>光谱分辨率</strong></td><td>$\sim 1\text{--}10\,\text{GHz}$</td><td>$\Delta\nu = c/(2\,\text{OPD}_{\max})$（典型 $0.1\text{--}1\,\text{GHz}$）</td><td><strong>单梳齿分辨率 $f_r$</strong>（经步进交错可达 $\text{kHz}$ 级）</td></tr>
+              <tr><td><strong>单次全谱采集时间</strong></td><td>毫秒至秒级</td><td>数秒（高分辨时可达分钟）</td><td><strong>微秒至毫秒级</strong>（$T = 1/\Delta f_r$）</td></tr>
+              <tr><td><strong>复相位 / 色散测量</strong></td><td>仅测光强（无相位）</td><td>常规构型仅测功率谱</td><td><strong>色散式探测同步测得吸收 $\alpha(\tilde{\nu})L$ 与色散 $\Delta\phi(\tilde{\nu})$</strong></td></tr>
+              <tr><td><strong>核心无混叠判据</strong></td><td>光栅自由光谱范围</td><td>采样定理（He-Ne 激光标定）</td><td><strong>射频-光频映射段完全落于 $(0, f_r/2)$ 或 $(f_r/2, f_r)$ 内</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>色散式探测 vs 强度式探测与 HITRAN 分子光谱</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">两种双光梳探测架构与标准气体振转指纹</div><span class="topic-badge badge-theory">实验物理</span></div>
+        <div class="topic-body">
+          <ul>
+            <li><strong>色散式探测（非对称构型，Dispersive / Asymmetric DCS）</strong>：仅探测光梳（Comb 1）穿过气体样品池，本振梳（Comb 2）作为参考直接合束。探测器外差信号直接线性正比于分子气体的<strong>复振幅传递函数</strong> $H(\tilde{\nu}) = \exp\!\left[-\frac{1}{2}\alpha(\tilde{\nu})L + i\Delta\phi(\tilde{\nu})\right]$。经傅里叶变换可同时反演出 Voigt 吸收谱 $\alpha(\tilde{\nu})L$ 与严格满足 Kramers-Kronig 关系的 S 形折射率色散曲线 $\Delta\phi(\tilde{\nu})$；在时域上，因果响应表现为仅出现在中心爆峰<strong>单侧（$t > 0$）的分子自由感应衰减（FID）振荡拖尾</strong>。</li>
+            <li><strong>强度式探测（对称构型，Intensity / Symmetric DCS）</strong>：两把光梳先合束再共同穿过同一气体样品池（或长程大气开放路径）。两路光经历完全相同的分子折射率相移 $\Delta\phi(\tilde{\nu})$，外差拍频时色散相位严格抵消，仅保留实数功率透射率 $|H(\tilde{\nu})|^2 = \exp[-\alpha(\tilde{\nu})L]$。时域干涉图呈严格偶对称，虽不输出色散相位，但对开放光路大气湍流引起的共模相位抖动具有极强抗干扰能力。</li>
+            <li><strong>HITRAN 标准格式分子吸收数据库</strong>：高分辨率透射分子吸收数据库（HITRAN）以标准 160 字符固定列宽格式（<code>.par</code>）收录了大气及痕量分子的精确振转跃迁参数（中心波数 $\tilde{\nu}_{ij}$、296 K 线强 $S_{ij}$、空气/自展宽半宽 $\gamma_{\text{air}}/\gamma_{\text{self}}$、低态能量 $E''$、温度指数 $n_{\text{air}}$ 与压致频移 $\delta_{\text{air}}$）。本章内置近红外波段最具代表性的三种气体：<strong>$^{12}\text{C}_2\text{H}_2$（乙炔 $\nu_1+\nu_3$ 带，1530 nm，3:1 核自旋奇偶强弱交替）</strong>、<strong>$^{12}\text{CO}_2$（二氧化碳 $30012\leftarrow 00001$ 带，1575 nm，仅存偶 $J$ 谱线与 R 支带头）</strong>与<strong>$^{12}\text{CH}_4$（甲烷 $2\nu_3$ 泛频带，1666 nm，尖锐 Q 支簇与 $A/E/F$ 多重分裂）</strong>。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Derivation Panel ===== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>双光梳时域异步采样（ASOPS）与拉伸因子推导</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">两列周期脉冲序列的相对走离与等效延迟轴</div><span class="topic-badge badge-formula">时域推导</span></div>
+        <div class="topic-body">
+          <p>设两把相干光学频率梳的脉冲重复周期分别为 $T_{r,1} = 1/f_r$ 与 $T_{r,2} = 1/(f_r + \Delta f_r)$（$0 < \Delta f_r \ll f_r$）。每经过一个脉冲周期，两列脉冲相对延时自动步进 $\Delta\tau$，时间拉伸（频率压缩）因子 $M$ 与单次干涉图刷新周期 $T_{\text{update}}$ 为：</p>
+          <div class="formula-box">
+            $$\Delta\tau = T_{r,1} - T_{r,2} = \frac{\Delta f_r}{f_r(f_r + \Delta f_r)} \approx \frac{\Delta f_r}{f_r^2}, \qquad M \equiv \frac{f_r}{\Delta f_r}, \qquad \tau_{\text{eff}}(t) = \frac{t}{M}, \qquad T_{\text{update}} = \frac{1}{\Delta f_r}$$
+            <div class="formula-label">飞秒级等效光延迟被线性拉伸 $M$ 倍至微秒/毫秒级实验室时间轴</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>射频-光频映射方程与双区间无重叠判据</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">主拍频分支、镜像分支与中分界 $f_r/2$ 无混叠充要条件</div><span class="topic-badge badge-formula">映射理论</span></div>
+        <div class="topic-body">
+          <p>由第 10 章频率梳方程，两把光梳第 $n$ 根梳齿的光学频率为 $\nu_{1,n} = f_{\text{ceo},1} + n f_r$ 与 $\nu_{2,n} = f_{\text{ceo},2} + n(f_r + \Delta f_r)$。以光谱中心频率 $\nu_0$ 对应的中心齿 $n_0$ 为参考，定义相对梳齿序数 $\Delta N = n - n_0 = (\nu - \nu_0)/f_r$，并将中心齿的初始外差频偏记为 $\Delta f_{\text{ceo,eff}} \equiv (f_{\text{ceo},2} - f_{\text{ceo},1} + n_0\Delta f_r) \bmod f_r \in [0, f_r)$。</p>
+          <p>梳齿捉对拍频在射频区间 $[0, f_r]$ 内形成两条关于<strong>中分界线 $f_r/2$ 严格对称</strong>的映射斜线：</p>
+          <div class="formula-box">
+            $$f_{\text{raw}}(\Delta N) = \Delta f_{\text{ceo,eff}} + \Delta N\,\Delta f_r = \Delta f_{\text{ceo,eff}} + \frac{\Delta f_r}{f_r}(\nu - \nu_0)$$
+            $$f_+(\Delta N) = f_{\text{raw}}(\Delta N) \bmod f_r \in [0, f_r), \qquad f_-(\Delta N) = f_r - f_+(\Delta N) \in (0, f_r]$$
+            <div class="formula-label">主分支 $f_+$（同阶齿拍频）与镜像分支 $f_-$（相邻阶齿拍频）关于中分界 $f_r/2$ 上下对称</div>
+          </div>
+          <p>设有效光梳光谱覆盖 $[\nu_0 - \Delta\nu_{\text{opt}}/2,\; \nu_0 + \Delta\nu_{\text{opt}}/2]$，对应的射频跨度为 $\Delta f_{\text{RF}} = \Delta\nu_{\text{opt}}\cdot\frac{\Delta f_r}{f_r}$，上下端点为 $f_{\text{low}} = \Delta f_{\text{ceo,eff}} - \frac{1}{2}\Delta f_{\text{RF}}$ 与 $f_{\text{high}} = \Delta f_{\text{ceo,eff}} + \frac{1}{2}\Delta f_{\text{RF}}$。<strong>系统无混叠有效的充要条件</strong>是整段 $[f_{\text{low}}, f_{\text{high}}]$ 完全落于中分界下方或上方：</p>
+          <div class="formula-box">
+            $$\underbrace{0 < f_{\text{low}} < f_{\text{high}} < \frac{f_r}{2}}_{\text{下半区有效（正向一对一映射）}} \qquad \text{或} \qquad \underbrace{\frac{f_r}{2} < f_{\text{low}} < f_{\text{high}} < f_r}_{\text{上半区有效（镜像反转一对一映射）}}$$
+            $$\Longrightarrow \quad \text{最大无混叠光带宽：}\;\Delta\nu_{\text{opt,max}} = \frac{f_r^2}{2\,\Delta f_r}$$
+            <div class="formula-label">不仅要求 $\Delta\nu_{\text{opt}} < \Delta\nu_{\text{opt,max}}$，还要求 $\Delta f_{\text{ceo,eff}}$ 避开 $0$、$f_r/2$ 与 $f_r$ 三条边界线</div>
+          </div>
+          <p>当有效射频段落于<strong>上半区 $(f_r/2, f_r)$</strong> 时，实光电信号将其无重叠地镜像折叠至探测器频带 $f_{\text{det}} = f_r - f_{\text{raw}} \in (0, f_r/2)$，只需按逆序解映射并取复共轭即可无损还原真实复光谱；一旦跨过 $f_r/2$ 或 $0/f_r$，则两段光学光谱在射频域重叠产生不可分离的混叠伪峰。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>HITRAN 标准复 Voigt 吸收-色散模型与信噪比</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">HITRAN 谱线参数、复 Faddeeva 函数与色散/强度双探测反演</div><span class="topic-badge badge-formula">HITRAN 建模</span></div>
+        <div class="topic-body">
+          <p>从标准 HITRAN 160-字符 <code>.par</code> 记录中读取第 $j$ 条分子跃迁的真空波数 $\tilde{\nu}_{0,j}$（$\text{cm}^{-1}$）、参考温度 $T_{\text{ref}} = 296\,\text{K}$ 下的线强 $S_{j}(T_{\text{ref}})$（$\text{cm}^{-1}/(\text{molecule}\cdot\text{cm}^{-2})$）、空气/自展宽系数 $\gamma_{\text{air},j}, \gamma_{\text{self},j}$、低态能量 $E''_j$、温度指数 $n_{\text{air},j}$ 与压致频移 $\delta_{\text{air},j}$。在总压强 $p$（atm）、体积摩尔分数 $\chi$、温度 $T$（K）下：</p>
+          <div class="formula-box">
+            $$S_j(T) = S_j(T_{\text{ref}})\frac{Q(T_{\text{ref}})}{Q(T)}\exp\!\left[-c_2 E''_j\left(\frac{1}{T} - \frac{1}{T_{\text{ref}}}\right)\right], \qquad \tilde{\nu}_j^* = \tilde{\nu}_{0,j} + \delta_{\text{air},j}\,p$$
+            $$\gamma_{L,j}(p, T) = \left(\frac{T_{\text{ref}}}{T}\right)^{n_{\text{air},j}}\big[\gamma_{\text{air},j}(1-\chi) + \gamma_{\text{self},j}\chi\big]p, \qquad \gamma_{D,j}(T) = \frac{\tilde{\nu}_{0,j}}{c}\sqrt{\frac{2 k_B T \ln 2}{m}}$$
+          </div>
+          <p>引入复 Faddeeva 函数 $w(z) = e^{-z^2}\operatorname{erfc}(-iz)$（其中 $x_j = \frac{\sqrt{\ln 2}}{\gamma_{D,j}}(\tilde{\nu} - \tilde{\nu}_j^*)$，$y_j = \frac{\sqrt{\ln 2}\,\gamma_{L,j}}{\gamma_{D,j}}$），其<strong>实部给出归一化 Voigt 吸收线型，虚部严格给出满足 Kramers-Kronig 关系的 Voigt 色散相位线型</strong>：</p>
+          <div class="formula-box">
+            $$H(\tilde{\nu}) = \exp\!\left[-\frac{\alpha(\tilde{\nu})L}{2} + i\,\Delta\phi(\tilde{\nu})\right], \qquad \alpha(\tilde{\nu})L = n_{\text{mol}} L \sum_j S_j(T)\frac{\sqrt{\ln 2/\pi}}{\gamma_{D,j}}\operatorname{Re}\!\big[w(x_j + i y_j)\big]$$
+            $$\Delta\phi(\tilde{\nu}) = -\frac{1}{2}\,n_{\text{mol}} L \sum_j S_j(T)\frac{\sqrt{\ln 2/\pi}}{\gamma_{D,j}}\operatorname{Im}\!\big[w(x_j + i y_j)\big]$$
+            <div class="formula-label">$n_{\text{mol}} = \chi p N_L (T_{\text{ref}}/T)$ 为吸收分子数密度（$\text{molecule}/\text{cm}^3$）</div>
+          </div>
+          <ul>
+            <li><strong>色散式探测（非对称构型）</strong>：测得复外差光谱比 $\tilde{S}_{\text{meas}}/\tilde{S}_0 = H(\tilde{\nu})$，同步提取 $\alpha_{\text{meas}} L = -2\ln|\tilde{S}_{\text{meas}}/\tilde{S}_0|$ 与 $\Delta\phi_{\text{meas}} = \arg(\tilde{S}_{\text{meas}}/\tilde{S}_0)$。</li>
+            <li><strong>强度式探测（对称构型）</strong>：测得 $\tilde{S}_{\text{meas}}/\tilde{S}_0 = |H(\tilde{\nu})|^2 = e^{-\alpha(\tilde{\nu})L}$，提取 $\alpha_{\text{meas}} L = -\ln|\tilde{S}_{\text{meas}}/\tilde{S}_0|$，色散相位 $\Delta\phi_{\text{meas}} \equiv 0$。</li>
+          </ul>
+          <p><strong>相干平均与探测信噪比</strong>：对 $N_{\text{avg}}$ 帧连续干涉图相干平均，有效噪声按 $1/\sqrt{N_{\text{avg}}}$ 衰减，信噪比提升为 $\text{SNR}(N_{\text{avg}}) = \text{SNR}_1 \cdot \sqrt{N_{\text{avg}}} \cdot e^{-\sigma_\phi^2/2}$。</p>
+        </div>
+      </div>
+
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">数值仿真算法：HITRAN `.par` 解析 + Weideman 16 阶复 Voigt + 4096 点 FFT</div><span class="topic-badge badge-sim">数值算法</span></div>
+        <div class="topic-body">
+          <ol style="padding-left:1.5rem; font-size:13.5px; line-height:1.85; margin-bottom:0.4rem;">
+            <li><strong>标准 HITRAN `.par` 列宽解析</strong>：仿真引擎直接解析内置的 HITRAN 固定列宽字符串，提取 $\tilde{\nu}_{0,j}, S_j, \gamma_{\text{air},j}, \gamma_{\text{self},j}, E''_j, n_{\text{air},j}, \delta_{\text{air},j}$ 并按气室压强 $p$ 与光程 $L$ 实时合成复透射谱。</li>
+            <li><strong>Weideman $N=16$ 复 Faddeeva 逼近</strong>：在复上半平面用 16 阶有理多项式计算 $w(x+iy)$（相对误差 $< 8\times 10^{-8}$），同步获得无近似失真的 Voigt 吸收与 Kramers-Kronig 色散相位。</li>
+            <li><strong>双区精确折叠与解映射（$N=4096$）</strong>：对超高斯带通光梳执行逐频点映射 $f_{\text{raw}} = \Delta f_{\text{ceo,eff}} + (\nu-\nu_0)\frac{\Delta f_r}{f_r}$ 并折叠入 $[0, f_r/2]$（奇数折叠区显式施加复共轭），经 IFFT 合成含因果 FID 尾的时域干涉图、注入按 $1/\sqrt{N_{\text{avg}}}$ 缩放的高斯探测白噪声，再经 FFT 依据中心工作区（下半区正向 / 上半区共轭反转）反演分子吸收与色散光谱。</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Simulation Panel ===== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container dcs-sim">
+      <div class="dcs-sec-banner">
+        <div class="dcs-sec-title">双光梳射频-光频映射与 HITRAN 分子光谱（色散式 / 强度式）交互仿真器</div>
+        <div class="dcs-status-pill" id="dcs-alias-pill">✔ 有效双光梳 · 下半区无重叠</div>
+      </div>
+
+      <div class="dcs-metrics">
+        <div class="dcs-metric"><div class="dcs-metric-lbl">有效射频范围 [f_low, f_high]</div><div class="dcs-metric-val" id="dm-rfrange" style="color:var(--c-teal-600);">5.0 ~ 45.0 MHz</div></div>
+        <div class="dcs-metric"><div class="dcs-metric-lbl">频率压缩比 M = f_r/Δf_r</div><div class="dcs-metric-val" id="dm-comp">50,000×</div></div>
+        <div class="dcs-metric"><div class="dcs-metric-lbl">单次刷新 / 采样步长</div><div class="dcs-metric-val" id="dm-tupd" style="color:#185FA5;">500 μs / 200 fs</div></div>
+        <div class="dcs-metric"><div class="dcs-metric-lbl">无混叠带宽上限 Δν_max</div><div class="dcs-metric-val" id="dm-bwmax">2.50 THz</div></div>
+        <div class="dcs-metric"><div class="dcs-metric-lbl">吸收反演误差 RMSE</div><div class="dcs-metric-val" id="dm-rmse" style="color:var(--c-amber-600);">0.012</div></div>
+        <div class="dcs-metric"><div class="dcs-metric-lbl">有效光谱信噪比 SNR</div><div class="dcs-metric-val" id="dm-snr" style="color:var(--c-teal-600);">32.4 dB</div></div>
+      </div>
+
+      <div class="dcs-layout">
+        <aside class="dcs-sidebar">
+          <div class="dcs-ctrl-sec">
+            <div class="dcs-ctrl-head">探测方式（复色散 vs 纯强度）</div>
+            <div class="dcs-mode-grid">
+              <button class="dcs-mode-btn active" id="dmode-asym" onclick="dcsSetGeo('asym')">色散式探测<br><span style="font-size:9.1px;opacity:0.78;">非对称 · 吸收+相位</span></button>
+              <button class="dcs-mode-btn" id="dmode-sym" onclick="dcsSetGeo('sym')">强度式探测<br><span style="font-size:9.1px;opacity:0.78;">对称 · 纯吸收</span></button>
+            </div>
+          </div>
+
+          <div class="dcs-ctrl-sec">
+            <div class="dcs-ctrl-head">HITRAN 标准气体分子</div>
+            <div class="dcs-gas-grid">
+              <button class="dcs-mode-btn gas active" id="dgas-c2h2" onclick="dcsSetGas('c2h2')">¹²C₂H₂<br><span style="font-size:8.8px;opacity:0.78;">1530 nm</span></button>
+              <button class="dcs-mode-btn gas" id="dgas-co2" onclick="dcsSetGas('co2')">¹²CO₂<br><span style="font-size:8.8px;opacity:0.78;">1575 nm</span></button>
+              <button class="dcs-mode-btn gas" id="dgas-ch4" onclick="dcsSetGas('ch4')">¹²CH₄<br><span style="font-size:8.8px;opacity:0.78;">1666 nm</span></button>
+            </div>
+          </div>
+
+          <div class="dcs-ctrl-sec">
+            <div class="dcs-ctrl-head">典型物理场景预设</div>
+            <div class="dcs-preset-grid">
+              <button class="dcs-preset-btn active" id="dpre-lower" onclick="dcsApplyPreset('lower')">① 下半区有效探测<br><span style="font-size:9px;opacity:0.75;">0 &lt; f_RF &lt; f_r/2</span></button>
+              <button class="dcs-preset-btn" id="dpre-upper" onclick="dcsApplyPreset('upper')">② 上半区镜像有效<br><span style="font-size:9px;opacity:0.75;">f_r/2 &lt; f_RF &lt; f_r</span></button>
+              <button class="dcs-preset-btn" id="dpre-midalias" onclick="dcsApplyPreset('midalias')">③ Δf_ceo 跨界混叠<br><span style="font-size:9px;opacity:0.75;">横跨 f_r/2 重叠</span></button>
+              <button class="dcs-preset-btn" id="dpre-bwalias" onclick="dcsApplyPreset('bwalias')">④ Δf_r 过大超限<br><span style="font-size:9px;opacity:0.75;">带宽超出 Δν_max</span></button>
+              <button class="dcs-preset-btn" id="dpre-sym" onclick="dcsApplyPreset('sym')">⑤ 强度式探测对比<br><span style="font-size:9px;opacity:0.75;">对称构型 · 零相位</span></button>
+              <button class="dcs-preset-btn" id="dpre-noisy" onclick="dcsApplyPreset('noisy')">⑥ 强噪声相干平均<br><span style="font-size:9px;opacity:0.75;">验证 √N_avg 降噪</span></button>
+            </div>
+          </div>
+
+          <div class="dcs-ctrl-sec">
+            <div class="dcs-btn-row">
+              <button class="dcs-action-btn primary" id="dbtn-anim" onclick="dcsToggleAnim()">▶ 动态走离演示</button>
+              <button class="dcs-action-btn" onclick="dcsApplyPreset('lower')">重置</button>
+            </div>
+          </div>
+
+          <div class="dcs-ctrl-sec">
+            <div class="dcs-ctrl-head">双光梳映射参数（联动图 12A）</div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>重复频率 f_r</span><span class="val" id="dv-fr">100 MHz</span></div>
+              <input type="range" id="ds-fr" min="50" max="250" step="10" value="100">
+            </div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>重复频率差 Δf_r</span><span class="val" id="dv-dfr" style="color:#e11d48;">2.0 kHz</span></div>
+              <input type="range" id="ds-dfr" min="0.5" max="12.0" step="0.5" value="2.0">
+            </div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>有效光谱带宽 Δν_opt</span><span class="val" id="dv-bw">2.00 THz</span></div>
+              <input type="range" id="ds-bw" min="0.5" max="2.6" step="0.1" value="2.0">
+            </div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>偏移频率差 Δf_ceo / f_r</span><span class="val" id="dv-fceo" style="color:var(--c-teal-600);">0.25 (25 MHz)</span></div>
+              <input type="range" id="ds-fceo" min="0.02" max="0.98" step="0.01" value="0.25">
+            </div>
+          </div>
+
+          <div class="dcs-ctrl-sec">
+            <div class="dcs-ctrl-head">HITRAN 气室与噪声参数</div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>气室压强 p (Voigt 展宽)</span><span class="val" id="dv-press" style="color:#185FA5;">0.45 atm</span></div>
+              <input type="range" id="ds-press" min="0.08" max="1.50" step="0.02" value="0.45">
+            </div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>光程倍率 L / L₀</span><span class="val" id="dv-path">1.00×</span></div>
+              <input type="range" id="ds-path" min="0.20" max="2.50" step="0.10" value="1.00">
+            </div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>相干平均次数 N_avg</span><span class="val" id="dv-navg" style="color:#185FA5;">25</span></div>
+              <input type="range" id="ds-navg" min="1" max="100" step="1" value="25">
+            </div>
+            <div class="dcs-slider-grp">
+              <div class="dcs-slider-row"><span>探测器噪声 σ_n</span><span class="val" id="dv-noise" style="color:var(--c-amber-600);">0.012</span></div>
+              <input type="range" id="ds-noise" min="0.000" max="0.150" step="0.004" value="0.012">
+            </div>
+          </div>
+        </aside>
+
+        <div class="dcs-main-col">
+          <div class="dcs-eq-bar" id="dcs-eq-bar">正在初始化双光梳射频-光频映射与 HITRAN 分子光谱引擎...</div>
+
+          <!-- Top Wide Hero Chart 12A: RF-to-Optical Mapping Diagram -->
+          <div class="dcs-chart-card">
+            <div class="dcs-chart-head" style="min-height:auto;">
+              <div class="dcs-chart-title"><span class="dcs-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">12A</span>双光梳射频-光频映射图（纵轴 0 ~ f_r · 中分界 f_r/2 · 横轴波数 ν̃ 与相对梳齿序数 ΔN）</div>
+              <div class="dcs-chart-sub">
+                <span class="leg">实线：主拍频 f₊(ν̃) · 虚线：镜像 f₋(ν̃) · 橙窗：有效带宽 · 粗线：有效射频段（红=跨界重叠）</span>
+              </div>
+            </div>
+            <div class="dcs-cv-wrap wide"><canvas id="dcv-map"></canvas></div>
+          </div>
+
+          <!-- 2x2 Linked Detection & HITRAN Retrieval Charts (12B - 12E) -->
+          <div class="dcs-charts-grid">
+            <div class="dcs-chart-card">
+              <div class="dcs-chart-head">
+                <div class="dcs-chart-title"><span class="dcs-badge">12B</span>时域外差干涉图 I_het(t) 与分子 FID 尾</div>
+                <div class="dcs-chart-sub">
+                  <span class="leg">紫：干涉图 · 橙线：走离采样时刻</span>
+                  <span class="btns">
+                    <button class="dcs-mini-btn active" id="dbtn-igm-zoom" onclick="dcsSetIgmZoom(true)">爆峰放大</button>
+                    <button class="dcs-mini-btn" id="dbtn-igm-full" onclick="dcsSetIgmZoom(false)">全周期</button>
+                  </span>
+                </div>
+              </div>
+              <div class="dcs-cv-wrap"><canvas id="dcv-igm"></canvas></div>
+            </div>
+
+            <div class="dcs-chart-card">
+              <div class="dcs-chart-head">
+                <div class="dcs-chart-title"><span class="dcs-badge" style="background:#fef2f2;color:#e11d48;">12C</span>探测器射频多外差频谱（0 → f_r/2）</div>
+                <div class="dcs-chart-sub">
+                  <span class="leg">紫：实测射频谱 · 橙：跨界混叠伪峰</span>
+                </div>
+              </div>
+              <div class="dcs-cv-wrap"><canvas id="dcv-rf"></canvas></div>
+            </div>
+
+            <div class="dcs-chart-card">
+              <div class="dcs-chart-head">
+                <div class="dcs-chart-title"><span class="dcs-badge" style="background:var(--c-blue-50);color:var(--c-blue-600);">12D</span>HITRAN 分子吸收谱反演 α(ν̃)L</div>
+                <div class="dcs-chart-sub">
+                  <span class="leg">紫实线：DCS 反演 · 红虚线：HITRAN Voigt 真值</span>
+                </div>
+              </div>
+              <div class="dcs-cv-wrap"><canvas id="dcv-abs"></canvas></div>
+            </div>
+
+            <div class="dcs-chart-card">
+              <div class="dcs-chart-head">
+                <div class="dcs-chart-title"><span class="dcs-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">12E</span>分子折射率色散相位反演 Δφ(ν̃)</div>
+                <div class="dcs-chart-sub">
+                  <span class="leg">青实线：DCS 相位 · 橙虚线：Voigt K-K 真值</span>
+                </div>
+              </div>
+              <div class="dcs-cv-wrap"><canvas id="dcv-phi"></canvas></div>
+            </div>
+          </div>
+
+          <div class="dcs-tip" id="dcs-tip">
+            <strong>物理诊断提示：</strong>正在初始化双光梳与 HITRAN 仿真器...
+          </div>
+
+          <details class="dcs-hitran-box">
+            <summary id="hitran-summary">查看当前气体 HITRAN 标准格式（.par 固定列宽）谱线数据表</summary>
+            <div class="dcs-hitran-pre" id="hitran-pre"></div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Coddington, I., Newbury, N. &amp; Swann, W. Dual-comb spectroscopy. <em>Optica</em> <strong>3</strong>, 414–426 (2016).</li>
+      <li><span class="ref-num">[2]</span>Gordon, I. E. et al. The HITRAN2020 molecular spectroscopic database. <em>J. Quant. Spectrosc. Radiat. Transf.</em> <strong>277</strong>, 107949 (2022).</li>
+      <li><span class="ref-num">[3]</span>Keilmann, F., Gohle, C. &amp; Holzwarth, R. Time-domain mid-infrared frequency-comb spectrometer. <em>Opt. Lett.</em> <strong>29</strong>, 1542–1544 (2004).</li>
+      <li><span class="ref-num">[4]</span>Newbury, N. R., Coddington, I. &amp; Swann, W. Sensitivity of coherent dual-comb spectroscopy. <em>Opt. Express</em> <strong>18</strong>, 7929–7945 (2010).</li>
+      <li><span class="ref-num">[5]</span>Picqué, N. &amp; Hänsch, T. W. Frequency comb spectroscopy. <em>Nat. Photonics</em> <strong>13</strong>, 146–157 (2019).</li>
+      <li><span class="ref-num">[6]</span>Weideman, J. A. C. Computation of the complex error function. <em>SIAM J. Numer. Anal.</em> <strong>31</strong>, 1497–1518 (1994).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== HITRAN Standard (.par) Molecular Databases =====
+  var HITRAN_DB = {"c2h2": {"name": "¹²C₂H₂ (乙炔)", "band": "ν₁+ν₃ 组合带 (~1530 nm)", "molId": 26, "iso": 1, "mass": 26.038, "qExp": 1.0, "nuCenter": 6555.0, "defaultP": 0.45, "xMole": 0.03, "baseLcm": 50.0, "baseLlabel": "0.5 m 气室 (3% C₂H₂)", "parLines": ["261 6512.991458 5.980E-21 4.820E+00.0676.1274  360.05370.75-0.008500         101000         000000                         P 17e", "261 6515.751145 2.279E-21 4.820E+00.0688.1292  320.04770.75-0.008500         101000         000000                         P 16e", "261 6518.485725 7.697E-21 4.820E+00.0700.1310  282.39500.75-0.008500         101000         000000                         P 15e", "261 6521.195158 2.843E-21 4.820E+00.0712.1328  247.09570.75-0.008500         101000         000000                         P 14e", "261 6523.879406 9.294E-21 4.820E+00.0724.1346  214.14960.75-0.008500         101000         000000                         P 13e", "261 6526.538430 3.318E-21 4.820E+00.0736.1364  183.55680.75-0.008500         101000         000000                         P 12e", "261 6529.172190 1.047E-20 4.820E+00.0748.1382  155.31730.75-0.008500         101000         000000                         P 11e", "261 6531.780648 3.597E-21 4.820E+00.0760.1400  129.43110.75-0.008500         101000         000000                         P 10e", "261 6534.363764 1.089E-20 4.820E+00.0772.1418  105.89810.75-0.008500         101000         000000                         P  9e", "261 6536.921500 3.577E-21 4.820E+00.0784.1436   84.71850.75-0.008500         101000         000000                         P  8e", "261 6539.453816 1.029E-20 4.820E+00.0796.1454   65.89220.75-0.008500         101000         000000                         P  7e", "261 6541.960674 3.185E-21 4.820E+00.0808.1472   49.41910.75-0.008500         101000         000000                         P  6e", "261 6544.442034 8.527E-21 4.820E+00.0820.1490   35.29940.75-0.008500         101000         000000                         P  5e", "261 6546.897857 2.408E-21 4.820E+00.0832.1508   23.53290.75-0.008500         101000         000000                         P  4e", "261 6549.328104 5.671E-21 4.820E+00.0844.1526   14.11980.75-0.008500         101000         000000                         P  3e", "261 6551.732736 1.304E-21 4.820E+00.0856.1544    7.05990.75-0.008500         101000         000000                         P  2e", "261 6554.111715 2.002E-21 4.820E+00.0868.1562    2.35330.75-0.008500         101000         000000                         P  1e", "261 6558.792553 6.749E-22 4.820E+00.0880.1580    0.00000.75-0.008500         101000         000000                         R  0e", "261 6561.094336 4.003E-21 4.820E+00.0868.1562    2.35330.75-0.008500         101000         000000                         R  1e", "261 6563.370308 1.956E-21 4.820E+00.0856.1544    7.05990.75-0.008500         101000         000000                         R  2e", "261 6565.620431 7.561E-21 4.820E+00.0844.1526   14.11980.75-0.008500         101000         000000                         R  3e", "261 6567.844667 3.010E-21 4.820E+00.0832.1508   23.53290.75-0.008500         101000         000000                         R  4e", "261 6570.042974 1.023E-20 4.820E+00.0820.1490   35.29940.75-0.008500         101000         000000                         R  5e", "261 6572.215316 3.715E-21 4.820E+00.0808.1472   49.41910.75-0.008500         101000         000000                         R  6e", "261 6574.361652 1.176E-20 4.820E+00.0796.1454   65.89220.75-0.008500         101000         000000                         R  7e", "261 6576.481944 4.024E-21 4.820E+00.0784.1436   84.71850.75-0.008500         101000         000000                         R  8e", "261 6578.576152 1.210E-20 4.820E+00.0772.1418  105.89810.75-0.008500         101000         000000                         R  9e", "261 6580.644238 3.957E-21 4.820E+00.0760.1400  129.43110.75-0.008500         101000         000000                         R 10e", "261 6582.686162 1.142E-20 4.820E+00.0748.1382  155.31730.75-0.008500         101000         000000                         R 11e", "261 6584.701886 3.595E-21 4.820E+00.0736.1364  183.55680.75-0.008500         101000         000000                         R 12e", "261 6586.691370 1.001E-20 4.820E+00.0724.1346  214.14960.75-0.008500         101000         000000                         R 13e", "261 6588.654576 3.046E-21 4.820E+00.0712.1328  247.09570.75-0.008500         101000         000000                         R 14e", "261 6590.591463 8.210E-21 4.820E+00.0700.1310  282.39500.75-0.008500         101000         000000                         R 15e", "261 6592.501994 2.421E-21 4.820E+00.0688.1292  320.04770.75-0.008500         101000         000000                         R 16e"]}, "co2": {"name": "¹²CO₂ (二氧化碳)", "band": "30012←00001 带 (~1575 nm)", "molId": 2, "iso": 1, "mass": 44.01, "qExp": 1.0, "nuCenter": 6345.0, "defaultP": 0.6, "xMole": 0.25, "baseLcm": 4000.0, "baseLlabel": "40 m 多通池 (25% CO₂)", "parLines": [" 21 6319.761689 7.574E-24 1.450E-02.0628.0824  412.07130.72-0.005500        3 0 012        0 0 001                         P 32e", " 21 6321.704894 9.017E-24 1.450E-02.0640.0840  362.90370.72-0.005500        3 0 012        0 0 001                         P 30e", " 21 6323.623210 1.053E-23 1.450E-02.0652.0856  316.85780.72-0.005500        3 0 012        0 0 001                         P 28e", " 21 6325.516612 1.204E-23 1.450E-02.0664.0872  273.93370.72-0.005500        3 0 012        0 0 001                         P 26e", " 21 6327.385074 1.349E-23 1.450E-02.0676.0888  234.13140.72-0.005500        3 0 012        0 0 001                         P 24e", " 21 6329.228571 1.478E-23 1.450E-02.0688.0904  197.45080.72-0.005500        3 0 012        0 0 001                         P 22e", " 21 6331.047076 1.582E-23 1.450E-02.0700.0920  163.89200.72-0.005500        3 0 012        0 0 001                         P 20e", " 21 6332.840565 1.650E-23 1.450E-02.0712.0936  133.45490.72-0.005500        3 0 012        0 0 001                         P 18e", " 21 6334.609011 1.675E-23 1.450E-02.0724.0952  106.13960.72-0.005500        3 0 012        0 0 001                         P 16e", " 21 6336.352390 1.649E-23 1.450E-02.0736.0968   81.94600.72-0.005500        3 0 012        0 0 001                         P 14e", " 21 6338.070675 1.566E-23 1.450E-02.0748.0984   60.87420.72-0.005500        3 0 012        0 0 001                         P 12e", " 21 6339.763842 1.424E-23 1.450E-02.0760.1000   42.92410.72-0.005500        3 0 012        0 0 001                         P 10e", " 21 6341.431864 1.224E-23 1.450E-02.0772.1016   28.09580.72-0.005500        3 0 012        0 0 001                         P  8e", " 21 6343.074717 9.718E-24 1.450E-02.0784.1032   16.38920.72-0.005500        3 0 012        0 0 001                         P  6e", " 21 6344.692374 6.755E-24 1.450E-02.0796.1048    7.80440.72-0.005500        3 0 012        0 0 001                         P  4e", " 21 6346.284810 3.468E-24 1.450E-02.0808.1064    2.34130.72-0.005500        3 0 012        0 0 001                         P  2e", " 21 6348.626119 1.754E-24 1.450E-02.0820.1080    0.00000.72-0.005500        3 0 012        0 0 001                         R  0e", " 21 6350.155392 5.202E-24 1.450E-02.0808.1064    2.34130.72-0.005500        3 0 012        0 0 001                         R  2e", " 21 6351.659354 8.444E-24 1.450E-02.0796.1048    7.80440.72-0.005500        3 0 012        0 0 001                         R  4e", " 21 6353.137980 1.134E-23 1.450E-02.0784.1032   16.38920.72-0.005500        3 0 012        0 0 001                         R  6e", " 21 6354.591244 1.377E-23 1.450E-02.0772.1016   28.09580.72-0.005500        3 0 012        0 0 001                         R  8e", " 21 6356.019122 1.566E-23 1.450E-02.0760.1000   42.92410.72-0.005500        3 0 012        0 0 001                         R 10e", " 21 6357.421587 1.696E-23 1.450E-02.0748.0984   60.87420.72-0.005500        3 0 012        0 0 001                         R 12e", " 21 6358.798615 1.767E-23 1.450E-02.0736.0968   81.94600.72-0.005500        3 0 012        0 0 001                         R 14e", " 21 6360.150178 1.780E-23 1.450E-02.0724.0952  106.13960.72-0.005500        3 0 012        0 0 001                         R 16e", " 21 6361.476253 1.742E-23 1.450E-02.0712.0936  133.45490.72-0.005500        3 0 012        0 0 001                         R 18e", " 21 6362.776813 1.661E-23 1.450E-02.0700.0920  163.89200.72-0.005500        3 0 012        0 0 001                         R 20e", " 21 6364.051833 1.545E-23 1.450E-02.0688.0904  197.45080.72-0.005500        3 0 012        0 0 001                         R 22e", " 21 6365.301288 1.405E-23 1.450E-02.0676.0888  234.13140.72-0.005500        3 0 012        0 0 001                         R 24e", " 21 6366.525151 1.251E-23 1.450E-02.0664.0872  273.93370.72-0.005500        3 0 012        0 0 001                         R 26e", " 21 6367.723397 1.090E-23 1.450E-02.0652.0856  316.85780.72-0.005500        3 0 012        0 0 001                         R 28e", " 21 6368.896001 9.318E-24 1.450E-02.0640.0840  362.90370.72-0.005500        3 0 012        0 0 001                         R 30e", " 21 6370.042938 7.810E-24 1.450E-02.0628.0824  412.07130.72-0.005500        3 0 012        0 0 001                         R 32e"]}, "ch4": {"name": "¹²CH₄ (甲烷)", "band": "2ν₃ 泛频带 (~1666 nm)", "molId": 6, "iso": 1, "mass": 16.043, "qExp": 1.5, "nuCenter": 6008.0, "defaultP": 0.5, "xMole": 0.08, "baseLcm": 120.0, "baseLlabel": "1.2 m 气室 (8% CH₄)", "parLines": [" 61 5970.421000 3.800E-22 3.150E-01.0620.0780   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       P  3 F2", " 61 5971.185000 5.400E-22 3.150E-01.0610.0770   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       P  3 A2", " 61 5971.642000 4.100E-22 3.150E-01.0620.0780   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       P  3 F1", " 61 5981.618000 4.600E-22 3.150E-01.0640.0800   31.44000.75-0.011000        0 0 2 0        0 0 0 0                       P  2 F2", " 61 5982.104000 3.200E-22 3.150E-01.0640.0800   31.44000.75-0.011000        0 0 2 0        0 0 0 0                       P  2 E ", " 61 5993.025000 3.900E-22 3.150E-01.0660.0810   10.48000.75-0.011000        0 0 2 0        0 0 0 0                       P  1 F1", " 61 6003.412000 4.800E-22 3.150E-01.0600.0760  157.10000.75-0.011000        0 0 2 0        0 0 0 0                       Q  5 F2", " 61 6003.945000 7.600E-22 3.150E-01.0610.0770  104.80000.75-0.011000        0 0 2 0        0 0 0 0                       Q  4 A1", " 61 6004.318000 9.800E-22 3.150E-01.0620.0780   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       Q  3 F2", " 61 6004.652000 1.320E-21 3.150E-01.0630.0790   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       Q  3 A2", " 61 6004.885000 8.900E-22 3.150E-01.0640.0800   31.44000.75-0.011000        0 0 2 0        0 0 0 0                       Q  2 F2", " 61 6005.120000 6.200E-22 3.150E-01.0650.0810   10.48000.75-0.011000        0 0 2 0        0 0 0 0                       Q  1 F1", " 61 6015.664000 6.800E-22 3.150E-01.0660.0820    0.00000.75-0.011000        0 0 2 0        0 0 0 0                       R  0 A1", " 61 6026.228000 7.200E-22 3.150E-01.0650.0810   10.48000.75-0.011000        0 0 2 0        0 0 0 0                       R  1 F1", " 61 6036.642000 6.400E-22 3.150E-01.0630.0790   31.44000.75-0.011000        0 0 2 0        0 0 0 0                       R  2 E ", " 61 6037.015000 9.200E-22 3.150E-01.0630.0790   31.44000.75-0.011000        0 0 2 0        0 0 0 0                       R  2 F2", " 61 6046.942000 1.180E-21 3.150E-01.0610.0770   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       R  3 A2", " 61 6047.310000 8.500E-22 3.150E-01.0610.0770   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       R  3 F2", " 61 6047.765000 7.900E-22 3.150E-01.0610.0770   62.88000.75-0.011000        0 0 2 0        0 0 0 0                       R  3 F1"]}};
+
+  // Parse authentic HITRAN fixed-width .par lines into numerical line objects
+  function parseHitranPar(parLines) {
+    return parLines.map(function(ln) {
+      return {
+        mol: parseInt(ln.slice(0, 2), 10),
+        iso: parseInt(ln.slice(2, 3), 10),
+        nu0: parseFloat(ln.slice(3, 15)),
+        Sref: parseFloat(ln.slice(15, 25)),
+        A: parseFloat(ln.slice(25, 35)),
+        gAir: parseFloat(ln.slice(35, 40)),
+        gSelf: parseFloat(ln.slice(40, 45)),
+        Elow: parseFloat(ln.slice(45, 55)),
+        nAir: parseFloat(ln.slice(55, 59)),
+        deltaAir: parseFloat(ln.slice(59, 67)),
+        qLbl: ln.slice(112).trim()
+      };
+    });
+  }
+  Object.keys(HITRAN_DB).forEach(function(k) {
+    HITRAN_DB[k].lines = parseHitranPar(HITRAN_DB[k].parLines);
+  });
+
+  // Physical constants (HITRAN CGS)
+  var C_THZ_PER_CM1 = 0.0299792458; // 1 cm^-1 = 0.0299792458 THz
+  var T_REF = 296.0, T_K = 296.0, C2_HC_KB = 1.4387769, NL_296 = 2.47937e19;
+  var SQRT_LN2 = Math.sqrt(Math.LN2), INV_SQRT_PI = 1.0 / Math.sqrt(Math.PI);
+
+  // Weideman N=16 Complex Faddeeva Function w(x + i*y), max error < 8e-8
+  var L_W = 3.363585661014858;
+  var A_W = [9.939e-07, 3.9813e-06, -5.5842e-06, -2.73464e-05, 2.17099e-05, 0.0002107106,
+             8.70316e-05, -0.0015276597, -0.0038810152, 0.0036825673, 0.0518224024,
+             0.1912417267, 0.4692909009, 0.8864478302, 1.3622408223, 1.7483958861];
+
+  function wofzComplex(x, y) {
+    // Denominator d = L - i*(x + i*y) = (L + y) - i*x
+    // Numerator   n = L + i*(x + i*y) = (L - y) + i*x
+    var dr = L_W + y, di = -x;
+    var d2 = dr * dr + di * di;
+    var nr = L_W - y, ni = x;
+    var zr = (nr * dr + ni * di) / d2;
+    var zi = (ni * dr - nr * di) / d2;
+    // Horner evaluation of polynomial p(Z)
+    var pr = 0.0, pi = 0.0;
+    for (var i = 0; i < 16; i++) {
+      var tr = pr * zr - pi * zi + A_W[i];
+      var ti = pr * zi + pi * zr;
+      pr = tr; pi = ti;
+    }
+    // 1 / d and 1 / d^2
+    var invDr = dr / d2, invDi = -di / d2;
+    var invD2r = invDr * invDr - invDi * invDi;
+    var invD2i = 2.0 * invDr * invDi;
+    var wr = 2.0 * (pr * invD2r - pi * invD2i) + INV_SQRT_PI * invDr;
+    var wi = 2.0 * (pr * invD2i + pi * invD2r) + INV_SQRT_PI * invDi;
+    return [wr, wi];
+  }
+
+  var N = 4096, HALF = N >> 1;
+  var S = {
+    geo: 'asym',      // 'asym' (dispersive) or 'sym' (intensity)
+    gas: 'c2h2',      // 'c2h2', 'co2', 'ch4'
+    fr: 100.0,        // MHz
+    dfr: 2.0,         // kHz
+    bw: 2.0,          // THz effective optical bandwidth
+    fceoFrac: 0.25,   // Delta f_ceo_eff / f_r in [0.02, 0.98]
+    press: 0.45,      // atm
+    pathScale: 1.0,   // L / L0
+    navg: 25,         // coherent averages
+    noise: 0.012,     // single-shot noise std
+    igmZoom: true
+  };
+
+  function makeRng(seed) {
+    var a = seed >>> 0;
+    return function() {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function fft(re, im, inv) {
+    var n = re.length;
+    for (var i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { var tr = re[i]; re[i] = re[j]; re[j] = tr; var ti = im[i]; im[i] = im[j]; im[j] = ti; }
+    }
+    var sign = inv ? 1 : -1;
+    for (var len = 2; len <= n; len <<= 1) {
+      var half = len >> 1, ang = sign * 2 * Math.PI / len, wR = Math.cos(ang), wI = Math.sin(ang);
+      for (var i0 = 0; i0 < n; i0 += len) {
+        var cR = 1, cI = 0;
+        for (var k = 0; k < half; k++) {
+          var u = i0 + k, v = u + half;
+          var tR = cR * re[v] - cI * im[v], tI = cR * im[v] + cI * re[v];
+          re[v] = re[u] - tR; im[v] = im[u] - tI; re[u] += tR; im[u] += tI;
+          var nR = cR * wR - cI * wI; cI = cR * wI + cI * wR; cR = nR;
+        }
+      }
+    }
+    if (inv) { for (var m = 0; m < n; m++) { re[m] /= n; im[m] /= n; } }
+  }
+
+  // Evaluate exact HITRAN Voigt optical depth alpha(nu_cm)*L and K-K dispersion phase Delta_phi(nu_cm)
+  function evalHitranArray(nuCmArr) {
+    var db = HITRAN_DB[S.gas], lines = db.lines;
+    var mLen = nuCmArr.length;
+    var aL = new Float64Array(mLen), dphi = new Float64Array(mLen);
+    var P = S.press, xM = db.xMole, Lcm = db.baseLcm * S.pathScale;
+    var nAbs = xM * P * NL_296 * (T_REF / T_K);
+    var doppCoeff = 3.581163e-7 * Math.sqrt(T_K / db.mass);
+    var tempFac = Math.pow(T_REF / T_K, db.qExp);
+    var invTdiff = (1.0 / T_K) - (1.0 / T_REF);
+
+    for (var q = 0; q < lines.length; q++) {
+      var ln = lines[q];
+      var sT = ln.Sref * tempFac * Math.exp(-C2_HC_KB * ln.Elow * invTdiff);
+      var nuS = ln.nu0 + ln.deltaAir * P;
+      var gL = Math.pow(T_REF / T_K, ln.nAir) * (ln.gAir * (1.0 - xM) + ln.gSelf * xM) * P;
+      var gD = doppCoeff * ln.nu0;
+      var y = SQRT_LN2 * gL / gD;
+      var pref = nAbs * Lcm * sT * (SQRT_LN2 * INV_SQRT_PI / gD);
+      var cutoff = Math.max(2.5, 25.0 * (gL + gD));
+      for (var i = 0; i < mLen; i++) {
+        var dNu = nuCmArr[i] - nuS;
+        if (Math.abs(dNu) > cutoff) continue;
+        var w = wofzComplex(SQRT_LN2 * dNu / gD, y);
+        aL[i] += pref * w[0];
+        dphi[i] += -0.5 * pref * w[1];
+      }
+    }
+    return { aL: aL, dphi: dphi };
+  }
+
+  // Output arrays
+  var M_PLOT = 640;
+  var nuPlotCm = new Float64Array(M_PLOT), nuPlotRelTHz = new Float64Array(M_PLOT);
+  var absTrue = new Float64Array(M_PLOT), phiTrue = new Float64Array(M_PLOT);
+  var absMeas = new Float64Array(M_PLOT), phiMeas = new Float64Array(M_PLOT);
+  var rfFreq = new Float64Array(HALF), rfAmpTotal = new Float64Array(HALF), rfAmpAlias = new Float64Array(HALF);
+  var igmTime = new Float64Array(N), igmSig = new Float64Array(N);
+  var simM = {
+    comp: 50000, tUpdUs: 500, dtauFs: 200, bwMaxTHz: 2.5,
+    fRF0: 25, fLow: 5, fHigh: 45, zone: 'lower', valid: true,
+    rmse: 0, snrDb: 32, maxAbsTrue: 1.0, maxPhiTrue: 0.3
+  };
+
+  function recomputeDCS() {
+    var db = HITRAN_DB[S.gas];
+    var frMHz = S.fr, dfrMHz = S.dfr * 1e-3;
+    var comp = frMHz / dfrMHz;
+    var tUpdUs = 1e3 / S.dfr;
+    var dtauFs = (dfrMHz / (frMHz * frMHz)) * 1e9;
+    var bwMaxTHz = (frMHz * frMHz) / (2.0 * dfrMHz) * 1e-6;
+    var fNyq = 0.5 * frMHz;
+    var fRF0 = S.fceoFrac * frMHz; // Center tooth beat frequency in [0, f_r]
+    var fSpanRF = (S.bw * 1e6) / comp;
+    var fLow = fRF0 - 0.5 * fSpanRF;
+    var fHigh = fRF0 + 0.5 * fSpanRF;
+
+    var margin = 0.005 * frMHz;
+    var inLower = (fLow > margin) && (fHigh < fNyq - margin);
+    var inUpper = (fLow > fNyq + margin) && (fHigh < frMHz - margin);
+    var valid = inLower || inUpper;
+    var zone = inLower ? 'lower' : (inUpper ? 'upper' : 'aliased');
+    var centerIsUpper = (fRF0 >= fNyq);
+    var nomFold = centerIsUpper ? 1 : 0;
+
+    // 1. Synthesize optical comb across [-1.55, +1.55] THz around gas band center
+    var nOpt = 4096, nuSpanTHz = 3.1;
+    var dNuTHz = nuSpanTHz / nOpt;
+    var optRelTHz = new Float64Array(nOpt), optCm = new Float64Array(nOpt);
+    for (var m = 0; m < nOpt; m++) {
+      var rT = -0.5 * nuSpanTHz + (m + 0.5) * dNuTHz;
+      optRelTHz[m] = rT;
+      optCm[m] = db.nuCenter + rT / C_THZ_PER_CM1;
+    }
+    var gasOpt = evalHitranArray(optCm);
+
+    var dfBin = fNyq / HALF;
+    var refRe = new Float64Array(N), refIm = new Float64Array(N);
+    var samRe = new Float64Array(N), samIm = new Float64Array(N);
+    var aliRe = new Float64Array(HALF), aliIm = new Float64Array(HALF);
+
+    // Super-Gaussian order-6 bandpass filter matching effective bandwidth S.bw
+    for (var m2 = 0; m2 < nOpt; m2++) {
+      var u = (2.0 * optRelTHz[m2]) / S.bw;
+      var u2 = u * u;
+      var env = Math.exp(-Math.LN2 * u2 * u2 * u2);
+      if (env < 1e-4) continue;
+
+      var fRaw = fRF0 + (optRelTHz[m2] * 1e6) / comp;
+      var foldIdx = Math.floor(fRaw / fNyq);
+      var rem = fRaw - foldIdx * fNyq;
+      var isOdd = ((foldIdx & 1) !== 0);
+      var fFold = isOdd ? (fNyq - rem) : rem;
+      var kF = fFold / dfBin;
+      var k0 = Math.max(1, Math.min(HALF - 2, Math.floor(kF)));
+      var frac = kF - k0;
+
+      var aL = gasOpt.aL[m2], phi = gasOpt.dphi[m2];
+      var hAmp = S.geo === 'asym' ? Math.exp(-0.5 * aL) : Math.exp(-aL);
+      var hPhi = S.geo === 'asym' ? -phi : 0.0;
+      if (isOdd) hPhi = -hPhi;
+
+      var wgt = env * (dNuTHz * 1e6 / comp) / dfBin;
+      var sR = wgt * hAmp * Math.cos(hPhi), sI = wgt * hAmp * Math.sin(hPhi);
+      var w0 = 1.0 - frac, w1 = frac;
+      refRe[k0] += wgt * w0; refRe[k0 + 1] += wgt * w1;
+      samRe[k0] += sR * w0;  samIm[k0] += sI * w0;
+      samRe[k0 + 1] += sR * w1; samIm[k0 + 1] += sI * w1;
+      if (foldIdx !== nomFold) {
+        aliRe[k0] += sR * w0; aliIm[k0] += sI * w0;
+        aliRe[k0 + 1] += sR * w1; aliIm[k0 + 1] += sI * w1;
+      }
+    }
+
+    // 2. Inverse FFT to generate real lab-time interferogram (centerburst at HALF)
+    var igmR = new Float64Array(N), igmI = new Float64Array(N);
+    for (var k = 1; k < HALF; k++) {
+      var sgn = (k & 1) ? -1 : 1;
+      igmR[k] = samRe[k] * sgn; igmI[k] = samIm[k] * sgn;
+      igmR[N - k] = samRe[k] * sgn; igmI[N - k] = -samIm[k] * sgn;
+    }
+    fft(igmR, igmI, true);
+
+    var pkIgm = 1e-12;
+    for (var i = 0; i < N; i++) if (Math.abs(igmR[i]) > pkIgm) pkIgm = Math.abs(igmR[i]);
+    var rng = makeRng(20261216);
+    var effNoise = S.noise / Math.sqrt(Math.max(1, S.navg));
+    for (var i2 = 0; i2 < N; i2++) {
+      igmTime[i2] = ((i2 - HALF) / N) * tUpdUs;
+      var u1 = Math.max(1e-12, rng()), u2r = rng();
+      var gNoise = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2r) * effNoise;
+      igmSig[i2] = igmR[i2] / pkIgm + gNoise;
+    }
+
+    // 3. Forward FFT of noisy interferogram -> measured RF spectrum on [0, f_r/2]
+    var recR = new Float64Array(N), recI = new Float64Array(N);
+    for (var i3 = 0; i3 < N; i3++) { recR[i3] = igmSig[i3] * pkIgm; recI[i3] = 0; }
+    fft(recR, recI, false);
+    var maxRF = 1e-12;
+    for (var k2 = 0; k2 < HALF; k2++) {
+      var sgn2 = (k2 & 1) ? -1 : 1;
+      recR[k2] *= sgn2; recI[k2] *= sgn2;
+      rfFreq[k2] = k2 * dfBin;
+      var mag = Math.hypot(recR[k2], recI[k2]);
+      rfAmpTotal[k2] = mag;
+      rfAmpAlias[k2] = Math.hypot(aliRe[k2], aliIm[k2]);
+      if (mag > maxRF) maxRF = mag;
+    }
+    for (var k3 = 0; k3 < HALF; k3++) {
+      rfAmpTotal[k3] /= maxRF;
+      rfAmpAlias[k3] /= maxRF;
+    }
+
+    // 4. Demap optical absorption & dispersion phase across effective bandwidth [-0.47*bw, +0.47*bw]
+    var viewHalfTHz = 0.47 * S.bw;
+    for (var p = 0; p < M_PLOT; p++) {
+      var rT2 = -viewHalfTHz + (p / (M_PLOT - 1)) * (2.0 * viewHalfTHz);
+      nuPlotRelTHz[p] = rT2;
+      nuPlotCm[p] = db.nuCenter + rT2 / C_THZ_PER_CM1;
+    }
+    var gasTrue = evalHitranArray(nuPlotCm);
+    var errSqSum = 0, errCnt = 0, maxA = 0.5, maxPh = 0.25;
+
+    for (var p2 = 0; p2 < M_PLOT; p2++) {
+      absTrue[p2] = gasTrue.aL[p2];
+      phiTrue[p2] = S.geo === 'asym' ? gasTrue.dphi[p2] : 0.0;
+      if (absTrue[p2] > maxA) maxA = absTrue[p2];
+      if (Math.abs(phiTrue[p2]) > maxPh) maxPh = Math.abs(phiTrue[p2]);
+
+      var fRawNom = fRF0 + (nuPlotRelTHz[p2] * 1e6) / comp;
+      var fDetNom = centerIsUpper ? (frMHz - fRawNom) : fRawNom;
+      if (fDetNom <= dfBin || fDetNom >= fNyq - dfBin) {
+        absMeas[p2] = NaN; phiMeas[p2] = NaN;
+        continue;
+      }
+      var kF2 = fDetNom / dfBin;
+      var k02 = Math.max(1, Math.min(HALF - 2, Math.floor(kF2))), frac2 = kF2 - k02;
+      var mR = recR[k02] * (1 - frac2) + recR[k02 + 1] * frac2;
+      var mI = recI[k02] * (1 - frac2) + recI[k02 + 1] * frac2;
+      var rR = refRe[k02] * (1 - frac2) + refRe[k02 + 1] * frac2;
+      if (rR < 1e-4) { absMeas[p2] = NaN; phiMeas[p2] = NaN; continue; }
+      var ratR = mR / rR, ratI = mI / rR;
+      if (centerIsUpper) ratI = -ratI; // Undo upper-zone mirror conjugation
+      var ratMag = Math.max(1e-4, Math.hypot(ratR, ratI));
+      var aRet = S.geo === 'asym' ? (-2.0 * Math.log(ratMag)) : (-Math.log(ratMag));
+      var pRet = -Math.atan2(ratI, ratR);
+      absMeas[p2] = Math.max(-0.5, Math.min(5.0, aRet));
+      phiMeas[p2] = pRet;
+
+      var diff = absMeas[p2] - absTrue[p2];
+      errSqSum += diff * diff; errCnt++;
+    }
+
+    var rmse = errCnt > 0 ? Math.sqrt(errSqSum / errCnt) : 9.99;
+    var snrDb = 20.0 * Math.log10(1.0 / Math.max(1e-4, effNoise * 2.2));
+    simM = {
+      comp: comp, tUpdUs: tUpdUs, dtauFs: dtauFs, bwMaxTHz: bwMaxTHz,
+      fRF0: fRF0, fLow: fLow, fHigh: fHigh, zone: zone, valid: valid,
+      rmse: rmse, snrDb: snrDb, maxAbsTrue: maxA, maxPhiTrue: maxPh
+    };
+  }
+
+  function setupCV(id) {
+    var c = document.getElementById(id), rect = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(10, Math.round(rect.width)), h = Math.max(10, Math.round(rect.height));
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function drawGrid(ctx, w, h, pad, xMin, xMax, yMin, yMax, xLbl, yLbl, xDec) {
+    var pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+    var toX = function(x) { return pad.l + ((x - xMin) / (xMax - xMin)) * pw; };
+    var toY = function(y) { return pad.t + ph - ((y - yMin) / (yMax - yMin)) * ph; };
+    ctx.strokeStyle = '#e4e1d8'; ctx.lineWidth = 0.5; ctx.font = '9.4px monospace'; ctx.fillStyle = '#888780';
+    for (var i = 0; i <= 4; i++) {
+      var yv = yMin + (i / 4) * (yMax - yMin), py = toY(yv);
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(Math.abs(yv) >= 10 ? yv.toFixed(0) : yv.toFixed(2), pad.l - 5, py + 3);
+      var xv = xMin + (i / 4) * (xMax - xMin), px = toX(xv);
+      ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, h - pad.b); ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(xDec !== undefined ? xv.toFixed(xDec) : (Math.abs(xv) >= 100 ? xv.toFixed(0) : xv.toFixed(1)), px, h - pad.b + 12);
+    }
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(xLbl, pad.l + pw / 2, h - 3);
+    ctx.save(); ctx.translate(11, pad.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yLbl, 0, 0); ctx.restore();
+    return { toX: toX, toY: toY, pw: pw, ph: ph };
+  }
+
+  var scanFrac = 0.5, isAnim = false, animId = null, isTabActive = false;
+
+  function renderAll() {
+    var db = HITRAN_DB[S.gas];
+    var fr = S.fr, fNyq = 0.5 * fr, comp = simM.comp;
+
+    // ===== 12A: RF-to-Optical Mapping Diagram (0 ~ f_r, midline f_r/2) =====
+    var rM = setupCV('dcv-map'), cM = rM.ctx;
+    var padM = { l: 48, r: 58, t: 22, b: 28 };
+    var viewSpanTHz = 3.0; // Fixed wide optical viewing frame [-1.5, +1.5] THz
+    var nuMinCm = db.nuCenter - 0.5 * viewSpanTHz / C_THZ_PER_CM1;
+    var nuMaxCm = db.nuCenter + 0.5 * viewSpanTHz / C_THZ_PER_CM1;
+    var axM = drawGrid(cM, rM.w, rM.h, padM, nuMinCm, nuMaxCm, 0, fr, '光频波数 ν̃ (cm⁻¹)  [' + db.name + ' ' + db.band + ']', '射频 f_RF (MHz)', 0);
+
+    // Secondary top axis: relative comb tooth index Delta N = (nu - nu_0) / f_r
+    cM.font = '9px monospace'; cM.fillStyle = '#534AB7'; cM.textAlign = 'center';
+    for (var ti = 0; ti <= 4; ti++) {
+      var rT = -0.5 * viewSpanTHz + (ti / 4) * viewSpanTHz;
+      var dN = Math.round((rT * 1e6) / fr);
+      var pxT = axM.toX(db.nuCenter + rT / C_THZ_PER_CM1);
+      cM.fillText('ΔN=' + (dN > 0 ? '+' : '') + (Math.abs(dN) >= 1000 ? (dN / 1000).toFixed(1) + 'k' : dN), pxT, padM.t - 6);
+    }
+
+    cM.save(); cM.beginPath(); cM.rect(padM.l, padM.t, axM.pw, axM.ph); cM.clip();
+    // Shade Upper (f_r/2 ~ f_r) & Lower (0 ~ f_r/2) Nyquist zones
+    cM.fillStyle = 'rgba(127,119,221,0.08)';
+    cM.fillRect(padM.l, axM.toY(fr), axM.pw, axM.toY(fNyq) - axM.toY(fr));
+    cM.fillStyle = 'rgba(29,158,117,0.08)';
+    cM.fillRect(padM.l, axM.toY(fNyq), axM.pw, axM.toY(0) - axM.toY(fNyq));
+
+    // Effective optical bandwidth vertical highlight box
+    var bwLcm = db.nuCenter - 0.5 * S.bw / C_THZ_PER_CM1;
+    var bwRcm = db.nuCenter + 0.5 * S.bw / C_THZ_PER_CM1;
+    var xBwL = axM.toX(bwLcm), xBwR = axM.toX(bwRcm);
+    cM.fillStyle = simM.valid ? 'rgba(239,159,39,0.13)' : 'rgba(225,29,72,0.12)';
+    cM.fillRect(xBwL, padM.t, xBwR - xBwL, axM.ph);
+    cM.strokeStyle = simM.valid ? '#EF9F27' : '#e11d48'; cM.lineWidth = 1.1; cM.setLineDash([4, 3]);
+    cM.beginPath(); cM.moveTo(xBwL, padM.t); cM.lineTo(xBwL, padM.t + axM.ph); cM.moveTo(xBwR, padM.t); cM.lineTo(xBwR, padM.t + axM.ph); cM.stroke();
+    cM.setLineDash([]);
+
+    // Midline f_r / 2
+    var yMid = axM.toY(fNyq);
+    cM.strokeStyle = '#e11d48'; cM.lineWidth = 1.6; cM.setLineDash([6, 4]);
+    cM.beginPath(); cM.moveTo(padM.l, yMid); cM.lineTo(padM.l + axM.pw, yMid); cM.stroke();
+    cM.setLineDash([]);
+    cM.fillStyle = '#e11d48'; cM.font = 'bold 9.2px monospace'; cM.textAlign = 'left';
+    cM.fillText('中分界 f_r/2 = ' + fNyq.toFixed(0) + ' MHz', padM.l + 5, yMid - 4);
+
+    // Draw full sawtooth main branch f_+ and mirror branch f_- across the optical frame
+    function drawBranch(isMirror, activeOnly, color, lw, dash) {
+      cM.strokeStyle = color; cM.lineWidth = lw; cM.setLineDash(dash || []);
+      cM.beginPath();
+      var prevY = null, steps = 420;
+      for (var s = 0; s <= steps; s++) {
+        var rT = -0.5 * viewSpanTHz + (s / steps) * viewSpanTHz;
+        if (activeOnly && Math.abs(rT) > 0.5 * S.bw) { prevY = null; continue; }
+        var fRaw = simM.fRF0 + (rT * 1e6) / comp;
+        var fMod = ((fRaw % fr) + fr) % fr;
+        var yVal = isMirror ? (fr - fMod) : fMod;
+        var px = axM.toX(db.nuCenter + rT / C_THZ_PER_CM1), py = axM.toY(yVal);
+        if (prevY === null || Math.abs(yVal - prevY) > 0.5 * fr) cM.moveTo(px, py);
+        else cM.lineTo(px, py);
+        prevY = yVal;
+      }
+      cM.stroke(); cM.setLineDash([]);
+    }
+    drawBranch(false, false, 'rgba(83,74,183,0.38)', 1.3, []);
+    drawBranch(true,  false, 'rgba(29,158,117,0.35)', 1.2, [4, 3]);
+    // Bold active effective segment!
+    var actCol = simM.zone === 'lower' ? '#0F6E56' : (simM.zone === 'upper' ? '#534AB7' : '#e11d48');
+    drawBranch(false, true, actCol, 3.2, []);
+    // Also show mirror trace inside active band faintly so overlap is crystal clear when crossing f_r/2
+    drawBranch(true, true, simM.valid ? 'rgba(29,158,117,0.28)' : 'rgba(225,29,72,0.55)', 1.6, [3, 2]);
+
+    // Zone labels
+    cM.font = 'bold 9.2px -apple-system,sans-serif'; cM.textAlign = 'right';
+    cM.fillStyle = '#3C3489'; cM.fillText('上半区 (f_r/2 ~ f_r)', padM.l + axM.pw - 5, padM.t + 12);
+    cM.fillStyle = '#0F6E56'; cM.fillText('下半区 (0 ~ f_r/2)', padM.l + axM.pw - 5, padM.t + axM.ph - 6);
+    cM.restore();
+
+    // Right margin RF projection bar showing occupied RF range in [0, f_r]
+    var barX = padM.l + axM.pw + 10, barW = 10;
+    cM.fillStyle = '#ece9e1'; cM.fillRect(barX, padM.t, barW, axM.ph);
+    cM.strokeStyle = '#e11d48'; cM.lineWidth = 1;
+    cM.beginPath(); cM.moveTo(barX - 3, yMid); cM.lineTo(barX + barW + 3, yMid); cM.stroke();
+    var cLow = Math.max(0, Math.min(fr, simM.fLow)), cHigh = Math.max(0, Math.min(fr, simM.fHigh));
+    cM.fillStyle = actCol;
+    if (simM.valid) {
+      var yTop = axM.toY(cHigh), yBot = axM.toY(cLow);
+      cM.fillRect(barX, yTop, barW, Math.max(2, yBot - yTop));
+    } else {
+      // Paint wrapped RF coverage in red
+      for (var bs = 0; bs < 200; bs++) {
+        var rTb = -0.5 * S.bw + (bs / 199) * S.bw;
+        var fM = (((simM.fRF0 + (rTb * 1e6) / comp) % fr) + fr) % fr;
+        cM.fillRect(barX, axM.toY(fM) - 1, barW, 2);
+      }
+    }
+    cM.fillStyle = actCol; cM.font = 'bold 8.8px monospace'; cM.textAlign = 'left';
+    cM.fillText(simM.valid ? '无重叠' : '重叠!', barX + barW + 3, simM.zone === 'upper' ? (padM.t + 26) : (padM.t + axM.ph - 18));
+
+    // ===== 12B: Time-domain Interferogram + Causal FID =====
+    var pad = { l: 44, r: 12, t: 10, b: 28 };
+    var tHalf = simM.tUpdUs * (S.igmZoom ? 0.14 : 0.50);
+    var rB0 = setupCV('dcv-igm'), cB0 = rB0.ctx;
+    var axB0 = drawGrid(cB0, rB0.w, rB0.h, pad, -tHalf, tHalf, -1.15, 1.15, '实验室时间 t (μs)', '干涉图 I(t)');
+    cB0.save(); cB0.beginPath(); cB0.rect(pad.l, pad.t, axB0.pw, axB0.ph); cB0.clip();
+    if (S.geo === 'asym') {
+      cB0.fillStyle = 'rgba(29,158,117,0.08)';
+      cB0.fillRect(axB0.toX(0), pad.t, axB0.toX(tHalf) - axB0.toX(0), axB0.ph);
+      cB0.fillStyle = '#0F6E56'; cB0.font = 'bold 9.2px -apple-system,sans-serif'; cB0.textAlign = 'right';
+      cB0.fillText('色散式单侧 FID (t>0)', rB0.w - pad.r - 4, pad.t + 12);
+    } else {
+      cB0.fillStyle = '#534AB7'; cB0.font = 'bold 9.2px -apple-system,sans-serif'; cB0.textAlign = 'right';
+      cB0.fillText('强度式偶对称干涉图', rB0.w - pad.r - 4, pad.t + 12);
+    }
+    cB0.strokeStyle = '#534AB7'; cB0.lineWidth = 1.35; cB0.beginPath();
+    var stI = false;
+    for (var i = 0; i < N; i++) {
+      if (igmTime[i] < -tHalf || igmTime[i] > tHalf) continue;
+      var px = axB0.toX(igmTime[i]), py = axB0.toY(Math.max(-1.12, Math.min(1.12, igmSig[i])));
+      if (!stI) { cB0.moveTo(px, py); stI = true; } else cB0.lineTo(px, py);
+    }
+    cB0.stroke();
+    var tCur = -tHalf + scanFrac * (2.0 * tHalf);
+    cB0.strokeStyle = '#EF9F27'; cB0.lineWidth = 1.5;
+    cB0.beginPath(); cB0.moveTo(axB0.toX(tCur), pad.t); cB0.lineTo(axB0.toX(tCur), pad.t + axB0.ph); cB0.stroke();
+    cB0.restore();
+
+    // ===== 12C: Photodetector RF Multi-Heterodyne Spectrum (0 -> f_r/2) =====
+    var rC0 = setupCV('dcv-rf'), cC0 = rC0.ctx;
+    var axC0 = drawGrid(cC0, rC0.w, rC0.h, pad, 0, fNyq * 1.05, 0, 1.12, '探测器射频 f_det (MHz)', '归一化幅值');
+    cC0.save(); cC0.beginPath(); cC0.rect(pad.l, pad.t, axC0.pw, axC0.ph); cC0.clip();
+    var xNyq = axC0.toX(fNyq);
+    cC0.strokeStyle = '#e11d48'; cC0.lineWidth = 1.4; cC0.setLineDash([4, 3]);
+    cC0.beginPath(); cC0.moveTo(xNyq, pad.t); cC0.lineTo(xNyq, pad.t + axC0.ph); cC0.stroke();
+    cC0.setLineDash([]);
+    cC0.fillStyle = '#e11d48'; cC0.font = 'bold 9px monospace'; cC0.textAlign = 'right';
+    cC0.fillText('f_r/2=' + fNyq.toFixed(0) + 'MHz', xNyq - 4, pad.t + 11);
+
+    cC0.fillStyle = 'rgba(83,74,183,0.12)'; cC0.beginPath(); cC0.moveTo(axC0.toX(0), axC0.toY(0));
+    for (var k = 1; k < HALF; k += 2) cC0.lineTo(axC0.toX(rfFreq[k]), axC0.toY(rfAmpTotal[k]));
+    cC0.lineTo(axC0.toX(rfFreq[HALF - 1]), axC0.toY(0)); cC0.closePath(); cC0.fill();
+
+    cC0.strokeStyle = '#534AB7'; cC0.lineWidth = 1.5; cC0.beginPath();
+    for (var k2 = 1; k2 < HALF; k2 += 2) {
+      var pxR = axC0.toX(rfFreq[k2]), pyR = axC0.toY(rfAmpTotal[k2]);
+      if (k2 === 1) cC0.moveTo(pxR, pyR); else cC0.lineTo(pxR, pyR);
+    }
+    cC0.stroke();
+    if (!simM.valid) {
+      cC0.strokeStyle = '#EF9F27'; cC0.lineWidth = 1.5; cC0.beginPath();
+      for (var k3 = 1; k3 < HALF; k3 += 2) {
+        var pxA = axC0.toX(rfFreq[k3]), pyA = axC0.toY(rfAmpAlias[k3]);
+        if (k3 === 1) cC0.moveTo(pxA, pyA); else cC0.lineTo(pxA, pyA);
+      }
+      cC0.stroke();
+    }
+    cC0.restore();
+
+    // ===== 12D: Retrieved HITRAN Molecular Absorption vs Voigt Ground Truth =====
+    var rD0 = setupCV('dcv-abs'), cD0 = rD0.ctx;
+    var yMaxD = Math.max(0.6, simM.maxAbsTrue * 1.25);
+    var xMinP = nuPlotCm[0], xMaxP = nuPlotCm[M_PLOT - 1];
+    var axD0 = drawGrid(cD0, rD0.w, rD0.h, pad, xMinP, xMaxP, -0.15, yMaxD, '真空波数 ν̃ (cm⁻¹)', '吸收深度 αL', 0);
+    cD0.save(); cD0.beginPath(); cD0.rect(pad.l, pad.t, axD0.pw, axD0.ph); cD0.clip();
+    cD0.strokeStyle = '#534AB7'; cD0.lineWidth = 1.85; cD0.beginPath(); var stD0 = false;
+    for (var p = 0; p < M_PLOT; p++) {
+      if (!isFinite(absMeas[p])) { stD0 = false; continue; }
+      var pxD = axD0.toX(nuPlotCm[p]), pyD = axD0.toY(absMeas[p]);
+      if (!stD0) { cD0.moveTo(pxD, pyD); stD0 = true; } else cD0.lineTo(pxD, pyD);
+    }
+    cD0.stroke();
+    cD0.strokeStyle = '#e11d48'; cD0.lineWidth = 1.3; cD0.setLineDash([4, 3]); cD0.beginPath();
+    for (var p2 = 0; p2 < M_PLOT; p2++) {
+      var pxT = axD0.toX(nuPlotCm[p2]), pyT = axD0.toY(absTrue[p2]);
+      if (p2 === 0) cD0.moveTo(pxT, pyT); else cD0.lineTo(pxT, pyT);
+    }
+    cD0.stroke(); cD0.setLineDash([]);
+    cD0.restore();
+
+    // ===== 12E: Retrieved Refractive-Index Dispersion Phase Delta_phi(nu) =====
+    var rE0 = setupCV('dcv-phi'), cE0 = rE0.ctx;
+    var yLimE = Math.max(0.32, simM.maxPhiTrue * 1.35);
+    var axE0 = drawGrid(cE0, rE0.w, rE0.h, pad, xMinP, xMaxP, -yLimE, yLimE, '真空波数 ν̃ (cm⁻¹)', '色散相位 Δφ (rad)', 0);
+    cE0.save(); cE0.beginPath(); cE0.rect(pad.l, pad.t, axE0.pw, axE0.ph); cE0.clip();
+    cE0.strokeStyle = '#cbd5e1'; cE0.lineWidth = 0.9;
+    cE0.beginPath(); cE0.moveTo(pad.l, axE0.toY(0)); cE0.lineTo(rE0.w - pad.r, axE0.toY(0)); cE0.stroke();
+    cE0.strokeStyle = '#1D9E75'; cE0.lineWidth = 1.85; cE0.beginPath(); var stE0 = false;
+    for (var p3 = 0; p3 < M_PLOT; p3++) {
+      if (!isFinite(phiMeas[p3])) { stE0 = false; continue; }
+      var pxE = axE0.toX(nuPlotCm[p3]), pyE = axE0.toY(phiMeas[p3]);
+      if (!stE0) { cE0.moveTo(pxE, pyE); stE0 = true; } else cE0.lineTo(pxE, pyE);
+    }
+    cE0.stroke();
+    cE0.strokeStyle = '#EF9F27'; cE0.lineWidth = 1.3; cE0.setLineDash([4, 3]); cE0.beginPath();
+    for (var p4 = 0; p4 < M_PLOT; p4++) {
+      var pxET = axE0.toX(nuPlotCm[p4]), pyET = axE0.toY(phiTrue[p4]);
+      if (p4 === 0) cE0.moveTo(pxET, pyET); else cE0.lineTo(pxET, pyET);
+    }
+    cE0.stroke(); cE0.setLineDash([]);
+    cE0.restore();
+
+    // ===== Update Metrics, Status Pill, Eq Bar, Tip & HITRAN Table =====
+    var rfEl = document.getElementById('dm-rfrange');
+    rfEl.textContent = simM.fLow.toFixed(1) + ' ~ ' + simM.fHigh.toFixed(1) + ' MHz';
+    rfEl.style.color = simM.valid ? (simM.zone === 'upper' ? '#534AB7' : '#0F6E56') : '#dc2626';
+    document.getElementById('dm-comp').textContent = Math.round(simM.comp).toLocaleString() + '×';
+    var tStr = simM.tUpdUs >= 1000 ? (simM.tUpdUs / 1000).toFixed(2) + ' ms' : simM.tUpdUs.toFixed(0) + ' μs';
+    var dStr = simM.dtauFs >= 1000 ? (simM.dtauFs / 1000).toFixed(2) + ' ps' : simM.dtauFs.toFixed(0) + ' fs';
+    document.getElementById('dm-tupd').textContent = tStr + ' / ' + dStr;
+    var bwEl = document.getElementById('dm-bwmax');
+    bwEl.textContent = simM.bwMaxTHz.toFixed(2) + ' THz';
+    bwEl.style.color = (S.bw > simM.bwMaxTHz) ? '#dc2626' : '#534AB7';
+    document.getElementById('dm-rmse').textContent = simM.rmse.toFixed(3);
+    document.getElementById('dm-snr').textContent = simM.snrDb.toFixed(1) + ' dB';
+
+    var pill = document.getElementById('dcs-alias-pill');
+    pill.classList.remove('warn', 'upper');
+    if (simM.zone === 'lower') {
+      pill.textContent = '✔ 有效双光梳 · 下半区无重叠';
+    } else if (simM.zone === 'upper') {
+      pill.textContent = '✔ 有效双光梳 · 上半区镜像无重叠';
+      pill.classList.add('upper');
+    } else {
+      pill.textContent = '⚠ 射频跨界混叠失效';
+      pill.classList.add('warn');
+    }
+
+    var eqBar = document.getElementById('dcs-eq-bar');
+    eqBar.classList.remove('warn', 'upper');
+    if (simM.zone === 'upper') eqBar.classList.add('upper');
+    if (!simM.valid) eqBar.classList.add('warn');
+    var modeLbl = S.geo === 'asym' ? '色散式探测（吸收+相位）' : '强度式探测（纯吸收）';
+    eqBar.textContent = modeLbl + ' · ' + db.name + ' (' + db.baseLlabel + ' × ' + S.pathScale.toFixed(1) + ', p=' + S.press.toFixed(2) + ' atm) · 映射区间 [' +
+      simM.fLow.toFixed(1) + ', ' + simM.fHigh.toFixed(1) + '] MHz / 中分界 ' + fNyq.toFixed(1) + ' MHz → ' +
+      (simM.zone === 'lower' ? '✔ 完全落于下半区 (0, f_r/2)' : (simM.zone === 'upper' ? '✔ 完全落于上半区 (f_r/2, f_r) 镜像解映射无损还原' : '⚠ 跨越边界线引发频谱重叠失真！'));
+
+    var tip = document.getElementById('dcs-tip');
+    tip.classList.toggle('warn', !simM.valid);
+    if (!simM.valid) {
+      var reason = (S.bw >= simM.bwMaxTHz)
+        ? '有效光带宽 <code>Δν_opt = ' + S.bw.toFixed(2) + ' THz</code> 已超出无混叠上限 <code>f_r²/(2Δf_r) = ' + simM.bwMaxTHz.toFixed(2) + ' THz</code>，请减小 <code>Δf_r</code> 或增大 <code>f_r</code>！'
+        : '虽然光带宽未超限，但偏移差 <code>Δf_ceo/f_r = ' + S.fceoFrac.toFixed(2) + '</code> 使有效映射段 <code>[' + simM.fLow.toFixed(1) + ', ' + simM.fHigh.toFixed(1) + '] MHz</code> 跨越了中分界 <code>f_r/2</code> 或 <code>0/f_r</code> 边界！微调 <code>Δf_ceo/f_r</code> 至 ~0.25 或 ~0.75 即可恢复无重叠有效工作。';
+      tip.innerHTML = '<strong>⚠ 射频-光频跨界混叠诊断：</strong>' + reason + ' 观察图 12C 中橙色折叠伪峰与图 12D 中畸变的 HITRAN 吸收峰。';
+    } else if (simM.zone === 'upper') {
+      tip.innerHTML = '<strong>✔ 上半区（f_r/2 ~ f_r）无重叠有效双光梳：</strong>图 12A 中有效射频段 <code>[' + simM.fLow.toFixed(1) + ', ' + simM.fHigh.toFixed(1) + '] MHz</code> 全部位于中分界上方，不与镜像分支重叠！经共轭反转解映射后，图 12D 与 12E 依然无损精准还原 ' + db.name + ' 的全部 HITRAN 吸收与色散谱线。';
+    } else if (S.geo === 'sym') {
+      tip.innerHTML = '<strong>✔ 强度式探测（对称构型）：</strong>两把光梳共同穿过 ' + db.name + ' 气室，分子色散相移共模抵消：图 12B 干涉图呈严格偶对称，图 12D 精确反演吸收谱，图 12E 色散相位归零。切换回「色散式探测」可立即恢复单侧 FID 与 S 形色散谱！';
+    } else if (S.noise > 0.04) {
+      tip.innerHTML = '<strong>强噪声与相干平均验证：</strong>当前噪声 <code>σ_n = ' + S.noise.toFixed(3) + '</code>、相干平均 <code>N_avg = ' + S.navg + '</code> 次（有效 SNR = <code>' + simM.snrDb.toFixed(1) + ' dB</code>）。逐步增大 <code>N_avg</code> 滑块，可直观看到 ' + db.name + ' 弱振转吸收峰与色散曲线按 <code>√N_avg</code> 从噪声基底中浮现。';
+    } else {
+      tip.innerHTML = '<strong>✔ 色散式探测 · 下半区无重叠有效系统：</strong>图 12A 射频-光频映射段完全落于中分界下方 <code>(0, f_r/2)</code>；图 12B 呈现清晰的单侧分子 FID 因果振荡尾；图 12D 与 12E 同步高保真反演 ' + db.name + '（' + db.band + '）全部 HITRAN Voigt 吸收线与 Kramers-Kronig 色散相位。';
+    }
+
+    // Update HITRAN .par table preview
+    document.getElementById('hitran-summary').textContent = '查看当前气体 ' + db.name + ' HITRAN 标准格式（.par 固定列宽，共 ' + db.parLines.length + ' 条谱线）';
+    var hdr = 'M I   nu(cm^-1)   S(296K)    A_ij     g_air g_slf   E"(cm^-1) n_a  d_air     v_up           v_lo           q_up           q_lo\n' +
+              '-- - ------------ ---------- ---------- ----- ----- ---------- ---- -------- --------------- --------------- --------------- ---------------\n';
+    document.getElementById('hitran-pre').textContent = hdr + db.parLines.join('\n');
+  }
+
+  function refresh() { recomputeDCS(); renderAll(); }
+
+  function animLoop() {
+    if (!isAnim || !isTabActive) return;
+    scanFrac = (scanFrac + 0.0055) % 1.0;
+    renderAll();
+    animId = requestAnimationFrame(animLoop);
+  }
+
+  window.dcsToggleAnim = function() {
+    isAnim = !isAnim;
+    var b = document.getElementById('dbtn-anim');
+    b.classList.toggle('running', isAnim);
+    b.textContent = isAnim ? '⏸ 暂停走离演示' : '▶ 动态走离演示';
+    if (isAnim) animId = requestAnimationFrame(animLoop);
+    else if (animId) cancelAnimationFrame(animId);
+  };
+
+  window.dcsSetGeo = function(g) {
+    S.geo = g;
+    document.getElementById('dmode-asym').classList.toggle('active', g === 'asym');
+    document.getElementById('dmode-sym').classList.toggle('active', g === 'sym');
+    refresh();
+  };
+
+  window.dcsSetGas = function(g) {
+    S.gas = g;
+    S.press = HITRAN_DB[g].defaultP;
+    S.pathScale = 1.0;
+    ['c2h2', 'co2', 'ch4'].forEach(function(id) {
+      document.getElementById('dgas-' + id).classList.toggle('active', id === g);
+    });
+    syncSliders();
+    refresh();
+  };
+
+  window.dcsSetIgmZoom = function(z) {
+    S.igmZoom = z;
+    document.getElementById('dbtn-igm-zoom').classList.toggle('active', z);
+    document.getElementById('dbtn-igm-full').classList.toggle('active', !z);
+    renderAll();
+  };
+
+  function syncSliders() {
+    document.getElementById('ds-fr').value = S.fr; document.getElementById('dv-fr').textContent = S.fr.toFixed(0) + ' MHz';
+    document.getElementById('ds-dfr').value = S.dfr; document.getElementById('dv-dfr').textContent = S.dfr.toFixed(1) + ' kHz';
+    document.getElementById('ds-bw').value = S.bw; document.getElementById('dv-bw').textContent = S.bw.toFixed(2) + ' THz';
+    document.getElementById('ds-fceo').value = S.fceoFrac; document.getElementById('dv-fceo').textContent = S.fceoFrac.toFixed(2) + ' (' + (S.fceoFrac * S.fr).toFixed(0) + ' MHz)';
+    document.getElementById('ds-press').value = S.press; document.getElementById('dv-press').textContent = S.press.toFixed(2) + ' atm';
+    document.getElementById('ds-path').value = S.pathScale; document.getElementById('dv-path').textContent = S.pathScale.toFixed(2) + '×';
+    document.getElementById('ds-navg').value = S.navg; document.getElementById('dv-navg').textContent = String(Math.round(S.navg));
+    document.getElementById('ds-noise').value = S.noise; document.getElementById('dv-noise').textContent = S.noise.toFixed(3);
+    document.getElementById('dmode-asym').classList.toggle('active', S.geo === 'asym');
+    document.getElementById('dmode-sym').classList.toggle('active', S.geo === 'sym');
+  }
+
+  window.dcsApplyPreset = function(name) {
+    var cfgs = {
+      lower:    { geo: 'asym', fr: 100, dfr: 2.0, bw: 2.0, fceoFrac: 0.25, navg: 25, noise: 0.012 },
+      upper:    { geo: 'asym', fr: 100, dfr: 2.0, bw: 2.0, fceoFrac: 0.75, navg: 25, noise: 0.012 },
+      midalias: { geo: 'asym', fr: 100, dfr: 2.0, bw: 2.0, fceoFrac: 0.50, navg: 25, noise: 0.010 },
+      bwalias:  { geo: 'asym', fr: 100, dfr: 6.0, bw: 2.0, fceoFrac: 0.25, navg: 25, noise: 0.010 },
+      sym:      { geo: 'sym',  fr: 100, dfr: 2.0, bw: 2.0, fceoFrac: 0.25, navg: 25, noise: 0.012 },
+      noisy:    { geo: 'asym', fr: 100, dfr: 2.0, bw: 2.0, fceoFrac: 0.25, navg: 2,  noise: 0.100 }
+    };
+    Object.assign(S, cfgs[name]);
+    ['lower', 'upper', 'midalias', 'bwalias', 'sym', 'noisy'].forEach(function(id) {
+      document.getElementById('dpre-' + id).classList.toggle('active', id === name);
+    });
+    syncSliders();
+    refresh();
+  };
+
+  function bind(id, key, fmt) {
+    document.getElementById('ds-' + id).addEventListener('input', function(e) {
+      S[key] = parseFloat(e.target.value);
+      document.getElementById('dv-' + id).textContent = fmt(S[key]);
+      if (id === 'fr') {
+        document.getElementById('dv-fceo').textContent = S.fceoFrac.toFixed(2) + ' (' + (S.fceoFrac * S.fr).toFixed(0) + ' MHz)';
+      }
+      refresh();
+    });
+  }
+  bind('fr', 'fr', function(v) { return v.toFixed(0) + ' MHz'; });
+  bind('dfr', 'dfr', function(v) { return v.toFixed(1) + ' kHz'; });
+  bind('bw', 'bw', function(v) { return v.toFixed(2) + ' THz'; });
+  bind('fceo', 'fceoFrac', function(v) { return v.toFixed(2) + ' (' + (v * S.fr).toFixed(0) + ' MHz)'; });
+  bind('press', 'press', function(v) { return v.toFixed(2) + ' atm'; });
+  bind('path', 'pathScale', function(v) { return v.toFixed(2) + '×'; });
+  bind('navg', 'navg', function(v) { return String(Math.round(v)); });
+  bind('noise', 'noise', function(v) { return v.toFixed(3); });
+
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isTabActive = (btn.dataset.panel === 'simulation');
+      if (isTabActive) setTimeout(refresh, 30);
+      else if (isAnim) window.dcsToggleAnim();
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+
+  window.addEventListener('resize', function() { if (isTabActive) renderAll(); });
+})();
+</script>
+</body>
+</html>
