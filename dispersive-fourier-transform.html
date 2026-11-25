@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<link rel="stylesheet" href="common.css">
+<title>色散傅里叶光谱测量（DFT） - 光子学学习</title>
+<style>
+.dft-sim { display: flex; flex-direction: column; gap: 0.68rem; overflow: hidden; }
+.dft-verdict {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding: 0.6rem 0.82rem; border-radius: var(--radius);
+  background: var(--c-teal-50); border: 1px solid var(--c-teal-100); border-left: 4px solid var(--c-teal-600);
+}
+.dft-verdict.warn { background: var(--c-amber-50); border-color: var(--c-amber-100); border-left-color: var(--c-amber-400); }
+.dft-verdict.fail { background: #fef2f2; border-color: #fecaca; border-left-color: #dc2626; }
+.dft-verdict-left { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+.dft-lamp {
+  width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
+  background: var(--c-teal-400); box-shadow: 0 0 0 4px rgba(29, 158, 117, 0.22);
+}
+.dft-verdict.warn .dft-lamp { background: var(--c-amber-400); box-shadow: 0 0 0 4px rgba(239, 159, 39, 0.25); }
+.dft-verdict.fail .dft-lamp { background: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.22); }
+.dft-vtitle { font-size: 13.2px; font-weight: 700; color: var(--c-teal-600); line-height: 1.35; }
+.dft-verdict.warn .dft-vtitle { color: var(--c-amber-600); }
+.dft-verdict.fail .dft-vtitle { color: #dc2626; }
+.dft-vsub { font-size: 11.2px; color: var(--c-text-sec); margin-top: 2px; line-height: 1.45; }
+.dft-scores { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+.dft-chip {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 10.6px; font-weight: 600;
+  padding: 2.5px 7px; border-radius: 6px; background: rgba(255,255,255,0.88);
+  border: 0.5px solid var(--c-border-2); color: var(--c-purple-800);
+}
+.dft-diag-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 0.45rem; }
+.dft-diag {
+  min-width: 0; background: var(--c-bg-sec); border: 0.5px solid var(--c-border);
+  border-radius: var(--radius); padding: 0.44rem 0.56rem;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dft-diag.pass { border-top: 2.5px solid var(--c-teal-400); }
+.dft-diag.warn { border-top: 2.5px solid var(--c-amber-400); background: #fffdf7; }
+.dft-diag.fail { border-top: 2.5px solid #dc2626; background: #fff9f9; }
+.dft-diag-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.dft-diag-lbl { font-size: 10.2px; color: var(--c-text-sec); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dft-diag-dot {
+  font-size: 9.2px; font-weight: 700; padding: 1px 5px; border-radius: 999px; flex-shrink: 0;
+  background: var(--c-teal-50); color: var(--c-teal-600);
+}
+.dft-diag.warn .dft-diag-dot { background: var(--c-amber-50); color: var(--c-amber-600); }
+.dft-diag.fail .dft-diag-dot { background: #fef2f2; color: #dc2626; }
+.dft-diag-val { font-family: "SF Mono", monospace; font-size: 12.2px; font-weight: 700; color: var(--c-purple-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dft-diag-hint { font-size: 9.5px; color: var(--c-text-hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dft-layout { display: grid; grid-template-columns: 282px minmax(0, 1fr); gap: 0.75rem; align-items: start; width: 100%; }
+@media (max-width: 860px) { .dft-layout { grid-template-columns: minmax(0, 1fr); } }
+.dft-sidebar {
+  min-width: 0; width: 100%; background: var(--c-bg-sec); border: 0.5px solid var(--c-border);
+  border-radius: var(--radius); padding: 0.66rem; display: flex; flex-direction: column; gap: 0.45rem;
+}
+.dft-sidebar input[type="range"] { min-width: 0; width: 100%; display: block; }
+.dft-ctrl-sec { border-top: 0.5px solid var(--c-border); padding-top: 0.44rem; min-width: 0; }
+.dft-ctrl-sec:first-child { border-top: none; padding-top: 0; }
+.dft-ctrl-head { font-size: 10.8px; font-weight: 600; color: var(--c-text-sec); margin-bottom: 0.28rem; display: flex; justify-content: space-between; align-items: center; }
+.dft-preset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.dft-preset-btn {
+  min-width: 0; padding: 4.5px 5.5px; font-size: 9.9px; border: 0.5px solid var(--c-border);
+  border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec);
+  cursor: pointer; transition: all 0.14s; font-family: inherit; text-align: left; line-height: 1.3;
+}
+.dft-preset-btn:hover { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); }
+.dft-preset-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-600); color: var(--c-purple-800); font-weight: 600; }
+.dft-fiber-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.dft-fiber-btn {
+  min-width: 0; padding: 4px 5px; font-size: 9.8px; border: 0.5px solid var(--c-border-2);
+  border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec);
+  cursor: pointer; font-family: inherit; text-align: center; transition: all 0.14s; line-height: 1.28;
+}
+.dft-fiber-btn:hover { background: var(--c-teal-50); border-color: var(--c-teal-400); color: var(--c-teal-600); }
+.dft-fiber-btn.active { background: var(--c-teal-50); border-color: var(--c-teal-600); color: var(--c-teal-600); font-weight: 600; }
+.dft-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.dft-mode-btn {
+  min-width: 0; padding: 4px 5px; font-size: 10px; border: 0.5px solid var(--c-border-2);
+  border-radius: var(--radius); background: var(--c-bg); color: var(--c-text-sec);
+  cursor: pointer; font-family: inherit; text-align: center; transition: all 0.14s; line-height: 1.3;
+}
+.dft-mode-btn.active { background: var(--c-teal-50); border-color: var(--c-teal-600); color: var(--c-teal-600); font-weight: 600; }
+.dft-mode-btn.blue.active { background: var(--c-blue-50); border-color: var(--c-blue-600); color: var(--c-blue-600); font-weight: 600; }
+.dft-slider-grp { display: flex; flex-direction: column; gap: 2.5px; margin-bottom: 4.5px; min-width: 0; }
+.dft-slider-grp:last-child { margin-bottom: 0; }
+.dft-slider-row { display: flex; justify-content: space-between; align-items: center; gap: 5px; font-size: 10.3px; color: var(--c-text-sec); }
+.dft-slider-row .val { font-family: "SF Mono", monospace; font-weight: 600; color: var(--c-purple-600); flex-shrink: 0; }
+.dft-pwr-box {
+  background: var(--c-bg); border: 0.5px solid var(--c-border); border-radius: 6px;
+  padding: 3.5px 6px; font-family: "SF Mono", monospace; font-size: 9.5px; color: var(--c-text-sec);
+  display: flex; justify-content: space-between; gap: 5px; flex-wrap: wrap;
+}
+.dft-chk-row { display: flex; align-items: center; gap: 6px; font-size: 10.3px; color: var(--c-text-sec); cursor: pointer; margin-top: 2px; }
+.dft-chk-row input { accent-color: var(--c-purple-600); width: 13px; height: 13px; }
+
+.dft-main-col { min-width: 0; width: 100%; display: flex; flex-direction: column; gap: 0.54rem; }
+.dft-eq-bar {
+  width: 100%; background: var(--c-bg-sec); border: 0.5px solid var(--c-border); border-left: 3px solid var(--c-purple-400);
+  border-radius: var(--radius); padding: 0.42rem 0.65rem; font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 10.1px; color: var(--c-purple-800); line-height: 1.52; word-break: break-word;
+}
+.dft-charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.56rem; align-items: stretch; width: 100%; }
+@media (max-width: 680px) { .dft-charts-grid { grid-template-columns: minmax(0, 1fr); } }
+.dft-chart-card {
+  min-width: 0; background: var(--c-bg-sec); border: 0.5px solid var(--c-border);
+  border-radius: var(--radius); padding: 0.52rem; display: flex; flex-direction: column; gap: 0.28rem;
+}
+.dft-chart-head { display: flex; flex-direction: column; gap: 2px; min-height: 35px; justify-content: space-between; }
+.dft-chart-title { font-size: 11.2px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dft-chart-sub { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 9.6px; color: var(--c-text-hint); min-height: 18px; }
+.dft-chart-sub .leg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dft-chart-sub .btns { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.dft-badge { font-size: 9.6px; font-family: "SF Mono", monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--c-purple-50); color: var(--c-purple-600); flex-shrink: 0; }
+.dft-mini-btn { font-size: 9.4px; padding: 1.5px 6px; border-radius: 4px; border: 0.5px solid var(--c-border-2); background: var(--c-bg); color: var(--c-text-sec); cursor: pointer; }
+.dft-mini-btn.active { background: var(--c-purple-50); border-color: var(--c-purple-400); color: var(--c-purple-600); font-weight: 600; }
+.dft-cv-wrap { width: 100%; height: 215px; margin-top: auto; background: #faf9f7; border: 0.5px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.dft-cv-wrap.clickable { cursor: crosshair; }
+.dft-cv-wrap canvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="main">
+
+  <div class="section">
+    <div class="section-title"><span class="section-icon">13</span>色散傅里叶光谱测量（Dispersive Fourier Transform）与鞍点近似</div>
+    <p class="section-desc">空时对偶与时域夫琅禾费衍射 → 鞍点（稳相）近似与三阶色散 TOD 修正 → 商用光纤（SMF-28 / DCF38 / C-DCF / NZ-DSF）数公里至数十公里工程选型 → 五维有效性判据与两阶段混合 GNLSE-Fresnel 实时校验</p>
+  </div>
+
+  <div class="tab-switch">
+    <button class="active" data-panel="principle">原理阐述</button>
+    <button data-panel="derivation">理论推导</button>
+    <button data-panel="simulation">交互仿真</button>
+  </div>
+
+  <!-- ===================== TAB 1: PRINCIPLE ===================== -->
+  <div class="tab-panel active" id="panel-principle">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>空时对偶：从远场夫琅禾费衍射到色散傅里叶变换（DFT）</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">时间拉伸光谱测量与单发实时动力学探测</div><span class="topic-badge badge-theory">物理图像</span></div>
+        <div class="topic-body">
+          <p>在空间波动光学中，光束穿过狭缝后经充分长距离自由传播（远场夫琅禾费区），二次空间相位项将孔径场的空间傅里叶变换直接映射到远场光强分布上。由麦克斯韦傍轴衍射方程与色散脉冲传输方程（第 11 章 GNLSE 的线性极限）的数学同构性，这一过程在时间域存在精确的<strong>空时对偶（Space-Time Duality）</strong>：当超快脉冲穿过一段大群速度色散（GVD）传输介质（如长距离单模光纤 SMF-28、色散补偿光纤 DCF 或啁啾光纤布拉格光栅 CFBG）后，不同频率分量因群速度差异在时间轴上线性分离；在<strong>鞍点近似（稳相近似）</strong>成立的远场条件下，光纤输出端的时域光强包络 $|A(L, T)|^2$ 就是入射脉冲光谱 $|\tilde{A}(0, \omega)|^2$ 的实时“时间副本”。</p>
+          <p>将输出光接入单个高速光电探测器与实时示波器，即可在激光脉冲的<strong>原始重复频率（$10\text{--}500\,\text{MHz}$）</strong>下逐脉冲连续记录<strong>单发实时光谱（Single-Shot Real-Time Spectroscopy）</strong>，填补了高速非重复瞬态动力学（如锁模起振过程、孤子分子振动、怪波 Rogue Wave、呼吸子失稳）实时观测的关键空白。</p>
+
+          <div class="diagram-box">
+            <svg viewBox="0 0 820 238" xmlns="http://www.w3.org/2000/svg" style="max-width:820px;">
+              <defs>
+                <marker id="arrDft-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#534AB7"/></marker>
+                <marker id="arrDft-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0F6E56"/></marker>
+              </defs>
+              <text x="410" y="19" text-anchor="middle" font-size="13.5" font-weight="600" fill="#3C3489">色散傅里叶光谱测量系统（DFT）及鞍点近似五大有效性边界</text>
+              <rect x="20" y="42" width="128" height="84" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.4"/>
+              <text x="84" y="60" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3C3489">超快脉冲输入</text>
+              <path d="M 38 106 Q 58 106 66 72 Q 74 106 86 106 Q 94 106 102 78 Q 110 106 130 106" fill="none" stroke="#534AB7" stroke-width="2"/>
+              <text x="84" y="120" text-anchor="middle" font-size="9" fill="#534AB7">T_FWHM · P₀ / P_avg</text>
+              <line x1="148" y1="84" x2="188" y2="84" stroke="#534AB7" stroke-width="2" marker-end="url(#arrDft-p)"/>
+
+              <rect x="192" y="36" width="236" height="96" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.6"/>
+              <text x="310" y="54" text-anchor="middle" font-size="11" font-weight="600" fill="#0F6E56">商用色散光纤（L = 2 ~ 25 km）</text>
+              <ellipse cx="268" cy="87" rx="36" ry="18" fill="none" stroke="#0F6E56" stroke-width="1.8"/>
+              <ellipse cx="310" cy="87" rx="36" ry="18" fill="none" stroke="#1D9E75" stroke-width="1.8"/>
+              <ellipse cx="352" cy="87" rx="36" ry="18" fill="none" stroke="#0F6E56" stroke-width="1.8"/>
+              <text x="310" y="122" text-anchor="middle" font-size="9.2" fill="#0F6E56">SMF-28 / DCF · |DL| ≈ 150–1000 ps/nm</text>
+              <line x1="428" y1="84" x2="468" y2="84" stroke="#0F6E56" stroke-width="2" marker-end="url(#arrDft-t)"/>
+
+              <rect x="472" y="42" width="156" height="84" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.4"/>
+              <text x="550" y="59" text-anchor="middle" font-size="10.5" font-weight="600" fill="#185FA5">时间拉伸干涉波形</text>
+              <path d="M 484 106 Q 496 104 504 80 Q 512 104 520 94 Q 528 66 536 96 Q 544 104 552 64 Q 560 98 568 104 Q 576 74 584 102 Q 596 106 616 106" fill="none" stroke="#185FA5" stroke-width="1.8"/>
+              <text x="550" y="120" text-anchor="middle" font-size="9" fill="#185FA5">Δλ ≈ T/(DL) · |A|² ∝ |Ã(0,ω)|²</text>
+              <line x1="628" y1="84" x2="660" y2="84" stroke="#534AB7" stroke-width="2" marker-end="url(#arrDft-p)"/>
+
+              <rect x="664" y="42" width="136" height="84" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1.5"/>
+              <text x="732" y="62" text-anchor="middle" font-size="10.5" font-weight="600" fill="#854F0B">高速 PD + 示波器</text>
+              <text x="732" y="80" text-anchor="middle" font-size="9.5" fill="#854F0B">B_PD ≈ 10–40 GHz</text>
+              <text x="732" y="98" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0F6E56">🟢 有效 / 🟡 临界 / 🔴 失效</text>
+              <text x="732" y="116" text-anchor="middle" font-size="8.8" fill="#854F0B">输出五维判定信号</text>
+
+              <rect x="20" y="148" width="780" height="76" rx="8" fill="#ffffff" stroke="#e0ddd3" stroke-width="1"/>
+              <text x="410" y="167" text-anchor="middle" font-size="11" font-weight="600" fill="#3C3489">鞍点近似与 GNLSE 一致性必须同时满足的五大物理边界</text>
+              <text x="102" y="189" text-anchor="middle" font-size="9.4" font-weight="600" fill="#0F6E56">① 远场色散充分</text>
+              <text x="102" y="206" text-anchor="middle" font-size="8.8" fill="#5f5e5a">L / L_D,eff ≫ 1</text>
+              <text x="256" y="189" text-anchor="middle" font-size="9.4" font-weight="600" fill="#dc2626">② 弱非线性限制</text>
+              <text x="256" y="206" text-anchor="middle" font-size="8.8" fill="#5f5e5a">Φ_NL,eff ≪ 1 &amp; 非孤子</text>
+              <text x="410" y="189" text-anchor="middle" font-size="9.4" font-weight="600" fill="#854F0B">③ TOD 畸变可控</text>
+              <text x="410" y="206" text-anchor="middle" font-size="8.8" fill="#5f5e5a">|β₃|Δω / 2|β₂| ≪ 1</text>
+              <text x="564" y="189" text-anchor="middle" font-size="9.4" font-weight="600" fill="#185FA5">④ 无帧间脉冲重叠</text>
+              <text x="564" y="206" text-anchor="middle" font-size="8.8" fill="#5f5e5a">T_out · f_rep &lt; 1</text>
+              <text x="718" y="189" text-anchor="middle" font-size="9.4" font-weight="600" fill="#534AB7">⑤ 损耗信噪比充足</text>
+              <text x="718" y="206" text-anchor="middle" font-size="8.8" fill="#5f5e5a">P_out,pk ≫ P_NEP</text>
+            </svg>
+            <div class="diagram-caption">图 1. 色散傅里叶光谱测量系统（DFT）光路原理、商用光纤总色散需求与决定鞍点近似有效性的五大边界条件</div>
+          </div>
+
+          <p><strong>全书四种光谱测量体制的定位对比</strong>：</p>
+          <table class="data-table">
+            <thead><tr><th>对比维度</th><th>机械扫描 FTIR（第 8 章）</th><th>FROG 时频测量（第 9 章）</th><th>双光梳 DCS（第 12 章）</th><th>色散傅里叶 DFT（本章）</th></tr></thead>
+            <tbody>
+              <tr><td><strong>核心物理机制</strong></td><td>迈克尔逊动镜自干涉</td><td>和频非线性门控 2D 谱图</td><td>两把频率梳异步多外差拍频</td><td>大群速度色散远场时间拉伸</td></tr>
+              <tr><td><strong>采集刷新速率</strong></td><td>$\sim 1\,\text{Hz}$</td><td>$\text{Hz}\text{--}\text{kHz}$</td><td>$\text{kHz}\text{--}\text{MHz}$ ($1/\Delta f_r$)</td><td><strong>单发实时 $10\text{--}500\,\text{MHz}$ ($f_{\text{rep}}$)</strong></td></tr>
+              <tr><td><strong>光谱分辨率</strong></td><td>$\sim 0.1\text{--}1\,\text{GHz}$</td><td>$\sim 0.1\text{--}1\,\text{THz}$</td><td><strong>单梳齿 $f_r$（极高）</strong></td><td>$\sim 0.05\text{--}0.5\,\text{nm}$（受 $|DL|$ 与 $B_{\text{PD}}$ 限制）</td></tr>
+              <tr><td><strong>适用场景</strong></td><td>稳态中红外宽带吸收</td><td>单脉冲完整振幅与相位重构</td><td>高分辨气体分子指纹精密谱</td><td><strong>非重复超快瞬态、孤子动力学、锁模起振</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>实际商用色散光纤选型与数公里长度的工程权衡</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">为何实验 DFT 通常需要数公里至数十公里光纤？商用光纤参数对照</div><span class="topic-badge badge-theory">工程选型</span></div>
+        <div class="topic-body">
+          <p>在真实实验系统中，决定色散光纤长度 $L$ 的不仅有<strong>远场夫琅禾费判据</strong>（$L \ge 4 L_{D,\text{eff}}$，对皮秒脉冲往往只需数百米），更关键的工程约束来自<strong>高速光电探测器与实时示波器的电学带宽 $B_{\text{PD}}$</strong>（典型 $10\text{--}40\,\text{GHz}$）。由时间-波长映射 $\Delta T \approx |DL|\,\Delta\lambda$，探测器有限响应时间 $\delta t_{\text{PD}} \approx 1/B_{\text{PD}}$ 对应的光谱分辨率为 $\delta\lambda_{\text{PD}} \approx (|DL|\,B_{\text{PD}})^{-1}$。要实现 $0.05\text{--}0.3\,\text{nm}$ 的单发精细光谱分辨（例如分辨孤子分子的干涉条纹或 Kelly 边带），光纤总累积色散量通常必须达到 <strong>$|DL| \approx 150\text{--}1000\,\text{ps/nm}$</strong>，因此实验上常规需要 <strong>$2\text{--}25\,\text{km}$</strong> 的商用光纤：</p>
+          <table class="data-table">
+            <thead><tr><th>商用光纤类型（$\lambda_0 = 1550\,\text{nm}$）</th><th>$D$ [ps/(nm·km)]</th><th>斜率 $S$ [ps/(nm²·km)]</th><th>$\beta_2$ [ps²/km]</th><th>$\beta_3$ [ps³/km]</th><th>$\alpha$ [dB/km]</th><th>$\gamma$ [W⁻¹km⁻¹]</th><th>典型 DFT 长度 $L$</th></tr></thead>
+            <tbody>
+              <tr><td><strong>标准单模光纤 SMF-28 (G.652.D)</strong></td><td>$+17.0$</td><td>$+0.056\sim +0.088$</td><td>$-21.7$</td><td>$+0.13\sim +0.18$</td><td>$0.20$</td><td>$1.3$</td><td><strong>$5\text{--}25\,\text{km}$</strong></td></tr>
+              <tr><td><strong>非零色散位移光纤 NZ-DSF (LEAF)</strong></td><td>$+4.2$</td><td>$+0.085$</td><td>$-5.4$</td><td>$+0.15$</td><td>$0.20$</td><td>$1.6$</td><td>$10\text{--}30\,\text{km}$（强 TOD）</td></tr>
+              <tr><td><strong>中色散补偿光纤（DCF38）</strong></td><td>$-38.0$</td><td>$-0.13$</td><td>$+48.5$</td><td>$-0.29$</td><td>$0.45$</td><td>$3.0$</td><td><strong>$4\text{--}12\,\text{km}$</strong></td></tr>
+              <tr><td><strong>标准 C 波段 DCF（电信 DCM）</strong></td><td>$-102.0$</td><td>$-0.36$</td><td>$+130.1$</td><td>$-0.80$</td><td>$0.50$</td><td>$4.5$</td><td><strong>$2\text{--}8\,\text{km}$</strong></td></tr>
+              <tr><td><strong>高色散补偿光纤（HS-DCF）</strong></td><td>$-140.0$</td><td>$-0.50$</td><td>$+178.6$</td><td>$-1.11$</td><td>$0.60$</td><td>$5.5$</td><td><strong>$1.5\text{--}6\,\text{km}$</strong></td></tr>
+            </tbody>
+          </table>
+          <ul>
+            <li><strong>SMF-28 方案（反常色散 $\beta_2 &lt; 0$）</strong>：损耗最低（$0.20\,\text{dB/km}$，$10\,\text{km}$ 仅损耗 $2\,\text{dB}$）、非线性系数小（$\gamma = 1.3$）、成本极低且易于盘绕 $10\text{--}25\,\text{km}$；但处于<strong>反常色散区</strong>，入纤峰值功率必须严格衰减控制，否则一旦孤子数 $N \gtrsim 0.7$ 即触发<strong>孤子自束缚</strong>或调制不稳定性，完全破坏时间拉伸。</li>
+            <li><strong>C 波段 DCF / DCF38 方案（正常色散 $\beta_2 &gt; 0$）</strong>：色散系数为 SMF-28 的 $2\text{--}8$ 倍，仅需 $2\text{--}6\,\text{km}$ 即可提供同等总色散量，且<strong>正常色散区不存在亮孤子束缚</strong>，对弱非线性畸变具有更高鲁棒性；其代价是传输损耗较高（$0.45\text{--}0.60\,\text{dB/km}$）、有效模场面积小导致 $\gamma$ 较大（$3\text{--}5.5\,\text{W}^{-1}\text{km}^{-1}$），且全斜率补偿 DCF 带有显著的负三阶色散（$\beta_3 \approx -0.80\,\text{ps}^3/\text{km}$），宽带测量时需进行非线性波长定标。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>鞍点近似与 GNLSE 一致性的五大失效机理</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">何时鞍点近似失效？五维物理判定准则</div><span class="topic-badge badge-theory">有效性分析</span></div>
+        <div class="topic-body">
+          <p>在真实长距离光纤链路（由完整 GNLSE 控制）中，只有当输入脉冲参数与光纤色散、损耗、非线性同时落入<strong>有效工作窗口</strong>时，鞍点近似才与 GNLSE 高度一致并真实反映原始光谱：</p>
+          <ul>
+            <li><strong>① 远场夫琅禾费判据（色散长度下限）</strong>：要求 $D_{\text{FF}} = L / L_{D,\text{eff}} \gg 1$（典型 $D_{\text{FF}} \ge 4$）。若光纤过短，脉冲仍处于菲涅耳近场，时域波形保留原脉冲结构（如双脉冲尚未演化出光谱干涉条纹），远场近似失效。</li>
+            <li><strong>② 弱非线性与反孤子判据（功率上限）</strong>：在<strong>正常色散 DCF（$\beta_2 &gt; 0$）</strong>中，高功率强 SPM 引发剧烈光谱展宽与光波分裂，输出光谱偏离入射真谱（$R_{\text{spec}}$ 暴跌）；在<strong>反常色散 SMF-28（$\beta_2 &lt; 0$）</strong>中，当孤子数 $N = \sqrt{L_D\gamma P_0} \gtrsim 0.65$ 时，Kerr 自聚焦抵消色散展宽形成<strong>孤子自束缚</strong>，脉冲拒绝被拉伸，DFT 失效。</li>
+            <li><strong>③ 三阶色散（TOD）畸变判据</strong>：当脉冲极短或使用 NZ-DSF 等近零色散光纤时，$\eta_{\text{TOD}} = |\beta_3|\Delta\omega / (2|\beta_2|)$ 显著增大。中等 TOD（$0.06 \sim 0.40$）使线性映射刻度弯曲偏移，但<strong>启用含 $\beta_3$ 修正的非线性鞍点定标与雅可比幅值补偿仍可高保真救回光谱</strong>；若 $\eta_{\text{TOD}} \ge 0.40$ 跨越零色散点，群延迟曲线折返形成焦散重叠，单值时频映射崩溃。</li>
+            <li><strong>④ 相邻脉冲重叠判据（长度/重频上限）</strong>：展宽后的脉冲全宽 $T_{\text{out}}$ 必须小于重复周期 $T_{\text{rep}} = 1/f_{\text{rep}}$（占空比 $\xi_{\text{ov}} = T_{\text{out}} f_{\text{rep}} &lt; 0.70$），否则相邻脉冲首尾交叠造成帧间混叠。</li>
+            <li><strong>⑤ 传输损耗与拉伸峰值信噪比判据（功率下限）</strong>：数公里至数十公里光纤引入指数损耗 $e^{-\alpha_{\text{lin}} L}$，叠加色散大倍率拉伸导致的峰值功率反比下跌 $\propto 1/M$，若输出峰值 $P_{\text{out,pk}}$ 跌近高速 PD 噪声基底（$P_{\text{NEP}} \approx 2\,\mu\text{W}$），单发光谱将被噪声淹没（工程中常采用分布式拉曼放大来补偿长 DCF 损耗）。</li>
+          </ul>
+          <table class="data-table">
+            <thead><tr><th>判据编号</th><th>无量纲判定指标</th><th>🟢 有效区</th><th>🟡 临界 / 需修正</th><th>🔴 失效区及物理后果</th></tr></thead>
+            <tbody>
+              <tr><td><strong>① 远场判据</strong></td><td>$D_{\text{FF}} = L / L_{D,\text{eff}}$</td><td>$D_{\text{FF}} \ge 4$</td><td>$1.5 \le D_{\text{FF}} &lt; 4$</td><td>$D_{\text{FF}} &lt; 1.5$：菲涅耳近场，未完成时频转换</td></tr>
+              <tr><td><strong>② 非线性判据</strong></td><td>$\Phi_{\text{NL,eff}} = \int_0^L \gamma P_{\text{pk}}(z)\,\mathrm{d}z$</td><td>$&lt; 0.30\,\text{rad}$</td><td>$0.30 \sim 0.80\,\text{rad}$</td><td>$\ge 0.80\,\text{rad}$ 或反常 $N \ge 0.65$：SPM 展宽或孤子束缚</td></tr>
+              <tr><td><strong>③ TOD 判据</strong></td><td>$\eta_{\text{TOD}} = \dfrac{|\beta_3|\Delta\omega}{2|\beta_2|}$</td><td>$&lt; 0.06$</td><td>$0.06 \sim 0.40$（TOD 定标救回）</td><td>$\ge 0.40$：跨零色散点焦散折叠，单值映射崩溃</td></tr>
+              <tr><td><strong>④ 重叠判据</strong></td><td>$\xi_{\text{ov}} = T_{\text{out}}\cdot f_{\text{rep}}$</td><td>$&lt; 0.70$</td><td>$0.70 \sim 0.95$</td><td>$\ge 0.95$：相邻脉冲首尾重叠，帧间混叠</td></tr>
+              <tr><td><strong>⑤ 损耗 SNR</strong></td><td>$\text{SNR}_{\text{out}} = 10\log_{10}(P_{\text{out,pk}}/P_{\text{NEP}})$</td><td>$\ge 18\,\text{dB}$</td><td>$10 \sim 18\,\text{dB}$</td><td>$&lt; 10\,\text{dB}$：损耗+拉伸致单发信号淹没于噪声</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB 2: DERIVATION ===================== -->
+  <div class="tab-panel" id="panel-derivation">
+    <div class="section">
+      <div class="section-title"><span class="section-icon">1</span>GNLSE 基准方程与商用光纤 $(D, S) \leftrightarrow (\beta_2, \beta_3)$ 精确换算</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">真实光纤传输方程及工程色散参量换算推导</div><span class="topic-badge badge-formula">基准方程</span></div>
+        <div class="topic-body">
+          <p>在随动时间坐标系 $T = t - \beta_1 z$ 下，中心波长 $\lambda_0 = 1550\,\text{nm}$（$\omega_0 = 2\pi c/\lambda_0 \approx 1215.2\,\text{rad/ps}$）处的超快光脉冲复包络 $A(z, T)$ 遵循通用非线性薛定谔方程（GNLSE）：</p>
+          <div class="formula-box">
+            $$\frac{\partial A}{\partial z} = -\frac{\alpha_{\text{lin}}}{2}A - i\frac{\beta_2}{2}\frac{\partial^2 A}{\partial T^2} + \frac{\beta_3}{6}\frac{\partial^3 A}{\partial T^3} + i\gamma\!\left(1 + \frac{i}{\omega_0}\frac{\partial}{\partial T}\right)\!\left[A\!\left(|A|^2 - \tau_R\frac{\partial |A|^2}{\partial T}\right)\right]$$
+            $$\alpha_{\text{lin}} = \alpha_{\text{dB}}\frac{\ln 10}{10}, \qquad P_{\text{avg}} = f_{\text{rep}} E_p = f_{\text{rep}}\int_{-\infty}^{+\infty}|A(0, T)|^2\,\mathrm{d}T$$
+          </div>
+          <p>商用光纤规格书通常给出波长域的<strong>群速度色散参量 $D = \frac{\mathrm{d}\beta_1}{\mathrm{d}\lambda}$</strong>（单位 $\text{ps/(nm}\cdot\text{km)}$）和<strong>色散斜率 $S = \frac{\mathrm{d}D}{\mathrm{d}\lambda}$</strong>（单位 $\text{ps/(nm}^2\cdot\text{km)}$）。利用 $\omega = \frac{2\pi c}{\lambda}$ 与 $\frac{\mathrm{d}}{\mathrm{d}\lambda} = -\frac{2\pi c}{\lambda^2}\frac{\mathrm{d}}{\mathrm{d}\omega}$，对 $D = -\frac{2\pi c}{\lambda^2}\beta_2$ 再求一次波长导数：</p>
+          <div class="formula-box">
+            $$S = \frac{\mathrm{d}D}{\mathrm{d}\lambda} = \frac{4\pi c}{\lambda^3}\beta_2 + \left(\frac{2\pi c}{\lambda^2}\right)^2\beta_3 = -\frac{2}{\lambda}D + \left(\frac{2\pi c}{\lambda^2}\right)^2\beta_3$$
+            $$\Longrightarrow \quad \beta_2 = -\frac{\lambda_0^2}{2\pi c}\,D, \qquad \beta_3 = \left(\frac{\lambda_0^2}{2\pi c}\right)^2\!\left(S + \frac{2D}{\lambda_0}\right)$$
+            <div class="formula-label">在 $\lambda_0 = 1550\,\text{nm}$ 处，$\frac{\lambda_0^2}{2\pi c} \approx 1.2754\,\text{ps}\cdot\text{nm}$：SMF-28 ($D=+17, S=+0.088$) 给出 $\beta_2=-21.7, \beta_3=+0.18$；全斜率 C 波段 DCF ($D=-102, S=-0.36$) 给出 $\beta_2=+130.1, \beta_3=-0.80$</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">2</span>鞍点近似（稳相法）、波长域非均匀定标与分辨率工程设计</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">驻相积分展开、雅可比幅值修正与多公里总色散设计方程</div><span class="topic-badge badge-formula">鞍点推导</span></div>
+        <div class="topic-body">
+          <p>在弱非线性极限（$\gamma \to 0$）下，采用傅里叶约定 $\tilde{A}(z, \omega) = \int_{-\infty}^{+\infty} A(z, T)e^{+i\omega T}\mathrm{d}T$，线性色散传输的精确解为振荡积分：</p>
+          <div class="formula-box">
+            $$A_{\text{lin}}(L, T) = \frac{e^{-\alpha_{\text{lin}} L/2}}{2\pi}\int_{-\infty}^{+\infty} \tilde{A}(0, \omega)\,\exp\!\big[i\,\Phi(\omega; T)\big]\,\mathrm{d}\omega, \qquad \Phi(\omega; T) \equiv \frac{\beta_2 L}{2}\omega^2 + \frac{\beta_3 L}{6}\omega^3 - \omega T$$
+          </div>
+          <p>令驻相条件 $\Phi'(\omega_s) = 0$ 并将相位展开至二阶 $\Phi(\omega) \approx \Phi(\omega_s) + \frac{1}{2}\Phi''(\omega_s)(\omega - \omega_s)^2$，由菲涅耳高斯积分直接给出两级解析近似：</p>
+          <div class="formula-box">
+            $$\text{（A）纯二阶线性鞍点：}\quad \omega_{\text{lin}}(T) = \frac{T}{\beta_2 L}, \qquad |A_{\text{SP,lin}}(L, T)|^2 = \frac{e^{-\alpha_{\text{lin}} L}}{2\pi |\beta_2| L}\left|\tilde{A}\!\left(0,\, \frac{T}{\beta_2 L}\right)\right|^2$$
+            $$\text{（B）含 TOD 修正的非线性鞍点：}\quad \omega_s(T) = \frac{-\beta_2 + \operatorname{sgn}(\beta_2)\sqrt{\beta_2^2 + \frac{2\beta_3 T}{L}}}{\beta_3}, \qquad |A_{\text{SP,TOD}}(L, T)|^2 = \frac{e^{-\alpha_{\text{lin}} L}}{2\pi\, L\sqrt{\beta_2^2 + \frac{2\beta_3 T}{L}}}\left|\tilde{A}\!\big(0,\, \omega_s(T)\big)\right|^2$$
+            <div class="formula-label">雅可比因子 $|\Phi''(\omega_s)| = L|\beta_2 + \beta_3\omega_s| = L\sqrt{\beta_2^2 + 2\beta_3 T/L}$；当 $\beta_2^2 + 2\beta_3 T/L \le 0$ 时形成焦散边界，单值映射崩溃</div>
+          </div>
+          <p><strong>波长域映射关系与数公里光纤长度需求</strong>：等价地在波长偏移 $\Delta\lambda = \lambda - \lambda_0$ 下展开群延迟，并联合高速光电探测器带宽 $B_{\text{PD}}$（典型 $25\,\text{GHz}$）确定总光谱分辨率：</p>
+          <div class="formula-box">
+            $$\Delta T(\Delta\lambda) = D L\,\Delta\lambda + \frac{1}{2} S L\,(\Delta\lambda)^2, \qquad \delta\lambda_{\text{disp}} \approx \lambda_0\sqrt{\frac{2}{c\,|D L|}}, \qquad \delta\lambda_{\text{PD}} = \frac{1}{|D L|\,B_{\text{PD}}}$$
+            $$L \ge \max\!\left(4\,L_{D,\text{eff}},\;\; \frac{1}{|D|\,B_{\text{PD}}\,\delta\lambda_{\text{target}}}\right)$$
+            <div class="formula-label">例：欲在 $B_{\text{PD}} = 25\,\text{GHz}$ 下获得 $\delta\lambda_{\text{PD}} \le 0.25\,\text{nm}$ 分辨率，需 $|DL| \ge 160\,\text{ps/nm}$，对应 $L_{\text{SMF-28}} \ge 9.4\,\text{km}$ 或 $L_{\text{C-DCF}} \ge 1.6\,\text{km}$</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="section-icon">3</span>有效工作窗口解析边界与两阶段混合 GNLSE-Fresnel 算法</div>
+      <div class="topic-card">
+        <div class="topic-header"><div class="topic-title">2D 相图边界与面向 $L = 10\text{--}30\,\text{km}$ 大拉伸比的无混叠精确求解</div><span class="topic-badge badge-sim">核心算法</span></div>
+        <div class="topic-body">
+          <p><strong>一、$(\log_{10} L,\; \log_{10} P_0)$ 平面有效窗口四边界</strong>：</p>
+          <div class="formula-box">
+            $$L \ge 4\,L_{D,\text{eff}} = \frac{16\,T_{\text{rms}}^2}{|\beta_2|} \;\text{（远场下限）}, \qquad L \le \frac{0.70}{f_{\text{rep}}|\beta_2|\Delta\omega_{\text{full}}} \;\text{（防重叠上限）}$$
+            $$P_0 \le \frac{0.30}{\gamma L_D\,\operatorname{arsinh}(L_{\text{eff}}/L_D)} \;\text{（弱非线性上限，反常区另需 } P_0 \le \frac{0.36}{\gamma L_D}\text{）}, \qquad P_0 \ge 10^{1.8} P_{\text{NEP}}\,e^{\alpha_{\text{lin}} L}\sqrt{1 + (L/L_D)^2}$$
+          </div>
+          <p><strong>二、两阶段混合自适应 GNLSE + 单步精确 Fresnel 变换算法（突破数十公里网格瓶颈）</strong>：在 $L = 10\text{--}30\,\text{km}$ 真实光纤中，脉冲时间拉伸比 $M$ 可达数百至上千倍，若全程在单一固定等间距 FFT 网格上积分，同时解析入纤皮秒脉冲与出纤纳秒波形需 $N > 2^{17}$ 点。仿真器利用超快脉冲非线性作用高度局域在光纤前段的物理特性，将传输严格分解为两阶段：</p>
+          <ol>
+            <li><strong>阶段一（活跃非线性区 $0 \to z_{\text{nl}}$）</strong>：在精细时域网格（$N \in \{4096, 8192, 16384\}$，$\Delta t \le T_0/4$）上以自适应步长 Strang 分裂 SSFM 求解完整 GNLSE（含 $\alpha, \beta_2, \beta_3$、SPM、拉曼与自陡峭）。当脉冲充分展宽使剩余非线性相移 $\gamma P_{\text{pk}}(z)(L-z) &lt; 0.015\,\text{rad}$ 或接近阶段一窗口边缘时退出（若为反常色散孤子束缚态，脉冲不展宽则自动保持全段 SSFM 推进）。</li>
+            <li><strong>阶段二（长程纯线性色散区 $z_{\text{nl}} \to L$，$\Delta z = L - z_{\text{nl}}$）</strong>：先在频域精确施加三阶色散相位 $\exp\!\left(i\frac{\beta_3\Delta z}{6}\omega^3\right)$ 得到 $A_{\text{tod}}(z_{\text{nl}}, t')$，再对大二阶色散 $\beta_2\Delta z$ 实施<strong>数学上严格精确的单步 Fresnel 因子化傅里叶变换</strong>：
+              <div class="formula-box">
+                $$A_{\text{lin}}(L, T) = \frac{e^{-\alpha_{\text{lin}}\Delta z/2 + i\operatorname{sgn}(\beta_2\Delta z)\frac{\pi}{4}}}{\sqrt{2\pi |\beta_2 \Delta z|}}\,e^{-i\frac{T^2}{2\beta_2 \Delta z}} \int_{-\infty}^{+\infty}\!\left[A_{\text{tod}}(z_{\text{nl}}, t')\,e^{-i\frac{t'^2}{2\beta_2 \Delta z}}\right] e^{+i\left(\frac{T}{\beta_2\Delta z}\right)t'}\,\mathrm{d}t'$$
+                <div class="formula-label">当 $|\beta_2\Delta z|$ 极大时，内部二次相位 $e^{-i t'^2/(2\beta_2\Delta z)}$ 缓变无混叠，仅需单次 $N=4096$ FFT 即可在毫秒级精确还原 $L=30\,\text{km}$ 输出波形（与 $N=65536$ 暴力网格相关度 $>0.999999$），且在 $|\beta_2\Delta z|\to\infty$ 时自然过渡至鞍点近似极限</div>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB 3: SIMULATION ===================== -->
+  <div class="tab-panel" id="panel-simulation">
+    <div class="sim-container dft-sim">
+
+      <!-- Master Verdict Banner -->
+      <div class="dft-verdict" id="dft-verdict-banner">
+        <div class="dft-verdict-left">
+          <div class="dft-lamp"></div>
+          <div style="min-width:0;">
+            <div class="dft-vtitle" id="dft-verdict-title">正在初始化两阶段混合 GNLSE-Fresnel 求解器...</div>
+            <div class="dft-vsub" id="dft-verdict-sub">正在计算五维有效性判据与光谱反演保真度...</div>
+          </div>
+        </div>
+        <div class="dft-scores">
+          <span class="dft-chip" id="dft-sc-rlin">线性一致 R_lin: —</span>
+          <span class="dft-chip" id="dft-sc-rtod">TOD修正 R_TOD: —</span>
+          <span class="dft-chip" id="dft-sc-rspec">光谱保真 R_spec: —</span>
+        </div>
+      </div>
+
+      <!-- 5-Criterion Diagnostic Strip -->
+      <div class="dft-diag-strip">
+        <div class="dft-diag pass" id="dft-dc-ff">
+          <div class="dft-diag-top"><span class="dft-diag-lbl">① 远场夫琅禾费判据</span><span class="dft-diag-dot" id="dft-dd-ff">有效</span></div>
+          <div class="dft-diag-val" id="dft-dv-ff">D_FF = 15.1</div>
+          <div class="dft-diag-hint" id="dft-dh-ff">要求 L/L_D,eff ≥ 4</div>
+        </div>
+        <div class="dft-diag pass" id="dft-dc-nl">
+          <div class="dft-diag-top"><span class="dft-diag-lbl">② 非线性相移判据</span><span class="dft-diag-dot" id="dft-dd-nl">有效</span></div>
+          <div class="dft-diag-val" id="dft-dv-nl">Φ_NL = 0.23 rad</div>
+          <div class="dft-diag-hint" id="dft-dh-nl">要求 Φ_NL &lt; 0.30 且非孤子态</div>
+        </div>
+        <div class="dft-diag pass" id="dft-dc-tod">
+          <div class="dft-diag-top"><span class="dft-diag-lbl">③ 三阶色散畸变</span><span class="dft-diag-dot" id="dft-dd-tod">线性可用</span></div>
+          <div class="dft-diag-val" id="dft-dv-tod">η_TOD = 0.006</div>
+          <div class="dft-diag-hint" id="dft-dh-tod">&lt;0.06 线性 · 0.06~0.4 需定标</div>
+        </div>
+        <div class="dft-diag pass" id="dft-dc-ov">
+          <div class="dft-diag-top"><span class="dft-diag-lbl">④ 相邻脉冲重叠</span><span class="dft-diag-dot" id="dft-dd-ov">无重叠</span></div>
+          <div class="dft-diag-val" id="dft-dv-ov">ξ_ov = 2.8%</div>
+          <div class="dft-diag-hint" id="dft-dh-ov">要求 T_out·f_rep &lt; 70%</div>
+        </div>
+        <div class="dft-diag pass" id="dft-dc-snr">
+          <div class="dft-diag-top"><span class="dft-diag-lbl">⑤ 损耗与峰值信噪比</span><span class="dft-diag-dot" id="dft-dd-snr">充足</span></div>
+          <div class="dft-diag-val" id="dft-dv-snr">31.0 dB</div>
+          <div class="dft-diag-hint" id="dft-dh-snr">相对 2 μW 高速 PD 本底</div>
+        </div>
+      </div>
+
+      <!-- Controls + 4 Charts -->
+      <div class="dft-layout">
+        <aside class="dft-sidebar">
+          <div class="dft-ctrl-sec">
+            <div class="dft-ctrl-head">六大典型工况预设（基于实际光纤）</div>
+            <div class="dft-preset-grid">
+              <button class="dft-preset-btn active" id="dft-pre-ideal" onclick="dftPreset('ideal')">① 理想 SMF-28 (10 km)<br><span style="font-size:8.5px;opacity:0.75;">五灯全绿 · 170 ps/nm</span></button>
+              <button class="dft-preset-btn" id="dft-pre-near" onclick="dftPreset('near')">② 近场色散不足 (60 m)<br><span style="font-size:8.5px;opacity:0.75;">SMF 过短 · 未进远场</span></button>
+              <button class="dft-preset-btn" id="dft-pre-spm" onclick="dftPreset('spm')">③ 高功率 C-DCF SPM<br><span style="font-size:8.5px;opacity:0.75;">3 km DCF · 光谱展宽</span></button>
+              <button class="dft-preset-btn" id="dft-pre-sol" onclick="dftPreset('sol')">④ SMF-28 孤子束缚<br><span style="font-size:8.5px;opacity:0.75;">8 km · N≈1 拒绝拉伸</span></button>
+              <button class="dft-preset-btn" id="dft-pre-tod" onclick="dftPreset('tod')">⑤ NZ-DSF 强 TOD 定标<br><span style="font-size:8.5px;opacity:0.75;">12 km · TOD 修正救回</span></button>
+              <button class="dft-preset-btn" id="dft-pre-loss" onclick="dftPreset('loss')">⑥ 长纤低 SNR + 重叠<br><span style="font-size:8.5px;opacity:0.75;">20 km DCF38 · 帧间混叠</span></button>
+            </div>
+          </div>
+
+          <div class="dft-ctrl-sec">
+            <div class="dft-ctrl-head">实际商用光纤一键选型（1550 nm）</div>
+            <div class="dft-fiber-grid">
+              <button class="dft-fiber-btn active" id="dft-fb-smf28" onclick="dftSetFiber('smf28')">SMF-28 (10 km)<br><span style="font-size:8.4px;opacity:0.75;">D=+17 · α=0.20</span></button>
+              <button class="dft-fiber-btn" id="dft-fb-dcf38" onclick="dftSetFiber('dcf38')">DCF38 (5 km)<br><span style="font-size:8.4px;opacity:0.75;">D=−38 · α=0.45</span></button>
+              <button class="dft-fiber-btn" id="dft-fb-cdcf" onclick="dftSetFiber('cdcf')">C-DCF (3 km)<br><span style="font-size:8.4px;opacity:0.75;">D=−102 · α=0.50</span></button>
+              <button class="dft-fiber-btn" id="dft-fb-nzdsf" onclick="dftSetFiber('nzdsf')">NZ-DSF (12 km)<br><span style="font-size:8.4px;opacity:0.75;">D=+4.2 · 强 TOD</span></button>
+            </div>
+          </div>
+
+          <div class="dft-ctrl-sec">
+            <div class="dft-ctrl-head">脉冲波形与输入参数（λ₀ = 1550 nm）</div>
+            <div class="dft-mode-grid" style="margin-bottom:5px;">
+              <button class="dft-mode-btn blue active" id="dft-pw-double" onclick="dftSetPulse('double')">双脉冲干涉态</button>
+              <button class="dft-mode-btn blue" id="dft-pw-asymmetric" onclick="dftSetPulse('asymmetric')">非对称双色峰</button>
+              <button class="dft-mode-btn blue" id="dft-pw-sech" onclick="dftSetPulse('sech')">Sech 孤子脉冲</button>
+              <button class="dft-mode-btn blue" id="dft-pw-gaussian" onclick="dftSetPulse('gaussian')">啁啾高斯脉冲</button>
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>脉冲半高宽 T_FWHM</span><span class="val" id="dft-vl-tfwhm">1.50 ps</span></div>
+              <input type="range" id="dft-sl-tfwhm" min="0.25" max="4.00" step="0.05" value="1.50">
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>初始线性啁啾 C</span><span class="val" id="dft-vl-chirp">0.0</span></div>
+              <input type="range" id="dft-sl-chirp" min="-3.0" max="3.0" step="0.1" value="0.0">
+            </div>
+            <div class="dft-mode-grid" style="margin:4px 0;">
+              <button class="dft-mode-btn active" id="dft-pm-peak" onclick="dftSetPwrMode('peak')">按峰值功率 P₀</button>
+              <button class="dft-mode-btn" id="dft-pm-avg" onclick="dftSetPwrMode('avg')">按平均功率 P_avg</button>
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span id="dft-lbl-pwr">峰值功率 P₀ (对数)</span><span class="val" id="dft-vl-pwr" style="color:#e11d48;">0.30 W</span></div>
+              <input type="range" id="dft-sl-pwr" min="-1.5" max="2.5" step="0.02" value="-0.523">
+            </div>
+            <div class="dft-pwr-box">
+              <span id="dft-sync-p0">P₀ = 0.30 W</span>
+              <span id="dft-sync-pavg">P_avg = 0.033 mW</span>
+              <span id="dft-sync-ep">E_p = 0.82 pJ</span>
+            </div>
+            <div class="dft-slider-grp" style="margin-top:4px;">
+              <div class="dft-slider-row"><span>重复频率 f_rep</span><span class="val" id="dft-vl-frep">40 MHz</span></div>
+              <input type="range" id="dft-sl-frep" min="10" max="400" step="5" value="40">
+            </div>
+          </div>
+
+          <div class="dft-ctrl-sec">
+            <div class="dft-ctrl-head">色散传输光纤参数（L 可达 30 km）</div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>二阶色散 β₂ (ps²/km)</span><span class="val" id="dft-vl-b2" style="color:var(--c-teal-600);">−21.7</span></div>
+              <input type="range" id="dft-sl-b2" min="-150" max="185" step="0.5" value="-21.7">
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>三阶色散 β₃ (ps³/km)</span><span class="val" id="dft-vl-b3">+0.15</span></div>
+              <input type="range" id="dft-sl-b3" min="-1.50" max="1.50" step="0.02" value="0.15">
+              <div style="font-size:9.2px;color:var(--c-text-hint);text-align:right;" id="dft-vl-Ddisp">D = +17.0 ps/(nm·km) · S = +0.070 ps/(nm²·km)</div>
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>传输损耗 α (dB/km)</span><span class="val" id="dft-vl-alpha" style="color:var(--c-amber-600);">0.20 dB/km</span></div>
+              <input type="range" id="dft-sl-alpha" min="0.0" max="3.0" step="0.05" value="0.20">
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>非线性系数 γ (W⁻¹km⁻¹)</span><span class="val" id="dft-vl-gamma">1.30</span></div>
+              <input type="range" id="dft-sl-gamma" min="0.0" max="8.0" step="0.1" value="1.3">
+            </div>
+            <div class="dft-slider-grp">
+              <div class="dft-slider-row"><span>光纤长度 L (0.05 ~ 30 km)</span><span class="val" id="dft-vl-L" style="color:#185FA5;">10.0 km</span></div>
+              <input type="range" id="dft-sl-L" min="-1.30" max="1.48" step="0.02" value="1.00">
+            </div>
+            <label class="dft-chk-row"><input type="checkbox" id="dft-chk-ho" checked onchange="dftRecompute()"> 开启拉曼散射 (τ_R=3 fs) 与自陡峭</label>
+          </div>
+        </aside>
+
+        <div class="dft-main-col">
+          <div class="dft-eq-bar" id="dft-eq-bar">正在计算总色散量 |DL|、25 GHz PD 分辨率与混合求解器状态...</div>
+
+          <div class="dft-charts-grid">
+            <div class="dft-chart-card">
+              <div class="dft-chart-head">
+                <div class="dft-chart-title"><span class="dft-badge">13A</span>输出时域波形：GNLSE vs 鞍点近似</div>
+                <div class="dft-chart-sub">
+                  <span class="leg">蓝实：GNLSE · 橙虚：线性鞍点 · 青：TOD鞍点</span>
+                  <span class="btns">
+                    <button class="dft-mini-btn active" id="dft-btn-tlin" onclick="dftSetLog(false)">线性</button>
+                    <button class="dft-mini-btn" id="dft-btn-tlog" onclick="dftSetLog(true)">dB</button>
+                  </span>
+                </div>
+              </div>
+              <div class="dft-cv-wrap"><canvas id="dft-cv-time"></canvas></div>
+            </div>
+
+            <div class="dft-chart-card">
+              <div class="dft-chart-head">
+                <div class="dft-chart-title"><span class="dft-badge" style="background:var(--c-blue-50);color:var(--c-blue-600);">13B</span>光谱反演保真度：映射谱 vs 真实谱</div>
+                <div class="dft-chart-sub">
+                  <span class="leg">红虚：输入真谱 · 紫：线性反演 · 青：TOD反演 · 灰点：输出真谱</span>
+                </div>
+              </div>
+              <div class="dft-cv-wrap"><canvas id="dft-cv-spec"></canvas></div>
+            </div>
+
+            <div class="dft-chart-card">
+              <div class="dft-chart-head">
+                <div class="dft-chart-title"><span class="dft-badge" style="background:var(--c-teal-50);color:var(--c-teal-600);">13C</span>2D 有效参数相图 (L: 0.03~32 km · 点击调参)</div>
+                <div class="dft-chart-sub">
+                  <span class="leg">绿区：有效 DFT 窗口 · 红/橙/蓝边界：四大物理极限</span>
+                </div>
+              </div>
+              <div class="dft-cv-wrap clickable"><canvas id="dft-cv-phase"></canvas></div>
+            </div>
+
+            <div class="dft-chart-card">
+              <div class="dft-chart-head">
+                <div class="dft-chart-title"><span class="dft-badge" style="background:var(--c-amber-50);color:var(--c-amber-600);">13D</span>沿光纤距离 z 演化：一致性 R(z) 与 Φ_NL(z)</div>
+                <div class="dft-chart-sub">
+                  <span class="leg">紫：R_lin(z) · 青虚：R_TOD(z) · 橙：Φ_NL(z) (右轴)</span>
+                </div>
+              </div>
+              <div class="dft-cv-wrap"><canvas id="dft-cv-evol"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-title">参考文献</div>
+    <ol class="ref-list">
+      <li><span class="ref-num">[1]</span>Goda, K. &amp; Jalali, B. Dispersive Fourier transformation for fast continuous single-shot measurements. <em>Nat. Photonics</em> <strong>7</strong>, 102–112 (2013).</li>
+      <li><span class="ref-num">[2]</span>Tong, Y. C., Chan, L. Y. &amp; Tsang, H. K. Fibre dispersion or pulse spectrum measurement using a sampling oscilloscope. <em>Electron. Lett.</em> <strong>33</strong>, 983–985 (1997).</li>
+      <li><span class="ref-num">[3]</span>Mahjoubfar, A. et al. Time stretch and its applications. <em>Nat. Photonics</em> <strong>11</strong>, 341–351 (2017).</li>
+      <li><span class="ref-num">[4]</span>Herink, G., Jalali, B., Ropers, C. &amp; Solli, D. R. Resolving the build-up of femtosecond mode-locking with single-shot spectroscopy at 90 MHz frame rate. <em>Nat. Photonics</em> <strong>10</strong>, 321–326 (2016).</li>
+      <li><span class="ref-num">[5]</span>Agrawal, G. P. <em>Nonlinear Fiber Optics</em>, 6th ed., Ch. 3 &amp; Ch. 4 (Academic Press, 2019).</li>
+      <li><span class="ref-num">[6]</span>Goodman, J. W. <em>Introduction to Fourier Optics</em>, 4th ed., Ch. 4: Fresnel and Fraunhofer Diffraction (W. H. Freeman, 2017).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<script>
+(function() {
+  'use strict';
+
+  var P_NEP_W = 2e-6;
+  var LAM_NM = 1550.0;
+  var C_NM_PS = 299792.458; // c in nm/ps
+  var FAC_DISP = (LAM_NM * LAM_NM) / (2.0 * Math.PI * C_NM_PS); // 1.275448 ps*nm
+  var W0_RAD_PS = 2.0 * Math.PI * C_NM_PS / LAM_NM; // ~1215.2 rad/ps
+  var TAU_R_PS = 0.003;
+
+  var FIBERS = {
+    smf28: { beta2: -21.7,  beta3: +0.15, alpha: 0.20, gamma: 1.3, L: 10.0 },
+    dcf38: { beta2: +48.5,  beta3: -0.29, alpha: 0.45, gamma: 3.0, L: 5.0  },
+    cdcf:  { beta2: +130.0, beta3: -0.80, alpha: 0.50, gamma: 4.5, L: 3.0  },
+    nzdsf: { beta2: -5.4,   beta3: +0.15, alpha: 0.20, gamma: 1.6, L: 12.0 }
+  };
+
+  var S = {
+    pulse: 'double',
+    tfwhm: 1.50,
+    chirp: 0.0,
+    pwrMode: 'peak',
+    P0: 0.30,
+    frep: 40.0,
+    beta2: -21.7,
+    beta3: +0.15,
+    alpha: 0.20,
+    gamma: 1.30,
+    L: 10.0,
+    highOrder: true,
+    logTime: false
+  };
+
+  function fft(re, im, inv) {
+    var n = re.length;
+    for (var i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { var tr = re[i]; re[i] = re[j]; re[j] = tr; var ti = im[i]; im[i] = im[j]; im[j] = ti; }
+    }
+    var sign = inv ? 1 : -1;
+    for (var len = 2; len <= n; len <<= 1) {
+      var half = len >> 1, ang = sign * 2 * Math.PI / len, wR = Math.cos(ang), wI = Math.sin(ang);
+      for (var i0 = 0; i0 < n; i0 += len) {
+        var cR = 1, cI = 0;
+        for (var k = 0; k < half; k++) {
+          var u = i0 + k, v = u + half;
+          var tR = cR * re[v] - cI * im[v], tI = cR * im[v] + cI * re[v];
+          re[v] = re[u] - tR; im[v] = im[u] - tI; re[u] += tR; im[u] += tI;
+          var nR = cR * wR - cI * wI; cI = cR * wI + cI * wR; cR = nR;
+        }
+      }
+    }
+    if (inv) { var invN = 1.0 / n; for (var m = 0; m < n; m++) { re[m] *= invN; im[m] *= invN; } }
+  }
+
+  function toFreq(inR, inI, outR, outI, dt) {
+    var n = inR.length, half = n >> 1, sc = n * dt;
+    for (var i = 0; i < n; i++) { var si = (i + half) & (n - 1); outR[i] = inR[si]; outI[i] = inI[si]; }
+    fft(outR, outI, true);
+    for (var j = 0; j < n; j++) { outR[j] *= sc; outI[j] *= sc; }
+  }
+
+  function toTime(inR, inI, outR, outI, dt) {
+    var n = inR.length, half = n >> 1, invSc = 1.0 / (n * dt);
+    var tR = new Float64Array(inR), tI = new Float64Array(inI);
+    fft(tR, tI, false);
+    for (var i = 0; i < n; i++) { var si = (i + half) & (n - 1); outR[si] = tR[i] * invSc; outI[si] = tI[i] * invSc; }
+  }
+
+  function interpArr(x, xs, ys) {
+    var n = xs.length;
+    if (x <= xs[0] || x >= xs[n - 1]) return 0.0;
+    var fIdx = ((x - xs[0]) / (xs[n - 1] - xs[0])) * (n - 1);
+    var i0 = Math.floor(fIdx);
+    if (i0 < 0) return 0.0;
+    if (i0 >= n - 1) return ys[n - 1];
+    var fr = fIdx - i0;
+    return ys[i0] * (1.0 - fr) + ys[i0 + 1] * fr;
+  }
+
+  function cosineCorr(a, b) {
+    var num = 0, da = 0, db = 0;
+    for (var i = 0; i < a.length; i++) { num += a[i] * b[i]; da += a[i] * a[i]; db += b[i] * b[i]; }
+    return num / (Math.sqrt(da * db) + 1e-30);
+  }
+
+  function getShapeEnergyFactor() {
+    var T0 = S.pulse === 'sech' ? (S.tfwhm / 1.762747) : (S.tfwhm / (2.0 * Math.sqrt(Math.LN2)));
+    if (S.pulse === 'gaussian') return T0 * Math.sqrt(Math.PI);
+    if (S.pulse === 'sech') return T0 * 2.0;
+    if (S.pulse === 'double') return T0 * Math.sqrt(Math.PI) * (1.0 + 0.85 * 0.85);
+    return T0 * Math.sqrt(Math.PI) * (1.0 + 0.55 * 0.55 * 1.2);
+  }
+
+  var RES = null, PHASE_GEOM = null, isSimTabActive = false;
+
+  // Dual-Regime Exact Linear Propagator (Standard Transfer Function OR Exact Single-FFT Fresnel-Factored)
+  function fresnelPropagate(inR, inI, tIn, wAxis, wShift, dz, b2, b3, alphaLin) {
+    var n = inR.length, half = n >> 1, dt = tIn[1] - tIn[0], T_win = n * dt;
+    var atten = Math.exp(-alphaLin * dz);
+    if (dz <= 1e-12) {
+      var outI0 = new Float64Array(n);
+      for (var i0 = 0; i0 < n; i0++) outI0[i0] = inR[i0] * inR[i0] + inI[i0] * inI[i0];
+      return { tOut: new Float64Array(tIn), iOut: outI0, usedFresnel: false };
+    }
+
+    var awR = new Float64Array(n), awI = new Float64Array(n);
+    toFreq(inR, inI, awR, awI, dt);
+    var wSq = 0, sSum = 0, tSq = 0, pSum = 0;
+    for (var i = 0; i < n; i++) {
+      var sp = awR[i] * awR[i] + awI[i] * awI[i];
+      wSq += wAxis[i] * wAxis[i] * sp; sSum += sp;
+      var pw = inR[i] * inR[i] + inI[i] * inI[i];
+      tSq += tIn[i] * tIn[i] * pw; pSum += pw;
+    }
+    var wRms = Math.sqrt(wSq / (sSum + 1e-30)), tRms = Math.sqrt(tSq / (pSum + 1e-30));
+    var estStretch = Math.abs(b2 * dz) * (5.0 * wRms) + 0.5 * Math.abs(b3 * dz) * Math.pow(3.5 * wRms, 2) + 4.5 * tRms;
+
+    if (estStretch < 0.72 * T_win || Math.abs(b2 * dz) < 1e-6) {
+      var attH = Math.exp(-0.5 * alphaLin * dz);
+      for (var k = 0; k < n; k++) {
+        var w = wAxis[k], ph = (0.5 * b2 * w * w + (1.0 / 6.0) * b3 * w * w * w) * dz;
+        var cp = Math.cos(ph) * attH, sp2 = Math.sin(ph) * attH;
+        var nr = awR[k] * cp - awI[k] * sp2, ni = awR[k] * sp2 + awI[k] * cp;
+        awR[k] = nr; awI[k] = ni;
+      }
+      var oR = new Float64Array(n), oI = new Float64Array(n), outI1 = new Float64Array(n);
+      toTime(awR, awI, oR, oI, dt);
+      for (var i1 = 0; i1 < n; i1++) outI1[i1] = oR[i1] * oR[i1] + oI[i1] * oI[i1];
+      return { tOut: new Float64Array(tIn), iOut: outI1, usedFresnel: false };
+    } else {
+      // Stage-2 Exact Fresnel-Factored Single-FFT!
+      // Step 1: exact TOD phase in frequency domain
+      for (var k2 = 0; k2 < n; k2++) {
+        var w2 = wAxis[k2], phT = (1.0 / 6.0) * b3 * w2 * w2 * w2 * dz;
+        var ct = Math.cos(phT), st = Math.sin(phT);
+        var nr2 = awR[k2] * ct - awI[k2] * st, ni2 = awR[k2] * st + awI[k2] * ct;
+        awR[k2] = nr2; awI[k2] = ni2;
+      }
+      var aTodR = new Float64Array(n), aTodI = new Float64Array(n);
+      toTime(awR, awI, aTodR, aTodI, dt);
+      // Step 2: multiply by chirp exp(-i * t'^2 / (2 * b2 * dz)) and take single FFT
+      var inv2b2z = -1.0 / (2.0 * b2 * dz);
+      for (var i2 = 0; i2 < n; i2++) {
+        var phC = tIn[i2] * tIn[i2] * inv2b2z, cc = Math.cos(phC), sc = Math.sin(phC);
+        var br = aTodR[i2] * cc - aTodI[i2] * sc, bi = aTodR[i2] * sc + aTodI[i2] * cc;
+        aTodR[i2] = br; aTodI[i2] = bi;
+      }
+      var bFR = new Float64Array(n), bFI = new Float64Array(n);
+      toFreq(aTodR, aTodI, bFR, bFI, dt);
+      var T_out = new Float64Array(n), I_out = new Float64Array(n);
+      var scaleOut = atten / (2.0 * Math.PI * Math.abs(b2 * dz));
+      var neg = (b2 * dz) < 0;
+      for (var k3 = 0; k3 < n; k3++) {
+        var srcShiftIdx = neg ? (n - 1 - k3) : k3;
+        var fftIdx = (srcShiftIdx + half) & (n - 1);
+        T_out[k3] = b2 * dz * wShift[srcShiftIdx];
+        I_out[k3] = scaleOut * (bFR[fftIdx] * bFR[fftIdx] + bFI[fftIdx] * bFI[fftIdx]);
+      }
+      return { tOut: T_out, iOut: I_out, usedFresnel: true };
+    }
+  }
+
+  function runSimulation() {
+    var b2 = Math.abs(S.beta2) < 0.5 ? (S.beta2 >= 0 ? 0.5 : -0.5) : S.beta2;
+    var b3 = S.beta3, L = S.L, alphaLin = S.alpha * Math.LN10 / 10.0, gamma = S.gamma;
+    var T0 = S.pulse === 'sech' ? (S.tfwhm / 1.762747) : (S.tfwhm / (2.0 * Math.sqrt(Math.LN2)));
+    var wBwEst = (4.2 / T0) * Math.sqrt(1.0 + S.chirp * S.chirp);
+    var tTodFull = 0.5 * Math.abs(b3) * L * wBwEst * wBwEst;
+    var T_win1_needed = Math.max(160.0 * T0, 3.0 * tTodFull + 60.0 * T0, 80.0);
+
+    var N = 4096;
+    while (N < 16384 && (T_win1_needed / N) > (T0 / 4.0)) N <<= 1;
+    var T_win1 = Math.min(N * (T0 / 3.8), T_win1_needed);
+    var dt = T_win1 / N, half = N >> 1;
+    var t1 = new Float64Array(N), wAxis = new Float64Array(N), wShift = new Float64Array(N);
+    var dw = (2.0 * Math.PI) / T_win1;
+    for (var i = 0; i < N; i++) {
+      t1[i] = (i - half) * dt;
+      var k = i < half ? i : i - N;
+      wAxis[i] = k * dw;
+      wShift[i] = (i - half) * dw;
+    }
+
+    // 1. Construct input pulse A(0, t1)
+    var aR = new Float64Array(N), aI = new Float64Array(N), maxEnv = 0;
+    for (var i1 = 0; i1 < N; i1++) {
+      var tv = t1[i1], u = tv / T0, er = 0, ei = 0;
+      if (S.pulse === 'gaussian') {
+        var g = Math.exp(-0.5 * u * u), ph = -0.5 * S.chirp * u * u;
+        er = g * Math.cos(ph); ei = g * Math.sin(ph);
+      } else if (S.pulse === 'sech') {
+        var sc = Math.abs(u) > 35 ? 0 : (1.0 / Math.cosh(u)), ph2 = -0.5 * S.chirp * u * u;
+        er = sc * Math.cos(ph2); ei = sc * Math.sin(ph2);
+      } else if (S.pulse === 'double') {
+        var sep = 4.0 * T0, u1 = (tv - 0.5 * sep) / T0, u2 = (tv + 0.5 * sep) / T0;
+        var g2 = Math.exp(-0.5 * u1 * u1) + 0.85 * Math.exp(-0.5 * u2 * u2), ph3 = -0.5 * S.chirp * u * u;
+        er = g2 * Math.cos(ph3); ei = g2 * Math.sin(ph3);
+      } else {
+        var gMain = Math.exp(-0.5 * u * u);
+        var uSide = (tv - 1.4 * T0) / (1.2 * T0), gSide = 0.55 * Math.exp(-0.5 * uSide * uSide);
+        var phSide = -(2.5 / T0) * tv, phC = -0.5 * S.chirp * u * u;
+        var tr = gMain + gSide * Math.cos(phSide), ti = gSide * Math.sin(phSide);
+        er = tr * Math.cos(phC) - ti * Math.sin(phC);
+        ei = tr * Math.sin(phC) + ti * Math.cos(phC);
+      }
+      aR[i1] = er; aI[i1] = ei;
+      var amp = Math.hypot(er, ei);
+      if (amp > maxEnv) maxEnv = amp;
+    }
+    var scaleA = Math.sqrt(S.P0) / (maxEnv + 1e-30);
+    var ePulsePJ = 0, tSqSum = 0;
+    for (var i2 = 0; i2 < N; i2++) {
+      aR[i2] *= scaleA; aI[i2] *= scaleA;
+      var p2 = aR[i2] * aR[i2] + aI[i2] * aI[i2];
+      ePulsePJ += p2 * dt;
+      tSqSum += t1[i2] * t1[i2] * p2 * dt;
+    }
+    var tRmsIn = Math.sqrt(tSqSum / (ePulsePJ + 1e-30));
+    var pAvgMW = ePulsePJ * 1e-12 * (S.frep * 1e6) * 1e3;
+
+    var fR = new Float64Array(N), fI = new Float64Array(N);
+    toFreq(aR, aI, fR, fI, dt);
+    var s0Sh = new Float64Array(N), wSqSum = 0, s0Sum = 0;
+    for (var k1 = 0; k1 < N; k1++) {
+      var sk = (k1 + half) & (N - 1);
+      var sp = fR[sk] * fR[sk] + fI[sk] * fI[sk];
+      s0Sh[k1] = sp;
+      wSqSum += wShift[k1] * wShift[k1] * sp;
+      s0Sum += sp;
+    }
+    var wRms = Math.sqrt(wSqSum / (s0Sum + 1e-30));
+    var L_D = (T0 * T0) / Math.abs(b2), L_Deff = Math.pow(2.0 * tRmsIn, 2) / Math.abs(b2);
+
+    var dispW = new Float64Array(N);
+    for (var k2 = 0; k2 < N; k2++) {
+      var wv = wAxis[k2];
+      dispW[k2] = 0.5 * b2 * wv * wv + (1.0 / 6.0) * b3 * wv * wv * wv;
+    }
+
+    function evalSaddleOnGrid(tGrid, zCur, atten, outLin, outTod) {
+      if (zCur < 1e-9) { outLin.fill(0); outTod.fill(0); return; }
+      var cLin = atten / (2.0 * Math.PI * Math.abs(b2) * zCur);
+      var sgnB2 = b2 >= 0 ? 1.0 : -1.0;
+      for (var ii = 0; ii < tGrid.length; ii++) {
+        var tv = tGrid[ii];
+        outLin[ii] = cLin * interpArr(tv / (b2 * zCur), wShift, s0Sh);
+        if (Math.abs(b3) > 1e-6) {
+          var disc = b2 * b2 + 2.0 * b3 * tv / zCur;
+          if (disc > 1e-4 * b2 * b2) {
+            var sq = Math.sqrt(disc);
+            var ws = (-b2 + sgnB2 * sq) / b3;
+            outTod[ii] = (atten / (2.0 * Math.PI * zCur * sq)) * interpArr(ws, wShift, s0Sh);
+          } else outTod[ii] = 0.0;
+        } else outTod[ii] = outLin[ii];
+      }
+    }
+
+    // 2. Stage 1: Adaptive Strang-Split SSFM in active nonlinear zone (0 -> zNL)
+    var curR = new Float64Array(aR), curI = new Float64Array(aI);
+    var tmpR = new Float64Array(N), tmpI = new Float64Array(N);
+    var iArr = new Float64Array(N), diR = new Float64Array(N), diI = new Float64Array(N);
+    var spLinTmp = new Float64Array(N), spTodTmp = new Float64Array(N);
+    var z = 0.0, phiNL = 0.0, step = 0, maxSteps = 210;
+    var zHist = [0], rLinHist = [0], rTodHist = [0], phiHist = [0];
+    var nextChk = L / 18.0;
+    var pAtSwitch = 0, zAtSwitch = 0;
+
+    while (z < L - 1e-11 && step < maxSteps) {
+      var pCur = 0, tCurSq = 0, eCur = 0;
+      for (var m0 = 0; m0 < N; m0++) {
+        var pp = curR[m0] * curR[m0] + curI[m0] * curI[m0];
+        if (pp > pCur) pCur = pp;
+        eCur += pp; tCurSq += t1[m0] * t1[m0] * pp;
+      }
+      var tRmsCur = Math.sqrt(tCurSq / (eCur + 1e-30));
+      var L_rem = L - z;
+      if ((gamma * pCur * L_rem < 0.015 && tRmsCur > 1.8 * tRmsIn) || (4.6 * tRmsCur > 0.56 * T_win1)) {
+        pAtSwitch = pCur; zAtSwitch = z;
+        break;
+      }
+
+      var dzNL = 0.055 / (gamma * pCur + 1e-12);
+      var dzMin = L_rem / Math.max(1, maxSteps - step);
+      var dzMax = Math.min(L / 40.0, Math.max(L_D * 1.5, L / 120.0));
+      var dz = Math.min(L_rem, Math.max(dzMin, Math.min(dzNL, dzMax)));
+
+      var attHalf = Math.exp(-0.25 * alphaLin * dz);
+      toFreq(curR, curI, fR, fI, dt);
+      for (var kl = 0; kl < N; kl++) {
+        var ph = dispW[kl] * 0.5 * dz, cp = Math.cos(ph) * attHalf, sp = Math.sin(ph) * attHalf;
+        var nr = fR[kl] * cp - fI[kl] * sp, ni = fR[kl] * sp + fI[kl] * cp;
+        fR[kl] = nr; fI[kl] = ni;
+      }
+      toTime(fR, fI, curR, curI, dt);
+
+      var pMid = 0;
+      for (var m1 = 0; m1 < N; m1++) { var im1 = curR[m1] * curR[m1] + curI[m1] * curI[m1]; iArr[m1] = im1; if (im1 > pMid) pMid = im1; }
+      phiNL += gamma * pMid * dz;
+
+      if (gamma > 1e-9) {
+        if (S.highOrder) {
+          diI.fill(0);
+          toFreq(iArr, diI, tmpR, tmpI, dt);
+          for (var kr = 0; kr < N; kr++) {
+            var wk = wAxis[kr], tr = wk * tmpI[kr], ti = -wk * tmpR[kr];
+            tmpR[kr] = tr; tmpI[kr] = ti;
+          }
+          toTime(tmpR, tmpI, diR, diI, dt);
+          for (var m2 = 0; m2 < N; m2++) {
+            var nPh = gamma * (iArr[m2] - TAU_R_PS * diR[m2]) * dz;
+            var cn = Math.cos(nPh), sn = Math.sin(nPh), ur = curR[m2], ui = curI[m2];
+            curR[m2] = ur * cn - ui * sn; curI[m2] = ur * sn + ui * cn;
+          }
+          toFreq(curR, curI, fR, fI, dt);
+          var ssShift = (gamma * pMid * dz) / W0_RAD_PS;
+          for (var ks = 0; ks < N; ks++) {
+            var phS = wAxis[ks] * ssShift * 0.5, cs = Math.cos(phS), ss = Math.sin(phS);
+            var sr = fR[ks] * cs - fI[ks] * ss, si = fR[ks] * ss + fI[ks] * cs;
+            fR[ks] = sr; fI[ks] = si;
+          }
+          toTime(fR, fI, curR, curI, dt);
+        } else {
+          for (var m3 = 0; m3 < N; m3++) {
+            var nPh0 = gamma * iArr[m3] * dz, cn0 = Math.cos(nPh0), sn0 = Math.sin(nPh0);
+            var ur0 = curR[m3], ui0 = curI[m3];
+            curR[m3] = ur0 * cn0 - ui0 * sn0; curI[m3] = ur0 * sn0 + ui0 * cn0;
+          }
+        }
+      }
+
+      toFreq(curR, curI, fR, fI, dt);
+      for (var kl2 = 0; kl2 < N; kl2++) {
+        var ph2 = dispW[kl2] * 0.5 * dz, cp2 = Math.cos(ph2) * attHalf, sp2 = Math.sin(ph2) * attHalf;
+        var nr2 = fR[kl2] * cp2 - fI[kl2] * sp2, ni2 = fR[kl2] * sp2 + fI[kl2] * cp2;
+        fR[kl2] = nr2; fI[kl2] = ni2;
+      }
+      toTime(fR, fI, curR, curI, dt);
+
+      z += dz; step++;
+      if (z >= nextChk - 1e-9 || z >= L - 1e-11) {
+        for (var c0 = 0; c0 < N; c0++) iArr[c0] = curR[c0] * curR[c0] + curI[c0] * curI[c0];
+        evalSaddleOnGrid(t1, z, Math.exp(-alphaLin * z), spLinTmp, spTodTmp);
+        zHist.push(z); rLinHist.push(cosineCorr(iArr, spLinTmp)); rTodHist.push(cosineCorr(iArr, spTodTmp)); phiHist.push(phiNL);
+        nextChk += L / 18.0;
+      }
+    }
+
+    var zNL = z;
+    var phiAtSwitch = phiNL;
+
+    // 3. Stage 2: Exact Dual-Regime Fresnel Propagation from zNL to L (+ checkpoints for Chart D)
+    if (zNL < L - 1e-9) {
+      var zScale = Math.max(zNL, L_D);
+      var nStage2Chk = 10;
+      for (var ic = 1; ic <= nStage2Chk; ic++) {
+        var zc = zNL + (ic / nStage2Chk) * (L - zNL);
+        var dzc = zc - zNL;
+        var lRemEff = alphaLin > 1e-6 ? (1.0 - Math.exp(-alphaLin * dzc)) / alphaLin : dzc;
+        var phiTail = gamma * pAtSwitch * zScale * Math.log(1.0 + lRemEff / zScale);
+        var pr = fresnelPropagate(curR, curI, t1, wAxis, wShift, dzc, b2, b3, alphaLin);
+        evalSaddleOnGrid(pr.tOut, zc, Math.exp(-alphaLin * zc), spLinTmp, spTodTmp);
+        zHist.push(zc);
+        rLinHist.push(cosineCorr(pr.iOut, spLinTmp));
+        rTodHist.push(cosineCorr(pr.iOut, spTodTmp));
+        phiHist.push(phiAtSwitch + phiTail);
+        if (ic === nStage2Chk) {
+          phiNL = phiAtSwitch + phiTail;
+        }
+      }
+    }
+
+    // Final output at z = L
+    var finProp = fresnelPropagate(curR, curI, t1, wAxis, wShift, L - zNL, b2, b3, alphaLin);
+    var tOut = finProp.tOut, iGnlse = finProp.iOut, usedFresnel = finProp.usedFresnel;
+    var dtOut = tOut[1] - tOut[0];
+    var pOutPk = 0, tOutSq = 0, eOut = 0;
+    for (var i3 = 0; i3 < N; i3++) {
+      var pw = iGnlse[i3];
+      if (pw > pOutPk) pOutPk = pw;
+      eOut += pw * dtOut; tOutSq += tOut[i3] * tOut[i3] * pw * dtOut;
+    }
+    var tOutRms = Math.sqrt(tOutSq / (eOut + 1e-30));
+
+    // Exact GNLSE output true spectrum (linear propagation preserves spectral shape up to exp(-alpha*(L-zNL)))
+    toFreq(curR, curI, fR, fI, dt);
+    var attStage2 = Math.exp(-alphaLin * (L - zNL));
+    var sGnlseSh = new Float64Array(N);
+    for (var k3 = 0; k3 < N; k3++) {
+      var sk3 = (k3 + half) & (N - 1);
+      sGnlseSh[k3] = (fR[sk3] * fR[sk3] + fI[sk3] * fI[sk3]) * attStage2;
+    }
+
+    var iSpLin = new Float64Array(N), iSpTod = new Float64Array(N);
+    evalSaddleOnGrid(tOut, L, Math.exp(-alphaLin * L), iSpLin, iSpTod);
+
+    // Map GNLSE output time waveform back to frequency grid for Chart B
+    var M_SPEC = 480;
+    var wViewHalf = Math.min(wShift[N - 1] * 0.9, Math.max(3.6 * wRms, 4.0 / T0));
+    var nuTHzGrid = new Float64Array(M_SPEC);
+    var specTrueIn = new Float64Array(M_SPEC), specTrueOut = new Float64Array(M_SPEC);
+    var specRecLin = new Float64Array(M_SPEC), specRecTod = new Float64Array(M_SPEC);
+    var attL = Math.exp(-alphaLin * L), maxS0 = 1e-30;
+    for (var ms = 0; ms < M_SPEC; ms++) {
+      var wv = -wViewHalf + (ms / (M_SPEC - 1)) * (2.0 * wViewHalf);
+      nuTHzGrid[ms] = wv / (2.0 * Math.PI);
+      var s0v = interpArr(wv, wShift, s0Sh);
+      var sGv = interpArr(wv, wShift, sGnlseSh) / Math.max(1e-12, attL);
+      specTrueIn[ms] = s0v; specTrueOut[ms] = sGv;
+      if (s0v > maxS0) maxS0 = s0v;
+      specRecLin[ms] = (2.0 * Math.PI * Math.abs(b2) * L / Math.max(1e-12, attL)) * interpArr(b2 * L * wv, tOut, iGnlse);
+      var tTod = b2 * L * wv + 0.5 * b3 * L * wv * wv, jacW = L * Math.abs(b2 + b3 * wv);
+      specRecTod[ms] = (2.0 * Math.PI * jacW / Math.max(1e-12, attL)) * interpArr(tTod, tOut, iGnlse);
+    }
+    for (var ms2 = 0; ms2 < M_SPEC; ms2++) {
+      specTrueIn[ms2] /= maxS0; specTrueOut[ms2] /= maxS0; specRecLin[ms2] /= maxS0; specRecTod[ms2] /= maxS0;
+    }
+
+    var rLin = cosineCorr(iGnlse, iSpLin), rTod = cosineCorr(iGnlse, iSpTod), rSpec = cosineCorr(sGnlseSh, s0Sh);
+    var D_FF = L / L_Deff, stretchM = tOutRms / (tRmsIn + 1e-12), Nsol = Math.sqrt(L_D * gamma * S.P0);
+    var isAnomSoliton = (b2 < 0) && (Nsol >= 0.65);
+    var etaTOD = (Math.abs(b3) * (2.355 * wRms)) / (2.0 * Math.abs(b2));
+    var duty = (4.5 * tOutRms) / (1e6 / S.frep);
+    var snrDb = 10.0 * Math.log10(Math.max(1e-12, pOutPk) / P_NEP_W);
+
+    var stFF = D_FF >= 4.0 ? 'pass' : (D_FF >= 1.5 ? 'warn' : 'fail');
+    var stNL = (phiNL < 0.30 && !isAnomSoliton) ? 'pass' : ((phiNL < 0.80 && !isAnomSoliton) ? 'warn' : 'fail');
+    var stTOD = etaTOD < 0.06 ? 'pass' : (etaTOD < 0.40 ? 'warn' : 'fail');
+    var stOV = duty < 0.70 ? 'pass' : (duty < 0.95 ? 'warn' : 'fail');
+    var stSNR = snrDb >= 18.0 ? 'pass' : (snrDb >= 10.0 ? 'warn' : 'fail');
+
+    var fails = [], warns = [];
+    if (stFF === 'fail') fails.push('色散长度不足（仍处菲涅耳近场 D_FF=' + D_FF.toFixed(2) + '）');
+    else if (stFF === 'warn') warns.push('远场色散略浅（D_FF=' + D_FF.toFixed(2) + '）');
+    if (isAnomSoliton) fails.push('反常色散孤子束缚（N=' + Nsol.toFixed(2) + '，脉冲拒绝时间拉伸）');
+    else if (stNL === 'fail') fails.push('强非线性 SPM 畸变（Φ_NL=' + phiNL.toFixed(2) + ' rad，光谱已被重塑）');
+    else if (stNL === 'warn') warns.push('存在轻度非线性相移（Φ_NL=' + phiNL.toFixed(2) + ' rad）');
+    if (stTOD === 'fail') fails.push('极强三阶色散焦散折叠（η_TOD=' + etaTOD.toFixed(2) + '）');
+    else if (stTOD === 'warn') warns.push('三阶色散显著（η_TOD=' + etaTOD.toFixed(2) + '），线性映射偏移但 TOD 修正可救回');
+    if (stOV === 'fail') fails.push('相邻脉冲严重重叠（占空比 ' + (duty * 100).toFixed(0) + '% > 95%）');
+    else if (stOV === 'warn') warns.push('接近脉冲重频重叠边缘（' + (duty * 100).toFixed(0) + '%）');
+    if (stSNR === 'fail') fails.push('长纤损耗/大倍率拉伸致输出峰值 SNR 过低（' + snrDb.toFixed(1) + ' dB）');
+    else if (stSNR === 'warn') warns.push('输出峰值信噪比偏低（' + snrDb.toFixed(1) + ' dB）');
+
+    var masterLevel = 'pass', masterTitle = '', masterSub = '';
+    if (fails.length > 0 || rTod < 0.88 || rSpec < 0.88) {
+      masterLevel = 'fail';
+      masterTitle = '🔴 判定信号：鞍点近似失效 — 不能准确反映原始脉冲光谱';
+      masterSub = '失效主因：' + (fails.length ? fails.join('；') : ('GNLSE 一致性过低 (R_TOD=' + rTod.toFixed(3) + ')')) + '。';
+    } else if (warns.length > 0 || rLin < 0.96) {
+      masterLevel = 'warn';
+      masterTitle = (stTOD === 'warn' && rTod >= 0.97)
+        ? '🟡 判定信号：线性映射存在 TOD 畸变 — 启用 TOD 非线性鞍点定标后有效'
+        : '🟡 判定信号：临界可用 — 存在轻度偏离或测量受限';
+      masterSub = '诊断提示：' + (warns.length ? warns.join('；') : '线性映射一致性偏低') + '。';
+    } else {
+      masterLevel = 'pass';
+      masterTitle = '🟢 判定信号：鞍点近似高度有效 — 与 GNLSE 高度一致，准确还原脉冲光谱';
+      masterSub = '五大物理判据全绿通过：线性映射保真度 R_lin = ' + (rLin * 100).toFixed(2) + '%，光谱不变性 R_spec = ' + (rSpec * 100).toFixed(2) + '%，可直接用高速示波器读取单发光谱。';
+    }
+
+    RES = {
+      N: N, dtOut: dtOut, b2: b2, L_D: L_D, L_Deff: L_Deff, T0: T0, tRmsIn: tRmsIn, wRms: wRms,
+      zNL: zNL, usedFresnel: usedFresnel, ePulsePJ: ePulsePJ, pAvgMW: pAvgMW, pOutPk: pOutPk, stretchM: stretchM,
+      tOut: tOut, iGnlse: iGnlse, iSpLin: iSpLin, iSpTod: iSpTod,
+      nuTHzGrid: nuTHzGrid, specTrueIn: specTrueIn, specTrueOut: specTrueOut, specRecLin: specRecLin, specRecTod: specRecTod,
+      zHist: zHist, rLinHist: rLinHist, rTodHist: rTodHist, phiHist: phiHist,
+      D_FF: D_FF, phiNL: phiNL, Nsol: Nsol, isAnomSoliton: isAnomSoliton,
+      etaTOD: etaTOD, duty: duty, snrDb: snrDb, rLin: rLin, rTod: rTod, rSpec: rSpec,
+      stFF: stFF, stNL: stNL, stTOD: stTOD, stOV: stOV, stSNR: stSNR,
+      masterLevel: masterLevel, masterTitle: masterTitle, masterSub: masterSub
+    };
+  }
+
+  function setupCV(id) {
+    var c = document.getElementById(id), rect = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(10, Math.round(rect.width)), h = Math.max(10, Math.round(rect.height));
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function drawGrid(ctx, w, h, pad, xMin, xMax, yMin, yMax, xLbl, yLbl, xDec) {
+    var pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+    var toX = function(x) { return pad.l + ((x - xMin) / (xMax - xMin)) * pw; };
+    var toY = function(y) { return pad.t + ph - ((y - yMin) / (yMax - yMin)) * ph; };
+    ctx.strokeStyle = '#e4e1d8'; ctx.lineWidth = 0.5; ctx.font = '9.2px monospace'; ctx.fillStyle = '#888780';
+    for (var i = 0; i <= 4; i++) {
+      var yv = yMin + (i / 4) * (yMax - yMin), py = toY(yv);
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+      ctx.textAlign = 'right'; ctx.fillText(Math.abs(yv) >= 10 ? yv.toFixed(0) : yv.toFixed(2), pad.l - 5, py + 3);
+      var xv = xMin + (i / 4) * (xMax - xMin), px = toX(xv);
+      ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, h - pad.b); ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(xDec !== undefined ? xv.toFixed(xDec) : (Math.abs(xv) >= 100 ? xv.toFixed(0) : xv.toFixed(1)), px, h - pad.b + 12);
+    }
+    ctx.fillStyle = '#5f5e5a'; ctx.font = '9.8px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(xLbl, pad.l + pw / 2, h - 3);
+    ctx.save(); ctx.translate(11, pad.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yLbl, 0, 0); ctx.restore();
+    return { toX: toX, toY: toY, pw: pw, ph: ph };
+  }
+
+  function renderAll() {
+    if (!RES || !isSimTabActive) return;
+    var R = RES, pad = { l: 43, r: 13, t: 10, b: 27 };
+
+    var vb = document.getElementById('dft-verdict-banner');
+    vb.classList.remove('warn', 'fail');
+    if (R.masterLevel !== 'pass') vb.classList.add(R.masterLevel);
+    document.getElementById('dft-verdict-title').textContent = R.masterTitle;
+    document.getElementById('dft-verdict-sub').textContent = R.masterSub;
+    document.getElementById('dft-sc-rlin').textContent = '线性一致 R_lin: ' + (R.rLin * 100).toFixed(2) + '%';
+    document.getElementById('dft-sc-rtod').textContent = 'TOD修正 R_TOD: ' + (R.rTod * 100).toFixed(2) + '%';
+    document.getElementById('dft-sc-rspec').textContent = '光谱保真 R_spec: ' + (R.rSpec * 100).toFixed(2) + '%';
+
+    function setCard(id, st, badgeTxt, valTxt, hintTxt) {
+      var el = document.getElementById('dft-dc-' + id);
+      el.classList.remove('pass', 'warn', 'fail'); el.classList.add(st);
+      document.getElementById('dft-dd-' + id).textContent = badgeTxt;
+      document.getElementById('dft-dv-' + id).textContent = valTxt;
+      document.getElementById('dft-dh-' + id).textContent = hintTxt;
+    }
+    setCard('ff', R.stFF, R.stFF === 'pass' ? '远场充分' : (R.stFF === 'warn' ? '远场偏浅' : '近场失效'),
+      'D_FF = ' + (R.D_FF >= 100 ? R.D_FF.toFixed(0) : R.D_FF.toFixed(2)),
+      '拉伸比 M = ' + R.stretchM.toFixed(1) + '× (L_D,eff=' + (R.L_Deff >= 0.1 ? R.L_Deff.toFixed(2) + 'km' : (R.L_Deff * 1e3).toFixed(0) + 'm') + ')');
+    setCard('nl', R.stNL, R.isAnomSoliton ? '孤子束缚' : (R.stNL === 'pass' ? '线性区' : (R.stNL === 'warn' ? '弱SPM' : '强非线性')),
+      'Φ_NL = ' + R.phiNL.toFixed(2) + ' rad',
+      '孤子数 N = ' + R.Nsol.toFixed(2) + ' (' + (R.b2 < 0 ? '反常色散' : '正常色散') + ')');
+    setCard('tod', R.stTOD, R.stTOD === 'pass' ? '线性可用' : (R.stTOD === 'warn' ? '需TOD定标' : '焦散折叠'),
+      'η_TOD = ' + R.etaTOD.toFixed(3),
+      R.stTOD === 'warn' ? 'R_lin=' + R.rLin.toFixed(3) + ' → R_TOD=' + R.rTod.toFixed(4) : '要求 |β₃|Δω/(2|β₂|) < 0.06');
+    setCard('ov', R.stOV, R.stOV === 'pass' ? '无重叠' : (R.stOV === 'warn' ? '临近混叠' : '帧间重叠'),
+      'ξ_ov = ' + (R.duty * 100).toFixed(1) + '%',
+      '周期 T_rep = ' + (1e3 / S.frep).toFixed(1) + ' ns');
+    setCard('snr', R.stSNR, R.stSNR === 'pass' ? 'SNR 充足' : (R.stSNR === 'warn' ? 'SNR 偏低' : '噪声淹没'),
+      R.snrDb.toFixed(1) + ' dB',
+      '输出峰值 ' + (R.pOutPk >= 1e-3 ? (R.pOutPk * 1e3).toFixed(2) + ' mW' : (R.pOutPk * 1e6).toFixed(1) + ' μW'));
+
+    var Ddisp = -R.b2 / FAC_DISP;
+    var totDL = Math.abs(Ddisp * S.L); // ps/nm
+    var dLamPD = 1000.0 / (Math.max(1e-3, totDL) * 25.0); // nm at B_PD = 25 GHz (1/(ps/nm * 0.025 /ps) = 40/DL)
+    var dLamPDExact = 1.0 / (Math.max(1e-3, totDL) * 0.025);
+    var stageTag = R.usedFresnel ? ('两阶段混合 (SSFM至' + R.zNL.toFixed(2) + 'km + 精确Fresnel)') : ('全程SSFM (N=' + R.N + ')');
+    document.getElementById('dft-eq-bar').textContent =
+      stageTag + ' · 总色散 |DL| = ' + (totDL >= 100 ? totDL.toFixed(0) : totDL.toFixed(1)) + ' ps/nm · 25GHz PD 波长分辨 δλ_PD = ' +
+      (dLamPDExact >= 10 ? dLamPDExact.toFixed(1) : dLamPDExact.toFixed(3)) + ' nm · 拉伸比 M = ' + R.stretchM.toFixed(1) + '×';
+
+    document.getElementById('dft-sync-p0').textContent = 'P₀ = ' + (S.P0 >= 10 ? S.P0.toFixed(1) : S.P0.toFixed(2)) + ' W';
+    document.getElementById('dft-sync-pavg').textContent = 'P_avg = ' + (R.pAvgMW >= 10 ? R.pAvgMW.toFixed(1) : R.pAvgMW.toFixed(3)) + ' mW';
+    document.getElementById('dft-sync-ep').textContent = 'E_p = ' + (R.ePulsePJ >= 100 ? R.ePulsePJ.toFixed(0) : R.ePulsePJ.toFixed(2)) + ' pJ';
+
+    // 13A: Time-domain waveform
+    var rA = setupCV('dft-cv-time'), cA = rA.ctx;
+    var tHalfView = Math.min(Math.abs(R.tOut[R.N - 1]) * 0.96, Math.max(4.5 * R.tRmsIn, Math.abs(R.b2) * S.L * 3.8 * R.wRms));
+    var maxPk = 1e-30;
+    for (var i = 0; i < R.N; i++) {
+      if (Math.abs(R.tOut[i]) > tHalfView) continue;
+      if (R.iGnlse[i] > maxPk) maxPk = R.iGnlse[i];
+      if (R.iSpLin[i] > maxPk) maxPk = R.iSpLin[i];
+      if (R.iSpTod[i] > maxPk) maxPk = R.iSpTod[i];
+    }
+    var useNs = tHalfView >= 1000.0;
+    var tScale = useNs ? 1e-3 : 1.0;
+    var axA = drawGrid(cA, rA.w, rA.h, pad, -tHalfView * tScale, tHalfView * tScale, S.logTime ? -35 : 0, S.logTime ? 2 : 1.12, useNs ? '随动时间 T (ns)' : '随动时间 T (ps)', S.logTime ? '归一化强度 (dB)' : '归一化强度', useNs ? 2 : 0);
+    cA.save(); cA.beginPath(); cA.rect(pad.l, pad.t, axA.pw, axA.ph); cA.clip();
+    function strokeTime(arr, col, lw, dash) {
+      cA.strokeStyle = col; cA.lineWidth = lw; cA.setLineDash(dash || []); cA.beginPath();
+      var st = false, stride = Math.max(1, Math.floor((2 * tHalfView / Math.abs(R.dtOut)) / 700));
+      for (var j = 0; j < R.N; j += stride) {
+        var tv = R.tOut[j]; if (tv < -tHalfView || tv > tHalfView) continue;
+        var v = S.logTime ? Math.max(-40, 10 * Math.log10(arr[j] / maxPk + 1e-10)) : (arr[j] / maxPk);
+        var px = axA.toX(tv * tScale), py = axA.toY(v);
+        if (!st) { cA.moveTo(px, py); st = true; } else cA.lineTo(px, py);
+      }
+      cA.stroke(); cA.setLineDash([]);
+    }
+    strokeTime(R.iGnlse, '#185FA5', 2.0, []);
+    strokeTime(R.iSpLin, '#EF9F27', 1.6, [5, 3]);
+    if (Math.abs(S.beta3) > 0.01) strokeTime(R.iSpTod, '#0F6E56', 1.5, [8, 3, 2, 3]);
+    cA.restore();
+
+    // 13B: Spectral Reconstruction
+    var rB = setupCV('dft-cv-spec'), cB = rB.ctx, M_SPEC = R.nuTHzGrid.length, yMaxB = 1.15;
+    for (var b0 = 0; b0 < M_SPEC; b0++) if (R.specRecLin[b0] > yMaxB && R.specRecLin[b0] < 2.2) yMaxB = R.specRecLin[b0] * 1.08;
+    var axB = drawGrid(cB, rB.w, rB.h, pad, R.nuTHzGrid[0], R.nuTHzGrid[M_SPEC - 1], 0, yMaxB, '相对光频 Δν (THz)', '归一化功率谱', 2);
+    cB.save(); cB.beginPath(); cB.rect(pad.l, pad.t, axB.pw, axB.ph); cB.clip();
+    function strokeSpec(arr, col, lw, dash) {
+      cB.strokeStyle = col; cB.lineWidth = lw; cB.setLineDash(dash || []); cB.beginPath();
+      for (var k = 0; k < M_SPEC; k++) {
+        var px = axB.toX(R.nuTHzGrid[k]), py = axB.toY(Math.min(yMaxB * 1.2, arr[k]));
+        if (k === 0) cB.moveTo(px, py); else cB.lineTo(px, py);
+      }
+      cB.stroke(); cB.setLineDash([]);
+    }
+    strokeSpec(R.specTrueOut, '#888780', 1.2, [2, 2]);
+    strokeSpec(R.specRecLin, '#534AB7', 1.9, []);
+    if (Math.abs(S.beta3) > 0.01) strokeSpec(R.specRecTod, '#1D9E75', 1.6, []);
+    strokeSpec(R.specTrueIn, '#dc2626', 1.5, [5, 3]);
+    cB.restore();
+
+    // 13C: 2D Valid Operating Window Phase Diagram (L from 0.03 km to 32 km)
+    var rC = setupCV('dft-cv-phase'), cC = rC.ctx, padC = { l: 43, r: 13, t: 11, b: 27 };
+    var lxMin = -1.5, lxMax = 1.5, pyMin = -1.5, pyMax = 2.5;
+    var axC = drawGrid(cC, rC.w, rC.h, padC, lxMin, lxMax, pyMin, pyMax, 'log₁₀(光纤长度 L / km)', 'log₁₀(P₀ / W)', 1);
+    PHASE_GEOM = { pad: padC, pw: axC.pw, ph: axC.ph, lxMin: lxMin, lxMax: lxMax, pyMin: pyMin, pyMax: pyMax };
+    cC.save(); cC.beginPath(); cC.rect(padC.l, padC.t, axC.pw, axC.ph); cC.clip();
+    var alphaLin = S.alpha * Math.LN10 / 10.0, b2Abs = Math.abs(R.b2), gam = Math.max(1e-6, S.gamma);
+    var L_ff_min = 4.0 * R.L_Deff, L_ov_max = 0.70 / (S.frep * 1e-6 * b2Abs * Math.max(0.5, 4.2 * R.wRms)), nCols = 140;
+    function pMaxNL(Lk) {
+      var Leff = alphaLin > 1e-5 ? (1.0 - Math.exp(-alphaLin * Lk)) / alphaLin : Lk;
+      var pPhi = 0.30 / (gam * R.L_D * Math.max(1e-4, Math.asinh(Leff / R.L_D)));
+      return R.b2 < 0 ? Math.min(pPhi, 0.36 / (gam * R.L_D)) : pPhi;
+    }
+    function pMinSNR(Lk) { return (Math.pow(10, 1.8) * P_NEP_W) * Math.sqrt(1.0 + Math.pow(Lk / R.L_D, 2)) * Math.exp(alphaLin * Lk); }
+    var colW = axC.pw / nCols + 0.8;
+    for (var ic = 0; ic < nCols; ic++) {
+      var lLog = lxMin + ((ic + 0.5) / nCols) * (lxMax - lxMin), Lk = Math.pow(10, lLog);
+      if (Lk < L_ff_min || Lk > L_ov_max || R.etaTOD >= 0.40) continue;
+      var pHi = Math.log10(Math.max(1e-6, pMaxNL(Lk))), pLo = Math.log10(Math.max(1e-6, pMinSNR(Lk)));
+      if (pHi > pLo) {
+        var yTop = axC.toY(Math.min(pyMax, pHi)), yBot = axC.toY(Math.max(pyMin, pLo));
+        cC.fillStyle = 'rgba(29, 158, 117, 0.22)'; cC.fillRect(axC.toX(lLog) - colW * 0.5, yTop, colW, Math.max(0, yBot - yTop));
+      }
+    }
+    var xFF = axC.toX(Math.log10(Math.max(1e-4, L_ff_min))), xOV = axC.toX(Math.log10(Math.max(1e-4, L_ov_max)));
+    cC.lineWidth = 1.35; cC.setLineDash([4, 3]);
+    cC.strokeStyle = '#185FA5'; cC.beginPath(); cC.moveTo(xFF, padC.t); cC.lineTo(xFF, padC.t + axC.ph); cC.stroke();
+    cC.strokeStyle = '#534AB7'; cC.beginPath(); cC.moveTo(xOV, padC.t); cC.lineTo(xOV, padC.t + axC.ph); cC.stroke();
+    cC.setLineDash([]);
+    cC.strokeStyle = '#dc2626'; cC.lineWidth = 1.6; cC.beginPath();
+    for (var ic2 = 0; ic2 <= nCols; ic2++) { var l2 = lxMin + (ic2 / nCols) * (lxMax - lxMin), y2 = axC.toY(Math.log10(Math.max(1e-6, pMaxNL(Math.pow(10, l2))))); if (ic2 === 0) cC.moveTo(axC.toX(l2), y2); else cC.lineTo(axC.toX(l2), y2); }
+    cC.stroke();
+    cC.strokeStyle = '#EF9F27'; cC.lineWidth = 1.6; cC.beginPath();
+    for (var ic3 = 0; ic3 <= nCols; ic3++) { var l3 = lxMin + (ic3 / nCols) * (lxMax - lxMin), y3 = axC.toY(Math.log10(Math.max(1e-6, pMinSNR(Math.pow(10, l3))))); if (ic3 === 0) cC.moveTo(axC.toX(l3), y3); else cC.lineTo(axC.toX(l3), y3); }
+    cC.stroke();
+    cC.font = 'bold 8.6px -apple-system,sans-serif';
+    cC.fillStyle = '#dc2626'; cC.textAlign = 'left'; cC.fillText('非线性上限', padC.l + 4, padC.t + 11);
+    cC.fillStyle = '#854F0B'; cC.textAlign = 'right'; cC.fillText('损耗/SNR下限', padC.l + axC.pw - 4, padC.t + axC.ph - 5);
+    cC.fillStyle = '#185FA5'; cC.textAlign = 'left'; if (xFF > padC.l && xFF < padC.l + axC.pw - 35) cC.fillText('远场→', xFF + 3, padC.t + 24);
+    cC.fillStyle = '#534AB7'; cC.textAlign = 'right'; if (xOV > padC.l + 35 && xOV < padC.l + axC.pw) cC.fillText('←防重叠', xOV - 3, padC.t + 24);
+    var curX = axC.toX(Math.log10(S.L)), curY = axC.toY(Math.log10(S.P0));
+    var ptCol = R.masterLevel === 'pass' ? '#0F6E56' : (R.masterLevel === 'warn' ? '#EF9F27' : '#dc2626');
+    cC.strokeStyle = 'rgba(44,44,42,0.35)'; cC.lineWidth = 0.9; cC.setLineDash([2, 2]);
+    cC.beginPath(); cC.moveTo(curX, padC.t); cC.lineTo(curX, padC.t + axC.ph); cC.moveTo(padC.l, curY); cC.lineTo(padC.l + axC.pw, curY); cC.stroke(); cC.setLineDash([]);
+    cC.fillStyle = ptCol; cC.beginPath(); cC.arc(curX, curY, 5.4, 0, Math.PI * 2); cC.fill();
+    cC.strokeStyle = '#ffffff'; cC.lineWidth = 1.8; cC.stroke();
+    cC.restore();
+
+    // 13D: z-Evolution
+    var rD = setupCV('dft-cv-evol'), cD = rD.ctx, padD = { l: 43, r: 40, t: 10, b: 27 };
+    var axD = drawGrid(cD, rD.w, rD.h, padD, 0, S.L, 0.2, 1.05, '传输距离 z (km)', '一致性 R(z)', S.L >= 5 ? 1 : 2);
+    var maxPhiAxis = Math.max(0.6, R.phiNL * 1.15);
+    cD.font = '8.8px monospace'; cD.fillStyle = '#854F0B'; cD.textAlign = 'left';
+    for (var g = 0; g <= 4; g++) { var pv = (g / 4) * maxPhiAxis, py = padD.t + axD.ph - (g / 4) * axD.ph; cD.fillText(pv >= 10 ? pv.toFixed(0) : pv.toFixed(2), rD.w - padD.r + 4, py + 3); }
+    cD.save(); cD.translate(rD.w - 7, padD.t + axD.ph / 2); cD.rotate(Math.PI / 2); cD.font = '9.4px -apple-system,sans-serif'; cD.textAlign = 'center'; cD.fillText('Φ_NL (rad)', 0, 0); cD.restore();
+    cD.save(); cD.beginPath(); cD.rect(padD.l, padD.t, axD.pw, axD.ph); cD.clip();
+    var yThr = padD.t + axD.ph - (0.30 / maxPhiAxis) * axD.ph;
+    cD.strokeStyle = 'rgba(220,38,38,0.45)'; cD.lineWidth = 1.1; cD.setLineDash([4, 3]);
+    cD.beginPath(); cD.moveTo(padD.l, yThr); cD.lineTo(padD.l + axD.pw, yThr); cD.stroke(); cD.setLineDash([]);
+    if (R.zHist.length > 1) {
+      cD.strokeStyle = '#EF9F27'; cD.lineWidth = 1.8; cD.beginPath();
+      for (var d0 = 0; d0 < R.zHist.length; d0++) { var px0 = axD.toX(R.zHist[d0]), py0 = padD.t + axD.ph - (R.phiHist[d0] / maxPhiAxis) * axD.ph; if (d0 === 0) cD.moveTo(px0, py0); else cD.lineTo(px0, py0); }
+      cD.stroke();
+      cD.strokeStyle = '#534AB7'; cD.lineWidth = 2.0; cD.beginPath();
+      for (var d1 = 1; d1 < R.zHist.length; d1++) { var px1 = axD.toX(R.zHist[d1]), py1 = axD.toY(Math.max(0.2, R.rLinHist[d1])); if (d1 === 1) cD.moveTo(px1, py1); else cD.lineTo(px1, py1); }
+      cD.stroke();
+      if (Math.abs(S.beta3) > 0.01) {
+        cD.strokeStyle = '#1D9E75'; cD.lineWidth = 1.6; cD.setLineDash([5, 3]); cD.beginPath();
+        for (var d2 = 1; d2 < R.zHist.length; d2++) { var px2 = axD.toX(R.zHist[d2]), py2 = axD.toY(Math.max(0.2, R.rTodHist[d2])); if (d2 === 1) cD.moveTo(px2, py2); else cD.lineTo(px2, py2); }
+        cD.stroke(); cD.setLineDash([]);
+      }
+    }
+    cD.restore();
+  }
+
+  function syncSliders() {
+    document.getElementById('dft-sl-tfwhm').value = S.tfwhm; document.getElementById('dft-vl-tfwhm').textContent = S.tfwhm.toFixed(2) + ' ps';
+    document.getElementById('dft-sl-chirp').value = S.chirp; document.getElementById('dft-vl-chirp').textContent = (S.chirp > 0 ? '+' : '') + S.chirp.toFixed(1);
+    document.getElementById('dft-sl-frep').value = S.frep; document.getElementById('dft-vl-frep').textContent = S.frep.toFixed(0) + ' MHz';
+    document.getElementById('dft-sl-b2').value = S.beta2; document.getElementById('dft-vl-b2').textContent = (S.beta2 > 0 ? '+' : '') + S.beta2.toFixed(1);
+    document.getElementById('dft-sl-b3').value = S.beta3; document.getElementById('dft-vl-b3').textContent = (S.beta3 > 0 ? '+' : '') + S.beta3.toFixed(2);
+    var Ddisp = -S.beta2 / FAC_DISP;
+    var Sslope = (S.beta3 / (FAC_DISP * FAC_DISP)) - (2.0 * Ddisp / LAM_NM);
+    document.getElementById('dft-vl-Ddisp').textContent = 'D = ' + (Ddisp > 0 ? '+' : '') + Ddisp.toFixed(1) + ' ps/(nm·km) · S = ' + (Sslope > 0 ? '+' : '') + Sslope.toFixed(3);
+    document.getElementById('dft-sl-alpha').value = S.alpha; document.getElementById('dft-vl-alpha').textContent = S.alpha.toFixed(2) + ' dB/km';
+    document.getElementById('dft-sl-gamma').value = S.gamma; document.getElementById('dft-vl-gamma').textContent = S.gamma.toFixed(2);
+    document.getElementById('dft-sl-L').value = Math.max(-1.30, Math.min(1.48, Math.log10(Math.max(0.05, S.L))));
+    document.getElementById('dft-vl-L').textContent = S.L < 0.2 ? (S.L * 1000).toFixed(0) + ' m' : (S.L >= 10 ? S.L.toFixed(1) + ' km' : S.L.toFixed(2) + ' km');
+    document.getElementById('dft-chk-ho').checked = S.highOrder;
+
+    var pwrSl = document.getElementById('dft-sl-pwr');
+    if (S.pwrMode === 'peak') {
+      document.getElementById('dft-lbl-pwr').textContent = '峰值功率 P₀ (对数)';
+      pwrSl.min = -1.5; pwrSl.max = 2.5; pwrSl.value = Math.max(-1.5, Math.min(2.5, Math.log10(Math.max(0.03, S.P0))));
+      document.getElementById('dft-vl-pwr').textContent = S.P0 >= 10 ? S.P0.toFixed(1) + ' W' : S.P0.toFixed(2) + ' W';
+    } else {
+      var pAvg = S.P0 * getShapeEnergyFactor() * 1e-12 * (S.frep * 1e6) * 1e3;
+      document.getElementById('dft-lbl-pwr').textContent = '平均功率 P_avg (对数)';
+      pwrSl.min = -2.2; pwrSl.max = 2.0; pwrSl.value = Math.max(-2.2, Math.min(2.0, Math.log10(Math.max(0.006, pAvg))));
+      document.getElementById('dft-vl-pwr').textContent = pAvg >= 10 ? pAvg.toFixed(1) + ' mW' : pAvg.toFixed(3) + ' mW';
+    }
+    ['double', 'asymmetric', 'sech', 'gaussian'].forEach(function(id) { document.getElementById('dft-pw-' + id).classList.toggle('active', S.pulse === id); });
+    document.getElementById('dft-pm-peak').classList.toggle('active', S.pwrMode === 'peak');
+    document.getElementById('dft-pm-avg').classList.toggle('active', S.pwrMode === 'avg');
+  }
+
+  function highlightFiber(fid) {
+    ['smf28', 'dcf38', 'cdcf', 'nzdsf'].forEach(function(id) {
+      document.getElementById('dft-fb-' + id).classList.toggle('active', id === fid);
+    });
+  }
+
+  var recomputeTimer = null;
+  window.dftRecompute = function() {
+    S.highOrder = document.getElementById('dft-chk-ho').checked;
+    if (recomputeTimer) cancelAnimationFrame(recomputeTimer);
+    recomputeTimer = requestAnimationFrame(function() { runSimulation(); renderAll(); });
+  };
+  window.dftSetPulse = function(p) { S.pulse = p; syncSliders(); window.dftRecompute(); };
+  window.dftSetPwrMode = function(m) { S.pwrMode = m; syncSliders(); };
+  window.dftSetFiber = function(fid) {
+    Object.assign(S, FIBERS[fid]);
+    highlightFiber(fid);
+    syncSliders(); window.dftRecompute();
+  };
+  window.dftSetLog = function(lg) {
+    S.logTime = lg;
+    document.getElementById('dft-btn-tlin').classList.toggle('active', !lg);
+    document.getElementById('dft-btn-tlog').classList.toggle('active', lg);
+    renderAll();
+  };
+  window.dftPreset = function(name) {
+    var cfgs = {
+      ideal: { fb: 'smf28', pulse: 'double',     tfwhm: 1.50, chirp: 0.0, P0: 0.30, frep: 40,  beta2: -21.7,  beta3: +0.15, alpha: 0.20, gamma: 1.3, L: 10.0 },
+      near:  { fb: 'smf28', pulse: 'double',     tfwhm: 1.50, chirp: 0.0, P0: 0.30, frep: 40,  beta2: -21.7,  beta3: +0.15, alpha: 0.20, gamma: 1.3, L: 0.06 },
+      spm:   { fb: 'cdcf',  pulse: 'double',     tfwhm: 1.50, chirp: 0.0, P0: 50.0, frep: 40,  beta2: +130.0, beta3: -0.80, alpha: 0.50, gamma: 4.5, L: 3.0  },
+      sol:   { fb: 'smf28', pulse: 'sech',       tfwhm: 1.50, chirp: 0.0, P0: 23.5, frep: 40,  beta2: -21.7,  beta3: +0.15, alpha: 0.20, gamma: 1.3, L: 8.0  },
+      tod:   { fb: 'nzdsf', pulse: 'asymmetric', tfwhm: 0.35, chirp: 0.0, P0: 0.20, frep: 40,  beta2: -5.4,   beta3: +0.18, alpha: 0.20, gamma: 1.6, L: 12.0 },
+      loss:  { fb: 'dcf38', pulse: 'double',     tfwhm: 1.20, chirp: 0.0, P0: 0.12, frep: 180, beta2: +48.5,  beta3: -0.29, alpha: 0.90, gamma: 3.0, L: 20.0 }
+    };
+    var cfg = cfgs[name];
+    Object.assign(S, cfg);
+    highlightFiber(cfg.fb);
+    ['ideal', 'near', 'spm', 'sol', 'tod', 'loss'].forEach(function(id) { document.getElementById('dft-pre-' + id).classList.toggle('active', id === name); });
+    syncSliders(); window.dftRecompute();
+  };
+
+  document.getElementById('dft-sl-tfwhm').addEventListener('input', function(e) { S.tfwhm = parseFloat(e.target.value); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-chirp').addEventListener('input', function(e) { S.chirp = parseFloat(e.target.value); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-frep').addEventListener('input', function(e) { S.frep = parseFloat(e.target.value); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-b2').addEventListener('input', function(e) { S.beta2 = parseFloat(e.target.value); highlightFiber(''); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-b3').addEventListener('input', function(e) { S.beta3 = parseFloat(e.target.value); highlightFiber(''); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-alpha').addEventListener('input', function(e) { S.alpha = parseFloat(e.target.value); highlightFiber(''); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-gamma').addEventListener('input', function(e) { S.gamma = parseFloat(e.target.value); highlightFiber(''); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-L').addEventListener('input', function(e) { S.L = Math.pow(10, parseFloat(e.target.value)); syncSliders(); window.dftRecompute(); });
+  document.getElementById('dft-sl-pwr').addEventListener('input', function(e) {
+    var lv = parseFloat(e.target.value);
+    if (S.pwrMode === 'peak') S.P0 = Math.pow(10, lv);
+    else {
+      var targetAvgMW = Math.pow(10, lv);
+      var denom = getShapeEnergyFactor() * 1e-12 * (S.frep * 1e6) * 1e3;
+      S.P0 = Math.max(0.01, Math.min(400.0, targetAvgMW / Math.max(1e-9, denom)));
+    }
+    syncSliders(); window.dftRecompute();
+  });
+
+  document.getElementById('dft-cv-phase').addEventListener('click', function(e) {
+    if (!PHASE_GEOM) return;
+    var rect = this.getBoundingClientRect(), g = PHASE_GEOM;
+    var rx = (e.clientX - rect.left - g.pad.l) / g.pw, ry = 1.0 - (e.clientY - rect.top - g.pad.t) / g.ph;
+    if (rx < 0 || rx > 1 || ry < 0 || ry > 1) return;
+    S.L = Math.max(0.05, Math.min(30.0, Math.pow(10, g.lxMin + rx * (g.lxMax - g.lxMin))));
+    S.P0 = Math.pow(10, g.pyMin + ry * (g.pyMax - g.pyMin));
+    syncSliders(); window.dftRecompute();
+  });
+
+  document.querySelectorAll('.tab-switch button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-switch button').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      isSimTabActive = (btn.dataset.panel === 'simulation');
+      if (isSimTabActive) {
+        setTimeout(function() { syncSliders(); if (!RES) runSimulation(); renderAll(); }, 30);
+      }
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+    });
+  });
+
+  window.addEventListener('resize', function() { if (isSimTabActive) renderAll(); });
+})();
+</script>
+</body>
+</html>
